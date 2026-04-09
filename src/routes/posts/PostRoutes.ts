@@ -50,29 +50,8 @@ logger.info("PostRoutes: 라우터 초기화됨");
  *         schema:
  *           type: string
  *           enum: [food, daily, beauty, electronics, school, freemarket]
- *         description: "품목 카테고리 필터"
+ *         description: "카테고리 필터 (food=먹거리, daily=일상용품, beauty=뷰티·패션, electronics=전자기기, school=학용품, freemarket=프리마켓)"
  *         example: food
- *       - in: query
- *         name: shoppingStage
- *         schema:
- *           type: string
- *           enum: [pre_shopping, post_shopping]
- *         description: "쇼핑 시점 (pre_shopping=쇼핑 전, post_shopping=쇼핑 후)"
- *         example: pre_shopping
- *       - in: query
- *         name: tradeIntent
- *         schema:
- *           type: string
- *           enum: [purchase, sale]
- *         description: "거래 의도 (purchase=구매, sale=판매/양도)"
- *         example: purchase
- *       - in: query
- *         name: postType
- *         schema:
- *           type: string
- *           enum: [group_buy, shopping_mate, proxy_buy_request, split_share, leftover_sale, sealed_transfer]
- *         description: "모집 유형"
- *         example: group_buy
  *     responses:
  *       200:
  *         description: 상품 목록 조회 성공
@@ -189,25 +168,7 @@ postRouter.get("/student/:studentId", getPostsByStudentId);
  *                     enum: [food, daily, beauty, electronics, school, freemarket]
  *                     nullable: true
  *                     example: "food"
- *                     description: "품목 카테고리"
- *                   shoppingStage:
- *                     type: string
- *                     enum: [pre_shopping, post_shopping]
- *                     nullable: true
- *                     example: "pre_shopping"
- *                     description: "쇼핑 시점 (pre_shopping=쇼핑 전, post_shopping=쇼핑 후)"
- *                   tradeIntent:
- *                     type: string
- *                     enum: [purchase, sale]
- *                     nullable: true
- *                     example: "purchase"
- *                     description: "거래 의도 (purchase=구매, sale=판매/양도)"
- *                   postType:
- *                     type: string
- *                     enum: [group_buy, shopping_mate, proxy_buy_request, split_share, leftover_sale, sealed_transfer]
- *                     nullable: true
- *                     example: "group_buy"
- *                     description: "모집 유형"
+ *                     description: "카테고리 ID (food=먹거리, daily=일상용품, beauty=뷰티·패션, electronics=전자기기, school=학용품, freemarket=프리마켓)"
  *                   images:
  *                     type: array
  *                     items:
@@ -225,9 +186,6 @@ postRouter.get("/student/:studentId", getPostsByStudentId);
  *               deadline: "2025-11-27T23:59:59.000Z"
  *               pickupLocation: "명지대학교 정문"
  *               category: "food"
- *               shoppingStage: "pre_shopping"
- *               tradeIntent: "purchase"
- *               postType: "group_buy"
  *               images: ["https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=400"]
  *     responses:
  *       201:

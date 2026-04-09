@@ -1,24 +1,5 @@
 import z from "zod";
 
-const shoppingStageEnum = z.enum(["pre_shopping", "post_shopping"]);
-const tradeIntentEnum = z.enum(["purchase", "sale"]);
-const postTypeEnum = z.enum([
-  "group_buy",
-  "shopping_mate",
-  "proxy_buy_request",
-  "split_share",
-  "leftover_sale",
-  "sealed_transfer",
-]);
-const itemCategoryEnum = z.enum([
-  "food",
-  "daily",
-  "beauty",
-  "electronics",
-  "school",
-  "freemarket",
-]);
-
 /**
  * 공동구매 상품 생성 요청 스키마
  */
@@ -31,13 +12,13 @@ export const createPostSchema = z.object({
     minParticipants: z.number().int().positive(),
     deadline: z.string().refine((val) => !isNaN(Date.parse(val)), {
       message: "Invalid datetime format",
-    }),
+    }), // ISO 8601 형식 검증
     pickupLocation: z.string().max(200),
-    images: z.array(z.string().min(1)).optional(),
-    category: itemCategoryEnum.optional().nullable(),
-    shoppingStage: shoppingStageEnum.optional().nullable(),
-    tradeIntent: tradeIntentEnum.optional().nullable(),
-    postType: postTypeEnum.optional().nullable(),
+    images: z.array(z.string().min(1)).optional(), // 이미지 URL 배열 (상대 경로 또는 절대 URL 모두 허용)
+    category: z
+      .enum(["food", "daily", "beauty", "electronics", "school", "freemarket"])
+      .optional()
+      .nullable(), // 카테고리 필드 추가
   }),
 });
 
@@ -60,11 +41,11 @@ export const updatePostSchema = z.object({
       })
       .optional(),
     pickupLocation: z.string().max(200).optional(),
-    images: z.array(z.string().min(1)).optional(),
-    category: itemCategoryEnum.optional().nullable(),
-    shoppingStage: shoppingStageEnum.optional().nullable(),
-    tradeIntent: tradeIntentEnum.optional().nullable(),
-    postType: postTypeEnum.optional().nullable(),
+    images: z.array(z.string().min(1)).optional(), // 이미지 URL 배열 (상대 경로 또는 절대 URL 모두 허용)
+    category: z
+      .enum(["food", "daily", "beauty", "electronics", "school", "freemarket"])
+      .optional()
+      .nullable(), // 카테고리 필드 추가
   }),
 });
 

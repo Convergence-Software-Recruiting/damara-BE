@@ -37,20 +37,14 @@ export async function getAllPosts(
     const offset = req.query.offset
       ? parseInt(req.query.offset as string, 10)
       : 0;
+    const category = req.query.category
+      ? String(req.query.category).trim()
+      : undefined;
 
-    const pick = (key: string) => {
-      const v = req.query[key];
-      return v ? String(v).trim() : undefined;
-    };
+    logger.info(`getAllPosts - 카테고리 파라미터: ${category}`);
+    const posts = await PostService.listPosts(limit, offset, category);
+    logger.info(`getAllPosts - 반환된 게시글 수: ${posts.length}`);
 
-    const filters = {
-      category: pick("category"),
-      shoppingStage: pick("shoppingStage"),
-      tradeIntent: pick("tradeIntent"),
-      postType: pick("postType"),
-    };
-
-    const posts = await PostService.listPosts(limit, offset, filters);
     res.status(HttpStatusCodes.OK).json(posts);
   } catch (error) {
     next(error);
@@ -129,21 +123,30 @@ export async function createPost(
     const validatedData = parseReq<CreatePostReq>(createPostSchema)(req.body);
     const { post } = validatedData;
 
-    const { images = [], deadline, category, shoppingStage, tradeIntent, postType, ...postData } = post;
+    // deadline과 category를 명시적으로 처리
+    const { images = [], deadline, category, ...postData } = post;
 
-    const normalize = (v?: string | null) =>
-      v && String(v).trim() !== "" ? String(v).trim() : null;
+    // category 값 정규화 (빈 문자열을 null로, trim 처리)
+    const normalizedCategory =
+      category && String(category).trim() !== ""
+        ? String(category).trim()
+        : null;
+
+    logger.info(
+      `createPost - 카테고리 처리: 원본=${category}, 정규화됨=${normalizedCategory}`
+    );
 
     const createdPost = await PostService.createPost(
       {
         ...postData,
         deadline: new Date(deadline),
-        category: normalize(category),
-        shoppingStage: (normalize(shoppingStage) as any) ?? null,
-        tradeIntent: (normalize(tradeIntent) as any) ?? null,
-        postType: (normalize(postType) as any) ?? null,
+        category: normalizedCategory,
       },
       images
+    );
+
+    logger.info(
+      `createPost - 생성된 게시글 카테고리: ${createdPost?.category}`
     );
 
     res.status(HttpStatusCodes.CREATED).json(createdPost);
