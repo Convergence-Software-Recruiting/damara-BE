@@ -111,7 +111,7 @@ Check for typescript errors.
 
 - **지원 카테고리**: `food` (먹거리), `daily` (일상용품), `beauty` (뷰티·패션), `electronics` (전자기기), `school` (학용품), `freemarket` (프리마켓)
 - **API 사용 예시**: `GET /api/posts?category=food`
-- **상세 문서**: [카테고리 기능 문서](./docs/CATEGORY_FEATURE.md)
+- **상세 문서**: [카테고리 기능 문서](./docs/features/CATEGORY_FEATURE.md)
 
 ### 신뢰점수(Trust Score) 기능
 사용자의 공동구매 활동을 기반으로 신뢰도를 수치화한 신뢰점수 시스템입니다.
@@ -121,7 +121,14 @@ Check for typescript errors.
 - **자동 업데이트**: 공동구매 완료/취소, 참여/참여 취소 시 자동으로 점수 조정
 - **등급 시스템**: 최우수(90~100), 우수(70~89), 보통(50~69), 주의(30~49), 경고(0~29)
 - **API 사용 예시**: `GET /api/users/:id` (trustScore 포함)
-- **상세 문서**: [신뢰점수 기능 문서](./docs/TRUST_SCORE_FEATURE.md)
+- **상세 문서**: [신뢰점수 기능 문서](./docs/features/TRUST_SCORE_FEATURE.md)
+
+### 서비스 개요/유저플로우/핵심 기능 정의
+현재 구현된 공동구매 백엔드 기능을 기준으로, 쇼핑 전/후 시나리오 확장 및 카테고리 세분화를 위한 기획 문서입니다.
+
+- **핵심 내용**: AS-IS 기능 정의, TO-BE 서비스 개요, 쇼핑 전/후 유저플로우, 핵심 기능 정의서
+- **확장 예시**: 쇼핑 전 `쇼핑메이트`, 쇼핑 후 `계란 N빵(분배)` 시나리오
+- **상세 문서**: [서비스 개요·유저플로우·핵심 기능 정의서](./docs/architecture/SERVICE_OVERVIEW_USERFLOW_CORE_FEATURES.md)
 
 ## API Documentation (Swagger)
 
