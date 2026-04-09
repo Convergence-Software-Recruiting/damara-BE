@@ -60,26 +60,30 @@ export const PostRepo = {
 
   /**
    * 전체 조회 + pagination (이미지 포함)
-   * category 필터링 지원
+   * category / shoppingStage / tradeIntent / postType 복합 필터링 지원
    */
-  async list(limit = 20, offset = 0, category?: string | null) {
-    const whereClause: any = {};
-    // category가 제공되고 빈 문자열이 아닐 때만 필터링
-    if (
-      category &&
-      category !== null &&
-      category !== undefined &&
-      String(category).trim() !== ""
-    ) {
-      const categoryValue = String(category).trim();
-      whereClause.category = categoryValue;
-      console.log("PostRepo.list - 카테고리 필터링:", {
-        요청카테고리: categoryValue,
-        whereClause카테고리: whereClause.category,
-      });
-    } else {
-      console.log("PostRepo.list - 전체 조회 (카테고리 없음)");
+  async list(
+    limit = 20,
+    offset = 0,
+    filters?: {
+      category?: string | null;
+      shoppingStage?: string | null;
+      tradeIntent?: string | null;
+      postType?: string | null;
     }
+  ) {
+    const whereClause: any = {};
+
+    const applyFilter = (key: string, value?: string | null) => {
+      if (value && String(value).trim() !== "") {
+        whereClause[key] = String(value).trim();
+      }
+    };
+
+    applyFilter("category", filters?.category);
+    applyFilter("shoppingStage", filters?.shoppingStage);
+    applyFilter("tradeIntent", filters?.tradeIntent);
+    applyFilter("postType", filters?.postType);
 
     const posts = await PostModel.findAll({
       where: whereClause,
@@ -96,17 +100,7 @@ export const PostRepo = {
       offset,
     });
 
-    const result = posts.map((p) => p.get());
-
-    // 디버깅: 조회된 게시글들의 카테고리 확인
-    if (whereClause.category) {
-      console.log(
-        "PostRepo.list - 조회된 게시글 카테고리:",
-        result.map((p) => ({ id: p.id, title: p.title, category: p.category }))
-      );
-    }
-
-    return result;
+    return posts.map((p) => p.get());
   },
 
   /**

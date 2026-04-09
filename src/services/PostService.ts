@@ -56,10 +56,19 @@ export const PostService = {
 
   /**
    * 전체 조회 + pagination
-   * category 필터링 지원
+   * category / shoppingStage / tradeIntent / postType 복합 필터링 지원
    */
-  async listPosts(limit = 20, offset = 0, category?: string | null) {
-    return await PostRepo.list(limit, offset, category);
+  async listPosts(
+    limit = 20,
+    offset = 0,
+    filters?: {
+      category?: string | null;
+      shoppingStage?: string | null;
+      tradeIntent?: string | null;
+      postType?: string | null;
+    }
+  ) {
+    return await PostRepo.list(limit, offset, filters);
   },
 
   /**
