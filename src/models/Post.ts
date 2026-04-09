@@ -12,6 +12,23 @@ import UserModel from "./User";
  * DB 컬럼 기반 attributes
  * 실제 posts 테이블의 컬럼 스키마를 TypeScript로 옮겨온 타입
  */
+export type ShoppingStage = "pre_shopping" | "post_shopping";
+export type TradeIntent = "purchase" | "sale";
+export type PostType =
+  | "group_buy"
+  | "shopping_mate"
+  | "proxy_buy_request"
+  | "split_share"
+  | "leftover_sale"
+  | "sealed_transfer";
+export type ItemCategory =
+  | "food"
+  | "daily"
+  | "beauty"
+  | "electronics"
+  | "school"
+  | "freemarket";
+
 export interface PostAttributes {
   id: string;
   authorId: string; // users.id와 외래키 관계
@@ -23,7 +40,10 @@ export interface PostAttributes {
   status: "open" | "closed" | "in_progress" | "completed" | "cancelled";
   deadline: Date;
   pickupLocation: string | null;
-  category: string | null; // 카테고리 ID (food, daily, beauty, electronics, school, freemarket)
+  category: string | null; // 기존 카테고리 (itemCategory로 점진 전환 예정)
+  shoppingStage: ShoppingStage | null; // 쇼핑 시점: pre_shopping | post_shopping
+  tradeIntent: TradeIntent | null;     // 거래 의도: purchase | sale
+  postType: PostType | null;           // 모집 유형: group_buy | shopping_mate | ...
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -63,6 +83,9 @@ export class PostModel
   public deadline!: Date;
   public pickupLocation!: string | null;
   public category!: string | null;
+  public shoppingStage!: ShoppingStage | null;
+  public tradeIntent!: TradeIntent | null;
+  public postType!: PostType | null;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -147,6 +170,34 @@ PostModel.init(
       allowNull: true,
       defaultValue: null,
       // 카테고리: food, daily, beauty, electronics, school, freemarket
+    },
+
+    shoppingStage: {
+      type: DataTypes.ENUM("pre_shopping", "post_shopping"),
+      allowNull: true,
+      defaultValue: null,
+      field: "shopping_stage",
+    },
+
+    tradeIntent: {
+      type: DataTypes.ENUM("purchase", "sale"),
+      allowNull: true,
+      defaultValue: null,
+      field: "trade_intent",
+    },
+
+    postType: {
+      type: DataTypes.ENUM(
+        "group_buy",
+        "shopping_mate",
+        "proxy_buy_request",
+        "split_share",
+        "leftover_sale",
+        "sealed_transfer"
+      ),
+      allowNull: true,
+      defaultValue: null,
+      field: "post_type",
     },
   },
 
