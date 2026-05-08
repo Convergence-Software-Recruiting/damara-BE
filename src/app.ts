@@ -30,6 +30,7 @@ import "./models/Message";
 import "./models/PostParticipant";
 
 const app = express();
+app.set("trust proxy", true);
 
 /**
  * ---------------------------------------------------------------------------
