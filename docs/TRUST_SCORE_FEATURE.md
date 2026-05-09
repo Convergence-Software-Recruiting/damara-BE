@@ -1,544 +1,488 @@
-# 신뢰점수(Trust Score) 기능 추가 문서
+# Trust Score & Trust Grade
 
-## 📋 개요
+## 1. 목적
 
-사용자의 공동구매 활동을 기반으로 신뢰도를 수치화한 신뢰점수(Trust Score) 기능을 구현했습니다.
+DAMARA는 대학교 내부 공동구매 서비스이므로, 사용자에게 노출되는 신뢰도를 학교 맥락에 맞는 **신뢰학점**으로 표현한다.
 
-**작업 일자**: 2025-11-24  
-**작업 범위**: Backend API (Model, Repository, Service, Controller, Swagger)
+다만 백엔드 내부에서는 계산 안정성과 정책 확장성을 위해 기존 `trustScore`를 유지한다.
 
----
-
-## 🎯 신뢰점수 계산 기준
-
-### 활동점수
-
-| 활동 | 점수 변화 |
-|------|----------|
-| 회원가입 초기 점수 | 50점 |
-| 공동구매 성공적 완료 (주최자) | +10점 |
-| 공동구매 성공적 참여 (참여자) | +5점 |
-| 공동구매 취소 (주최자) | -5점 |
-| 참여 후 취소 (참여자) | -3점 |
-| 게시글 삭제 (주최자) | -5점 |
-
-### 신뢰점수 등급 (프론트엔드 표시용)
-
-| 점수 범위 | 등급 | 표시 |
-|----------|------|------|
-| 90 ~ 100 | 최우수 | ⭐⭐⭐⭐⭐ |
-| 70 ~ 89 | 우수 | ⭐⭐⭐⭐ |
-| 50 ~ 69 | 보통 | ⭐⭐⭐ |
-| 30 ~ 49 | 주의 | ⭐⭐ |
-| 0 ~ 29 | 경고 | ⭐ |
-
-**참고**: 점수는 0~100 범위로 제한되며, 계산 결과가 범위를 벗어나면 자동으로 조정됩니다.
-
----
-
-## 📝 변경사항 상세
-
-### 1. 데이터베이스 스키마 변경
-
-#### User 모델 (`src/models/User.ts`)
-
-**추가된 필드**:
-```typescript
-trustScore: {
-  type: DataTypes.INTEGER,
-  allowNull: false,
-  defaultValue: 50,
-  field: "trust_score",
-  validate: {
-    min: 0,
-    max: 100,
-  },
-}
+```text
+내부 계산값: trustScore 0~100
+외부 표시값: trustGrade 2.5~4.5
+기본값: trustScore 50 = trustGrade 3.5
 ```
 
-**변경 내용**:
-- `UserAttributes` 인터페이스에 `trustScore: number` 추가
-- `UserCreationAttributes`에 `trustScore`를 optional로 추가 (기본값 50)
-- `UserModel` 클래스에 `trustScore` 필드 추가
-- `UserModel.init()`에서 `trustScore` 컬럼 정의 추가
-- 최소값 0, 최대값 100으로 제한
+이번 브랜치의 목표는 신뢰도를 단순 숫자에서 이벤트 기반 정책으로 확장하고, 사용자-facing 표현을 “신뢰학점”으로 리팩토링하는 것이다.
 
-**데이터베이스 마이그레이션**:
-- 기존 `users` 테이블에 `trust_score` 컬럼이 추가되어야 합니다.
-- Sequelize의 `sync()` 기능을 사용하는 경우, 서버 재시작 시 자동으로 컬럼이 추가됩니다.
-- 수동 마이그레이션이 필요한 경우:
-  ```sql
-  ALTER TABLE users ADD COLUMN trust_score INTEGER NOT NULL DEFAULT 50;
-  ALTER TABLE users ADD CONSTRAINT check_trust_score_range CHECK (trust_score >= 0 AND trust_score <= 100);
-  ```
+현재 브랜치:
 
----
-
-### 2. Repository 레이어 변경
-
-#### UserRepo (`src/repos/UserRepo.ts`)
-
-**변경된 메서드**:
-
-1. **`create(data)`**
-   ```typescript
-   async create(data: UserCreationAttributes) {
-     // trustScore가 제공되지 않으면 기본값 50으로 설정
-     const userData = {
-       ...data,
-       trustScore: data.trustScore ?? 50,
-     };
-     const user = await UserModel.create(userData);
-     return user.get();
-   }
-   ```
-   - 회원가입 시 `trustScore`가 없으면 기본값 50으로 설정
-
-2. **`findById(id)`** (신규 추가)
-   ```typescript
-   async findById(id: string) {
-     const user = await UserModel.findByPk(id);
-     return user ? user.get() : null;
-   }
-   ```
-   - 사용자 ID로 조회하는 메서드 추가
-
----
-
-### 3. Service 레이어 변경
-
-#### UserService (`src/services/UserService.ts`)
-
-**추가된 메서드**:
-
-1. **`updateTrustScore(userId, scoreChange)`**
-   ```typescript
-   async updateTrustScore(userId: string, scoreChange: number) {
-     const user = await UserRepo.findById(userId);
-     if (!user) {
-       throw new RouteError(HttpStatusCodes.NOT_FOUND, "USER_NOT_FOUND");
-     }
-
-     // 현재 점수에 변화량을 더하고, 0~100 범위로 제한
-     const newScore = Math.max(0, Math.min(100, user.trustScore + scoreChange));
-
-     await UserRepo.update(userId, { trustScore: newScore });
-     return newScore;
-   }
-   ```
-   - 신뢰점수를 업데이트하는 메서드
-   - 점수 변화량(양수: 증가, 음수: 감소)을 받아서 업데이트
-   - 0~100 범위로 자동 제한
-
-2. **`getUserById(id)`** (신규 추가)
-   ```typescript
-   async getUserById(id: string) {
-     const user = await UserRepo.findById(id);
-     if (!user) {
-       throw new RouteError(HttpStatusCodes.NOT_FOUND, "USER_NOT_FOUND");
-     }
-     // 비밀번호 해시 제외
-     const { passwordHash, ...userWithoutPassword } = user;
-     return userWithoutPassword;
-   }
-   ```
-   - 사용자 ID로 조회 (비밀번호 제외)
-
-#### PostService (`src/services/PostService.ts`)
-
-**변경된 메서드**:
-
-1. **`updatePost(id, patch)`**
-   ```typescript
-   async updatePost(id: string, patch: Partial<PostCreationAttributes>) {
-     // 이전 상태 확인
-     const oldPost = await PostRepo.findById(id);
-     if (!oldPost) {
-       throw new RouteError(HttpStatusCodes.NOT_FOUND, "POST_NOT_FOUND");
-     }
-
-     const updatedPost = await PostRepo.update(id, patch);
-     const newPost = updatedPost?.get();
-
-     // status 변경 시 신뢰점수 업데이트
-     if (patch.status && oldPost.status !== patch.status) {
-       if (patch.status === "closed") {
-         // 공동구매 완료: 주최자 +10점, 참여자 +5점
-         await UserService.updateTrustScore(oldPost.authorId, 10);
-         
-         const participants = await PostParticipantRepo.findByPostId(id);
-         for (const participant of participants) {
-           await UserService.updateTrustScore(participant.userId, 5);
-         }
-       } else if (patch.status === "cancelled") {
-         // 공동구매 취소: 주최자 -5점
-         await UserService.updateTrustScore(oldPost.authorId, -5);
-       }
-     }
-
-     return newPost;
-   }
-   ```
-   - 게시글 상태가 `closed`로 변경되면:
-     - 주최자에게 +10점
-     - 참여자들에게 +5점
-   - 게시글 상태가 `cancelled`로 변경되면:
-     - 주최자에게 -5점
-
-2. **`deletePost(id)`**
-   ```typescript
-   async deletePost(id: string) {
-     // 삭제 전에 게시글 정보 조회
-     const post = await PostRepo.findById(id);
-     if (!post) {
-       throw new RouteError(HttpStatusCodes.NOT_FOUND, "POST_NOT_FOUND");
-     }
-
-     await PostRepo.delete(id);
-
-     // 주최자 신뢰점수 감소
-     await UserService.updateTrustScore(post.authorId, -5);
-   }
-   ```
-   - 게시글 삭제 시 주최자에게 -5점
-
-3. **`PostParticipantService.leavePost(postId, userId)`**
-   ```typescript
-   async leavePost(postId: string, userId: string) {
-     await PostParticipantRepo.delete(postId, userId);
-
-     // currentQuantity 업데이트
-     const count = await PostParticipantRepo.countByPostId(postId);
-     await PostModel.update(
-       { currentQuantity: count },
-       { where: { id: postId } }
-     );
-
-     // 참여자 신뢰점수 감소
-     await UserService.updateTrustScore(userId, -3);
-   }
-   ```
-   - 참여 취소 시 참여자에게 -3점
-
----
-
-### 4. Controller 레이어 변경
-
-#### UserController (`src/controllers/user.controller.ts`)
-
-**추가된 메서드**:
-
-1. **`getUserById(req, res, next)`** (신규)
-   ```typescript
-   export async function getUserById(
-     req: Request,
-     res: Response,
-     next: NextFunction
-   ) {
-     try {
-       const { id } = req.params;
-       const user = await UserService.getUserById(id);
-       res.status(HttpStatusCodes.OK).json(user);
-     } catch (error) {
-       next(error);
-     }
-   }
-   ```
-   - `GET /api/users/:id` 엔드포인트 추가
-   - 응답에 `trustScore` 포함
-
-**기존 메서드 변경사항**:
-- 모든 User 응답에 `trustScore` 필드가 자동으로 포함됨
-- `createUser`: 회원가입 응답에 `trustScore: 50` 포함
-- `login`: 로그인 응답에 `trustScore` 포함
-- `getAllUsers`: 전체 조회 응답에 `trustScore` 포함
-
----
-
-### 5. Routes 변경
-
-#### UserRoutes (`src/routes/users/UserRoutes.ts`)
-
-**추가된 라우트**:
-
-```typescript
-/**
- * @swagger
- * /api/users/{id}:
- *   get:
- *     summary: 사용자 정보 조회
- *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *     responses:
- *       200:
- *         description: 사용자 정보 조회 성공
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
- */
-userRouter.get("/:id", getUserById);
+```text
+feature/trust-safety-filtering
 ```
 
----
+## 2. 왜 학점 컨셉인가
 
-### 6. Swagger API 문서 변경
+온도 방식도 가능하지만, DAMARA는 학교 구성원 기반 공동구매 서비스다. 따라서 학점 컨셉은 서비스 맥락과 더 잘 맞는다.
 
-#### Swagger Config (`src/config/swagger.ts`)
+```text
+일반 중고거래 서비스
+= 매너온도 같은 생활형 표현이 자연스러움
 
-**User 스키마에 추가된 필드**:
-```typescript
-trustScore: {
-  type: "integer",
-  description: "신뢰점수 (0~100, 기본값: 50)",
-  minimum: 0,
-  maximum: 100,
-  example: 50,
-}
+대학교 내부 공동구매 서비스
+= 신뢰학점 같은 캠퍼스 맥락 표현이 자연스러움
 ```
 
-**User 스키마 required 필드 업데이트**:
-```typescript
-required: ["id", "email", "nickname", "studentId", "trustScore"]
+다만 실제 성적처럼 보이면 사용자가 부담을 느낄 수 있으므로, 명칭은 단순 “학점”이 아니라 **신뢰학점**으로 사용한다.
+
+## 3. 핵심 설계
+
+현재 구조는 다음과 같다.
+
+```text
+사용자 행동
+  -> PostService / PostParticipantService
+  -> TrustService
+  -> users.trust_score 업데이트
+  -> trust_events 이력 저장
+  -> API 응답에서 trustGrade 계산
 ```
 
----
+역할 분리는 다음과 같다.
 
-## 🔌 API 사용 예시
+```text
+UserService
+= 사용자 생성, 조회, 로그인 같은 사용자 기본 로직 담당
 
-### 1. 회원가입 (trustScore 자동 설정)
-
-```http
-POST /api/users
-Content-Type: application/json
-
-{
-  "user": {
-    "email": "test@mju.ac.kr",
-    "passwordHash": "mypassword123",
-    "nickname": "홍길동",
-    "studentId": "20241234",
-    "department": "컴퓨터공학과"
-  }
-}
+TrustService
+= 신뢰 정책, 점수 계산, 신뢰학점 변환, 점수 변경 이력 저장 담당
 ```
 
-**응답**:
+앞으로 신뢰도를 변경하는 기능은 `users.trust_score`를 직접 수정하지 않고 `TrustService`를 거쳐야 한다.
+
+## 4. 내부값과 외부값
+
+### 내부값: trustScore
+
+`trustScore`는 DB에 저장되는 내부 정책 값이다.
+
+```text
+컬럼: users.trust_score
+범위: 0~100
+회원가입 기본값: 50
+```
+
+내부 정책은 정수 점수로 유지한다.
+
+이유:
+
+```text
+1. +10, -5 같은 정책 계산이 명확하다.
+2. 소수점 누적 오차를 피할 수 있다.
+3. 추후 온도, 학점, 등급 등 다른 표시 방식으로 바꾸기 쉽다.
+4. 기존 DB 구조와 호환된다.
+```
+
+### 외부값: trustGrade
+
+`trustGrade`는 사용자에게 보여주는 신뢰학점이다.
+
+```text
+API 응답 필드: trustGrade
+범위: 2.5~4.5
+기본값: 3.5
+소수점: 첫째 자리까지 표시
+```
+
+`trustGrade`는 DB에 저장하지 않고, `trustScore`를 기반으로 계산한다.
+
+## 5. 신뢰학점 변환식
+
+변환 공식은 다음과 같다.
+
+```text
+trustGrade = 2.5 + (trustScore / 100) * 2.0
+```
+
+같은 의미로 쓰면:
+
+```text
+trustGrade = 3.5 + (trustScore - 50) * 0.02
+```
+
+예시:
+
+| trustScore | trustGrade | 의미 |
+| ---: | ---: | --- |
+| 0 | 2.5 | 매우 낮은 신뢰 |
+| 25 | 3.0 | 주의 필요 |
+| 50 | 3.5 | 기본 신뢰 |
+| 75 | 4.0 | 좋은 신뢰 |
+| 100 | 4.5 | 매우 높은 신뢰 |
+
+코드 기준:
+
+```ts
+trustGrade = Number((2.5 + (trustScore / 100) * 2).toFixed(1));
+```
+
+## 6. 점수 범위 보정
+
+`trustScore`는 0점에서 100점 사이로 제한한다.
+
+```text
+최소 점수: 0
+최대 점수: 100
+회원가입 기본 점수: 50
+```
+
+점수 변경 후 0보다 작아지면 0으로 보정하고, 100보다 커지면 100으로 보정한다.
+
+예시:
+
+```text
+현재 97점인 사용자가 +10 이벤트를 받음
+계산상 107점
+최종 저장 점수는 100점
+표시 신뢰학점은 4.5
+
+현재 2점인 사용자가 -5 이벤트를 받음
+계산상 -3점
+최종 저장 점수는 0점
+표시 신뢰학점은 2.5
+```
+
+## 7. 현재 구현된 정책
+
+현재 구현된 정책은 `src/services/TrustService.ts`의 `TRUST_POLICY`를 기준으로 한다.
+
+| 이벤트 | 대상자 | trustScore 변화 | trustGrade 변화 | 적용 시점 |
+| --- | --- | ---: | ---: | --- |
+| 공동구매 거래 완료 | 작성자 | +10 | +0.2 | 게시글 상태가 `completed`가 될 때 |
+| 공동구매 거래 완료 | 참여자 | +5 | +0.1 | 게시글 상태가 `completed`가 될 때 |
+| 공동구매 취소 | 작성자 | -5 | -0.1 | 게시글 상태가 `cancelled`가 될 때 |
+| 공동구매 게시글 삭제 | 작성자 | -5 | -0.1 | 게시글 삭제 시 |
+| 공동구매 참여 취소 | 참여자 | -3 | -0.1 미만 | 참여자가 참여를 취소할 때 |
+| 노쇼 확정 | 대상 참여자 | -10 | -0.2 | 아직 API 미구현, 정책 상수만 예약 |
+
+주의:
+
+```text
+trustGrade는 소수점 첫째 자리까지만 표시하므로,
+-3점 같은 작은 변화는 표시값에서 바로 티가 나지 않을 수 있다.
+하지만 내부 trustScore와 trust_events에는 정확히 기록된다.
+```
+
+## 8. 상태값 기준
+
+게시글 상태값의 의미는 다음처럼 해석한다.
+
+| 상태 | 의미 | 점수 변경 여부 |
+| --- | --- | --- |
+| `open` | 모집중 | 없음 |
+| `closed` | 모집 마감 | 없음 |
+| `in_progress` | 거래 진행중 | 없음 |
+| `completed` | 거래 완료 | 작성자 +10, 참여자 +5 |
+| `cancelled` | 거래 취소 | 작성자 -5 |
+
+중요한 기준:
+
+```text
+closed는 거래 완료가 아니다.
+closed는 모집 마감 상태다.
+따라서 closed에서는 신뢰학점 보상을 주지 않는다.
+```
+
+프론트엔드에서 거래 완료 버튼을 만들 경우 `closed`가 아니라 `completed`를 보내야 한다.
+
+## 9. API 응답 기준
+
+사용자 응답에는 다음 두 값을 모두 포함한다.
+
 ```json
 {
-  "id": "123e4567-e89b-12d3-a456-426614174000",
-  "email": "test@mju.ac.kr",
+  "id": "user-uuid",
   "nickname": "홍길동",
   "studentId": "20241234",
-  "department": "컴퓨터공학과",
   "trustScore": 50,
-  "createdAt": "2025-11-24T10:00:00.000Z",
-  "updatedAt": "2025-11-24T10:00:00.000Z"
+  "trustGrade": 3.5
 }
 ```
 
-### 2. 로그인 (trustScore 포함)
+각 필드의 의미:
 
-```http
-POST /api/users/login
-Content-Type: application/json
+```text
+trustScore
+= 백엔드 내부 정책 값이다.
+= 관리자, 정책 계산, 필터링 기준으로 사용한다.
 
-{
-  "studentId": "20241234",
-  "password": "mypassword123"
-}
+trustGrade
+= 사용자에게 보여줄 신뢰학점이다.
+= 프론트엔드는 기본적으로 이 값을 표시한다.
 ```
 
-**응답**:
-```json
-{
-  "id": "123e4567-e89b-12d3-a456-426614174000",
-  "email": "test@mju.ac.kr",
-  "nickname": "홍길동",
-  "studentId": "20241234",
-  "department": "컴퓨터공학과",
-  "trustScore": 75,
-  "createdAt": "2025-11-24T10:00:00.000Z",
-  "updatedAt": "2025-11-24T10:00:00.000Z"
-}
+프론트엔드 표시 예시:
+
+```text
+신뢰학점 3.5
+신뢰학점 4.1
+신뢰학점 2.9
 ```
 
-### 3. 사용자 정보 조회 (신규)
+## 10. TrustEvent 기록 기준
 
-```http
-GET /api/users/123e4567-e89b-12d3-a456-426614174000
+신뢰도가 변경될 때마다 `trust_events` 테이블에 이력이 남는다.
+
+### 컬럼
+
+| 컬럼 | 의미 |
+| --- | --- |
+| `id` | 이벤트 ID |
+| `user_id` | 점수가 변경되는 사용자 |
+| `post_id` | 관련 게시글, 없으면 null |
+| `actor_user_id` | 이벤트를 발생시킨 사용자, 없으면 null |
+| `type` | 이벤트 타입 |
+| `score_change` | 점수 변화량 |
+| `previous_score` | 변경 전 점수 |
+| `next_score` | 변경 후 점수 |
+| `reason` | 사람이 읽을 수 있는 사유 |
+| `metadata` | 추후 확장을 위한 JSON 데이터 |
+| `created_at` | 이벤트 발생 시각 |
+
+### 이벤트 타입
+
+현재 정의된 이벤트 타입은 다음과 같다.
+
+| 타입 | 의미 | 현재 사용 여부 |
+| --- | --- | --- |
+| `post_completed_author` | 거래 완료 작성자 보상 | 사용 |
+| `post_completed_participant` | 거래 완료 참여자 보상 | 사용 |
+| `post_cancelled_by_author` | 작성자 거래 취소 감점 | 사용 |
+| `post_deleted_by_author` | 작성자 게시글 삭제 감점 | 사용 |
+| `participant_cancelled` | 참여자 참여 취소 감점 | 사용 |
+| `participant_no_show` | 노쇼 확정 감점 | 예약 |
+| `agreement_confirmed` | 사전 약속 확인 | 예약 |
+| `manual_adjustment` | 관리자 또는 legacy 수동 조정 | 사용 가능 |
+
+## 11. 현재 코드 적용 위치
+
+### 거래 완료
+
+게시글 상태가 `completed`로 바뀌면 신뢰도 보상이 적용된다.
+
+```text
+PostService.updatePostStatus()
+PostService.updatePost()
 ```
 
-**응답**:
-```json
-{
-  "id": "123e4567-e89b-12d3-a456-426614174000",
-  "email": "test@mju.ac.kr",
-  "nickname": "홍길동",
-  "studentId": "20241234",
-  "department": "컴퓨터공학과",
-  "avatarUrl": "https://example.com/avatar.jpg",
-  "trustScore": 75,
-  "createdAt": "2025-11-24T10:00:00.000Z",
-  "updatedAt": "2025-11-24T10:00:00.000Z"
-}
+적용 정책:
+
+```text
+작성자: trustScore +10, trustGrade +0.2
+참여자: trustScore +5, trustGrade +0.1
 ```
 
-### 4. 공동구매 완료 시 신뢰점수 자동 업데이트
+### 거래 취소
 
-```http
-PUT /api/posts/123e4567-e89b-12d3-a456-426614174000
-Content-Type: application/json
+게시글 상태가 `cancelled`로 바뀌면 작성자에게 감점이 적용된다.
 
-{
-  "post": {
-    "status": "closed"
-  }
-}
+```text
+PostService.updatePostStatus()
+PostService.updatePost()
 ```
 
-**자동 처리**:
-- 주최자 신뢰점수: +10점
-- 참여자들 신뢰점수: 각각 +5점
+적용 정책:
 
-### 5. 참여 취소 시 신뢰점수 자동 업데이트
-
-```http
-DELETE /api/posts/123e4567-e89b-12d3-a456-426614174000/participate/abc123...
+```text
+작성자: trustScore -5, trustGrade -0.1
 ```
 
-**자동 처리**:
-- 참여자 신뢰점수: -3점
+### 게시글 삭제
 
----
+게시글을 삭제하면 작성자에게 감점이 적용된다.
 
-## ✅ 호환성
-
-### 하위 호환성
-- ✅ 기존 API 호출은 그대로 동작합니다 (`trustScore` 필드가 자동으로 포함됨)
-- ✅ 기존 사용자는 서버 재시작 시 `trustScore: 50`으로 자동 설정됩니다
-- ✅ 프론트엔드에서 `trustScore` 필드를 사용하지 않아도 문제없습니다
-
-### 데이터베이스 마이그레이션
-- 기존 `users` 테이블에 `trust_score` 컬럼이 없으면 서버 시작 시 Sequelize가 자동으로 추가합니다
-- 수동 마이그레이션이 필요한 경우 위의 SQL 명령어를 실행하세요
-- 기존 사용자의 `trust_score`는 기본값 50으로 설정됩니다
-
----
-
-## 🧪 테스트 방법
-
-### 1. Swagger UI에서 테스트
-1. 서버 실행: `npm run dev`
-2. 브라우저에서 `http://localhost:3000/api-docs` 접속
-3. `POST /api/users` 엔드포인트에서 회원가입 테스트
-4. 응답에서 `trustScore: 50` 확인
-5. `GET /api/users/{id}` 엔드포인트에서 사용자 정보 조회 테스트
-
-### 2. 신뢰점수 자동 업데이트 테스트
-
-#### 공동구매 완료 테스트
-```bash
-# 1. 게시글 생성
-curl -X POST "http://localhost:3000/api/posts" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "post": {
-      "authorId": "user-id-1",
-      "title": "테스트 게시글",
-      "content": "테스트 내용",
-      "price": 10000,
-      "minParticipants": 2,
-      "deadline": "2025-12-31T23:59:59.000Z"
-    }
-  }'
-
-# 2. 참여하기
-curl -X POST "http://localhost:3000/api/posts/post-id/participate" \
-  -H "Content-Type: application/json" \
-  -d '{"userId": "user-id-2"}'
-
-# 3. 게시글 상태를 closed로 변경
-curl -X PUT "http://localhost:3000/api/posts/post-id" \
-  -H "Content-Type: application/json" \
-  -d '{"post": {"status": "closed"}}'
-
-# 4. 사용자 정보 조회하여 신뢰점수 확인
-curl "http://localhost:3000/api/users/user-id-1"  # 주최자: +10점
-curl "http://localhost:3000/api/users/user-id-2"  # 참여자: +5점
+```text
+PostService.deletePost()
 ```
 
-#### 참여 취소 테스트
-```bash
-# 참여 취소
-curl -X DELETE "http://localhost:3000/api/posts/post-id/participate/user-id-2"
+적용 정책:
 
-# 사용자 정보 조회하여 신뢰점수 확인 (참여자: -3점)
-curl "http://localhost:3000/api/users/user-id-2"
+```text
+작성자: trustScore -5, trustGrade -0.1
 ```
 
----
+### 참여 취소
 
-## 📚 관련 파일 목록
+참여자가 공동구매 참여를 취소하면 참여자에게 감점이 적용된다.
 
-### 수정된 파일
-1. `src/models/User.ts` - User 모델에 trustScore 필드 추가
-2. `src/repos/UserRepo.ts` - findById 메서드 추가, create에서 trustScore 기본값 설정
-3. `src/services/UserService.ts` - updateTrustScore, getUserById 메서드 추가
-4. `src/services/PostService.ts` - updatePost, deletePost, leavePost에 신뢰점수 업데이트 로직 추가
-5. `src/controllers/user.controller.ts` - getUserById 메서드 추가
-6. `src/routes/users/UserRoutes.ts` - GET /api/users/:id 라우트 추가
-7. `src/config/swagger.ts` - User 스키마에 trustScore 필드 추가
+```text
+PostParticipantService.leavePost()
+```
 
----
+적용 정책:
 
-## 🔄 신뢰점수 업데이트 시점
+```text
+참여자: trustScore -3
+```
 
-### 자동 업데이트 이벤트
+표시 학점은 소수점 첫째 자리 반올림 때문에 즉시 변하지 않을 수 있다.
 
-| 이벤트 | API/시점 | 점수 변화 | 대상 |
-|--------|----------|----------|------|
-| 공동구매 완료 (주최자) | `PUT /api/posts/{id}` (status: "closed") | +10점 | 주최자 |
-| 공동구매 완료 (참여자) | `PUT /api/posts/{id}` (status: "closed") | +5점 | 참여자들 |
-| 공동구매 취소 (주최자) | `PUT /api/posts/{id}` (status: "cancelled") | -5점 | 주최자 |
-| 참여 취소 | `DELETE /api/posts/{id}/participate/{userId}` | -3점 | 참여자 |
-| 게시글 삭제 | `DELETE /api/posts/{id}` | -5점 | 주최자 |
+## 12. 왜 TrustEvent가 필요한가
 
-### 주의사항
-- 신뢰점수 업데이트 실패 시에도 메인 작업(게시글 업데이트, 삭제 등)은 성공으로 처리됩니다
-- 에러는 콘솔에 로그로 기록되며, 사용자에게는 표시되지 않습니다
-- 신뢰점수는 0~100 범위로 자동 제한됩니다
+단순히 `users.trust_score`만 있으면 다음 질문에 답할 수 없다.
 
----
+```text
+왜 이 사용자는 신뢰학점 3.1인가?
+언제 감점되었는가?
+어떤 게시글에서 문제가 생겼는가?
+작성자 때문에 감점되었는가, 참여자 때문에 감점되었는가?
+반복 취소 사용자인가?
+노쇼 이력이 있는가?
+```
 
-## 🔄 향후 개선 사항
+`trust_events`를 남기면 사용자 신뢰도를 설명할 수 있다.
 
-1. **신뢰점수 히스토리**
-   - 신뢰점수 변경 이력을 별도 테이블에 기록
-   - 사용자가 자신의 신뢰점수 변화 추이를 확인 가능
+예시:
 
-2. **신뢰점수 조회 API**
-   - 사용자별 신뢰점수 통계 API 추가
-   - 예: `GET /api/users/{id}/trust-score/history`
+```text
+초기 trustScore: 50
+초기 trustGrade: 3.5
 
-3. **신뢰점수 계산 로직 확장**
-   - 리뷰/평가 시스템 연동
-   - 거래 완료율 기반 점수 계산
-   - 시간 가중치 적용 (최근 활동에 더 높은 가중치)
++5 공동구매 참여 완료
+-3 참여 취소
+-5 작성한 공동구매 취소
+= 현재 trustScore 47
+= 현재 trustGrade 3.4
+```
 
-4. **신뢰점수 기반 필터링**
-   - 게시글 목록에서 최소 신뢰점수 필터링
-   - 신뢰점수 높은 사용자 우선 표시
+이 이력은 이후 다음 기능의 근거가 된다.
 
----
+```text
+신뢰학점 낮은 사용자 참여 제한
+반복 취소 사용자 탐지
+노쇼 신고 처리
+거래 분쟁 시 이력 확인
+관리자 수동 조정
+프론트엔드 신뢰학점 표시
+```
 
-## 📞 문의
+## 13. 현재 구현과 예정 기능 구분
 
-신뢰점수 기능 관련 문의사항이 있으면 개발팀에 연락해주세요.
+### 현재 구현됨
 
+```text
+users.trust_score 필드
+trustGrade 계산 함수
+User API 응답에 trustGrade 포함
+TrustEvent 모델
+TrustService
+점수 0~100 보정
+거래 완료 보상
+거래 취소 감점
+게시글 삭제 감점
+참여 취소 감점
+점수 변경 이력 저장
+```
+
+### 아직 구현 전
+
+```text
+사전 약속 확인 API
+노쇼 신고 API
+관리자 수동 점수 조정 API
+신뢰학점 기반 게시글 필터링
+신뢰학점 기반 참여 제한
+학교 구성원 인증 레벨
+신뢰 이벤트 조회 API
+```
+
+## 14. 다음 구현 예정: 사전 약속 확인
+
+이미지에서 제안한 “거래 분쟁 최소화를 위한 사전 약속 확인 절차”는 다음 단계에서 구현한다.
+
+추천 구조:
+
+```text
+post_participants.agreement_status
+post_participants.agreement_accepted_at
+```
+
+예상 상태:
+
+```text
+pending
+accepted
+```
+
+예상 흐름:
+
+```text
+1. 사용자가 공동구매 참여 요청
+2. 참여 row 생성
+3. agreement_status = pending
+4. 사용자가 약속 확인 버튼 클릭
+5. agreement_status = accepted
+6. accepted 상태만 최종 참여자로 간주
+```
+
+이 기능이 들어가면 `agreement_confirmed` 이벤트를 `trust_events`에 기록할 수 있다.
+
+## 15. 다음 구현 예정: 노쇼 정책
+
+현재 `PARTICIPANT_NO_SHOW = -10` 정책 상수와 `participant_no_show` 이벤트 타입은 예약되어 있다.
+
+다만 노쇼는 악용 가능성이 있으므로, 바로 감점하지 않고 신고/확정 단계를 두는 것이 안전하다.
+
+추천 흐름:
+
+```text
+1. 작성자가 참여자를 노쇼로 신고
+2. no_show_reports row 생성
+3. 상태는 pending
+4. 관리자 또는 검증 로직이 confirmed 처리
+5. confirmed 시 TrustService로 -10 적용
+```
+
+즉, 노쇼 감점은 신고 생성 시점이 아니라 확정 시점에 적용한다.
+
+## 16. 운영 주의사항
+
+현재 서버는 `sequelize.sync({ alter: true })`를 사용하고 있다.
+
+이 방식은 개발 중에는 편하지만 운영 DB에서는 unique index 중복 생성 같은 문제가 생길 수 있다. 실제 운영에서는 마이그레이션 방식으로 전환하는 것이 좋다.
+
+이번 브랜치에서 추가되는 테이블:
+
+```text
+trust_events
+```
+
+운영 반영 전에는 마이그레이션 파일로 분리하는 것을 권장한다.
+
+## 17. 요약
+
+이번 작업의 핵심은 신뢰도를 대학교 서비스에 맞는 신뢰학점 컨셉으로 리팩토링한 것이다.
+
+```text
+기존:
+users.trust_score 숫자만 변경
+프론트에는 신뢰점수 n점으로 표시
+
+변경:
+내부는 trustScore 0~100 유지
+외부는 trustGrade 2.5~4.5로 표시
+TrustService가 정책과 변환을 담당
+trust_events에 변경 이력 저장
+completed/cancelled/delete/leave 이벤트 기준 명확화
+```
+
+현재 기준:
+
+```text
+회원가입: trustScore 50, trustGrade 3.5
+거래 완료 작성자: +10점, +0.2
+거래 완료 참여자: +5점, +0.1
+거래 취소 작성자: -5점, -0.1
+게시글 삭제 작성자: -5점, -0.1
+참여 취소 참여자: -3점
+노쇼 확정 참여자: -10점, -0.2 예정
+```
