@@ -34,7 +34,14 @@ const options: swaggerJsdoc.Options = {
       schemas: {
         User: {
           type: "object",
-          required: ["id", "email", "nickname", "studentId", "trustScore"],
+          required: [
+            "id",
+            "email",
+            "nickname",
+            "studentId",
+            "trustScore",
+            "trustGrade",
+          ],
           properties: {
             id: {
               type: "string",
@@ -73,10 +80,19 @@ const options: swaggerJsdoc.Options = {
             },
             trustScore: {
               type: "integer",
-              description: "신뢰점수 (0~100, 기본값: 50)",
+              description: "내부 신뢰점수 (0~100, 기본값: 50)",
               minimum: 0,
               maximum: 100,
               example: 50,
+            },
+            trustGrade: {
+              type: "number",
+              format: "float",
+              description:
+                "사용자에게 표시하는 신뢰학점 (2.5~4.5, 기본값: 3.5)",
+              minimum: 2.5,
+              maximum: 4.5,
+              example: 3.5,
             },
             createdAt: {
               type: "string",
