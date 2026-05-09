@@ -115,7 +115,7 @@ manual_adjustment
 다만 `User` 응답에는 사용자 표시용 `trustGrade`가 추가된다. Swagger 변경 사항은 다음 문서에서 관리한다.
 
 ```text
-docs/SWAGGER_CHANGELOG.md
+docs/api/SWAGGER_CHANGELOG.md
 ```
 
 ### 배포 주의점

@@ -45,15 +45,15 @@
 기록 위치:
 
 ```text
-docs/SWAGGER_CHANGELOG.md
-docs/ERD_CHANGELOG.md
+docs/api/SWAGGER_CHANGELOG.md
+docs/architecture/ERD_CHANGELOG.md
 ```
 
-`docs/ERD_CHANGELOG.md`가 없으면 DB 구조 변경 작업에서 새로 만든다.
+`docs/architecture/ERD_CHANGELOG.md`가 없으면 DB 구조 변경 작업에서 새로 만든다.
 
 ## 개발 보고서 규칙
 
-각 기능 개발은 `docs/` 아래에 배경과 기획 의도를 남긴다.
+각 기능 개발은 `docs/features/` 아래에 배경과 기획 의도를 남긴다.
 
 보고서에는 최소한 다음 내용이 있어야 한다.
 

@@ -111,7 +111,7 @@ Check for typescript errors.
 
 - **지원 카테고리**: `food` (먹거리), `daily` (일상용품), `beauty` (뷰티·패션), `electronics` (전자기기), `school` (학용품), `freemarket` (프리마켓)
 - **API 사용 예시**: `GET /api/posts?category=food`
-- **상세 문서**: [카테고리 기능 문서](./docs/CATEGORY_FEATURE.md)
+- **상세 문서**: [카테고리 기능 문서](./docs/features/CATEGORY_FEATURE.md)
 
 ### 신뢰학점(Trust Grade) 기능
 사용자의 공동구매 활동을 기반으로 신뢰도를 계산하고, 대학교 서비스 맥락에 맞게 신뢰학점으로 표시합니다.
@@ -122,7 +122,7 @@ Check for typescript errors.
 - **자동 업데이트**: 공동구매 완료/취소, 참여/참여 취소 시 자동으로 점수 조정
 - **이력 저장**: `trust_events`에 점수 변경 사유와 전후 점수 기록
 - **API 사용 예시**: `GET /api/users/:id` (`trustScore`, `trustGrade` 포함)
-- **상세 문서**: [신뢰학점 기능 문서](./docs/TRUST_SCORE_FEATURE.md)
+- **상세 문서**: [신뢰학점 기능 문서](./docs/features/TRUST_SCORE_FEATURE.md)
 
 ## API Documentation (Swagger)
 
@@ -152,7 +152,7 @@ Check for typescript errors.
    - `/api-docs.json` 엔드포인트에서 OpenAPI JSON 스펙을 다운로드할 수 있습니다.
 
 4. **Swagger 변경 이력**:
-   - Swagger/OpenAPI 스키마 변경은 [Swagger 변경 이력 문서](./docs/SWAGGER_CHANGELOG.md)에 기록합니다.
+   - Swagger/OpenAPI 스키마 변경은 [Swagger 변경 이력 문서](./docs/api/SWAGGER_CHANGELOG.md)에 기록합니다.
 
 ### Swagger에서 할 수 있는 것
 
