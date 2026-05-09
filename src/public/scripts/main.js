@@ -200,10 +200,14 @@ function updateUIForLoggedInUser() {
     currentUserNickname.textContent = currentUser.nickname;
   if (currentUserEmail) currentUserEmail.textContent = currentUser.email;
 
-  // 신뢰점수 표시
+  // 신뢰학점 표시
   const trustScoreDisplay = document.getElementById("trust-score-display");
   if (trustScoreDisplay && currentUser.trustScore !== undefined) {
-    trustScoreDisplay.textContent = `신뢰점수: ${currentUser.trustScore}점`;
+    const trustGrade =
+      currentUser.trustGrade !== undefined
+        ? Number(currentUser.trustGrade).toFixed(1)
+        : (2.5 + (currentUser.trustScore / 100) * 2).toFixed(1);
+    trustScoreDisplay.textContent = `신뢰학점: ${trustGrade}`;
     trustScoreDisplay.classList.remove("d-none");
   }
 

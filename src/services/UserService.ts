@@ -10,6 +10,7 @@ import {
 } from "../common/util/route-errors";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
 import bcrypt from "bcrypt";
+import { TrustService } from "./TrustService";
 
 export const UserService = {
   /**
@@ -39,7 +40,7 @@ export const UserService = {
       passwordHash: hashedPassword,
     });
 
-    return user;
+    return TrustService.withTrustGrade(user);
   },
 
   /**
@@ -57,7 +58,8 @@ export const UserService = {
    * 부분 업데이트
    */
   async updateUser(id: string, patch: Partial<UserCreationAttributes>) {
-    return await UserRepo.update(id, patch);
+    const user = await UserRepo.update(id, patch);
+    return TrustService.withTrustGrade(user);
   },
 
   /**
@@ -71,7 +73,8 @@ export const UserService = {
    * 전체 조회 + pagination
    */
   async listUsers(limit = 20, offset = 0) {
-    return await UserRepo.list(limit, offset);
+    const users = await UserRepo.list(limit, offset);
+    return users.map((user) => TrustService.withTrustGrade(user));
   },
 
   /**
@@ -92,25 +95,23 @@ export const UserService = {
 
     // 3) 비밀번호 해시는 제외하고 반환
     const { passwordHash, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    return TrustService.withTrustGrade(userWithoutPassword);
   },
 
   /**
-   * 신뢰점수 업데이트
+   * 내부 신뢰점수 업데이트
    * @param userId 사용자 ID
    * @param scoreChange 점수 변화량 (양수: 증가, 음수: 감소)
    */
   async updateTrustScore(userId: string, scoreChange: number) {
-    const user = await UserRepo.findById(userId);
-    if (!user) {
-      throw new RouteError(HttpStatusCodes.NOT_FOUND, "USER_NOT_FOUND");
-    }
+    const event = await TrustService.applyEvent({
+      userId,
+      type: "manual_adjustment",
+      scoreChange,
+      reason: "UserService.updateTrustScore legacy adjustment",
+    });
 
-    // 현재 점수에 변화량을 더하고, 0~100 범위로 제한
-    const newScore = Math.max(0, Math.min(100, user.trustScore + scoreChange));
-
-    await UserRepo.update(userId, { trustScore: newScore });
-    return newScore;
+    return event.nextScore;
   },
 
   /**
@@ -123,6 +124,6 @@ export const UserService = {
     }
     // 비밀번호 해시 제외
     const { passwordHash, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    return TrustService.withTrustGrade(userWithoutPassword);
   },
 };
