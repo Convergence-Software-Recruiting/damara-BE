@@ -21,7 +21,7 @@ export interface UserAttributes {
   department: string | null;
   studentId: string; // 필수 필드로 변경
   avatarUrl: string | null;
-  trustScore: number; // 신뢰점수 (기본값: 50, 최소: 0, 최대: 100)
+  trustScore: number; // 내부 신뢰점수 (기본값: 50, 최소: 0, 최대: 100)
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -31,7 +31,7 @@ export interface UserAttributes {
 export type UserCreationAttributes = Optional<
   UserAttributes,
   "id" | "department" | "avatarUrl" | "trustScore" | "createdAt" | "updatedAt"
->; // studentId는 필수이므로 Optional에서 제거, trustScore는 기본값으로 설정
+>; // studentId는 필수이므로 Optional에서 제거, trustScore는 기본 내부 점수로 설정
 
 // Sequelize 모델 타입 선언
 // Model<Attributes, CreationAttributes>를 상속하면
@@ -47,7 +47,7 @@ export class UserModel
   public department!: string | null;
   public studentId!: string; // 필수 필드로 변경
   public avatarUrl!: string | null;
-  public trustScore!: number; // 신뢰점수
+  public trustScore!: number; // 내부 신뢰점수
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;

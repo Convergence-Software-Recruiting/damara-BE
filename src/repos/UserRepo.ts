@@ -13,7 +13,7 @@ export const UserRepo = {
    */
   async create(data: UserCreationAttributes) {
     try {
-      // trustScore가 제공되지 않으면 기본값 50으로 설정
+      // trustScore가 제공되지 않으면 기본 내부 점수 50으로 설정
       const userData = {
         ...data,
         trustScore: data.trustScore ?? 50,
