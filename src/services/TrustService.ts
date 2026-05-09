@@ -7,6 +7,7 @@ import TrustEventModel, {
   TrustEventType,
 } from "../models/TrustEvent";
 import UserModel from "../models/User";
+import { TrustEventRepo } from "../repos/TrustEventRepo";
 
 export const TRUST_POLICY = {
   MIN_SCORE: 0,
@@ -90,6 +91,29 @@ export const TrustService = {
 
       return event.get();
     });
+  },
+
+  async listEventsByUserId(userId: string, limit = 20, offset = 0) {
+    const user = await UserModel.findByPk(userId, {
+      attributes: ["id"],
+    });
+    if (!user) {
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "USER_NOT_FOUND");
+    }
+
+    const events = await TrustEventRepo.findByUserId(userId, limit, offset);
+    const total = await TrustEventRepo.countByUserId(userId);
+
+    return {
+      trustEvents: events.map((event) => ({
+        ...event,
+        previousGrade: this.calculateTrustGrade(event.previousScore),
+        nextGrade: this.calculateTrustGrade(event.nextScore),
+      })),
+      total,
+      limit,
+      offset,
+    };
   },
 
   async recordPostCompletedForAuthor(postId: string, authorId: string) {
