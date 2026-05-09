@@ -161,9 +161,9 @@ OAuth 로그인/세션 사용자 응답
 
 내부 관리나 정책 판단이 필요한 화면이 아니라면 `trustScore`는 숨긴다.
 
-### 변경되지 않은 것
+### 당시 변경되지 않은 것
 
-이번 변경에서는 Swagger에 신규 엔드포인트를 추가하지 않았다.
+이 시점의 변경에서는 Swagger에 신규 엔드포인트를 추가하지 않았다.
 
 `trust_events` 테이블과 `TrustService`는 백엔드 내부 정책 이력 저장용으로 추가되었지만, 아직 다음 API는 만들지 않았다.
 
@@ -174,6 +174,114 @@ POST /api/posts/{id}/participants/{userId}/no-show
 ```
 
 이 API들이 추가되면 이 문서에 별도 항목으로 기록한다.
+
+## 2026-05-09 - 신뢰 이벤트 조회 API 추가
+
+브랜치:
+
+```text
+feature/trust-safety-filtering
+```
+
+### 변경 요약
+
+사용자 신뢰학점이 왜 바뀌었는지 확인할 수 있도록 신뢰 이벤트 조회 API를 추가했다.
+
+신규 API:
+
+```text
+GET /api/users/{id}/trust-events
+```
+
+### 요청
+
+Path parameter:
+
+```text
+id: 사용자 UUID
+```
+
+Query parameter:
+
+```text
+limit: 조회 개수, 기본값 20
+offset: 시작 위치, 기본값 0
+```
+
+예시:
+
+```bash
+curl -s "https://damara.bluerack.org/api/users/{id}/trust-events?limit=20&offset=0"
+```
+
+### 응답
+
+응답 형태:
+
+```json
+{
+  "trustEvents": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "userId": "a87522bd-bc79-47b0-a73f-46ea4068a158",
+      "postId": "123e4567-e89b-12d3-a456-426614174000",
+      "actorUserId": "a87522bd-bc79-47b0-a73f-46ea4068a158",
+      "type": "post_completed_author",
+      "scoreChange": 10,
+      "previousScore": 50,
+      "nextScore": 60,
+      "previousGrade": 3.5,
+      "nextGrade": 3.7,
+      "reason": "공동구매 거래 완료: 작성자 보상",
+      "metadata": null,
+      "createdAt": "2026-05-09T00:00:00.000Z",
+      "updatedAt": "2026-05-09T00:00:00.000Z"
+    }
+  ],
+  "total": 1,
+  "limit": 20,
+  "offset": 0
+}
+```
+
+### Swagger 스키마 변경
+
+추가된 스키마:
+
+```text
+components.schemas.TrustEvent
+```
+
+주요 필드:
+
+```text
+scoreChange
+previousScore
+nextScore
+previousGrade
+nextGrade
+reason
+type
+```
+
+`previousScore`와 `nextScore`는 백엔드 내부 정책 점수다.
+
+`previousGrade`와 `nextGrade`는 프론트엔드 화면에 표시하기 쉬운 신뢰학점 값이다.
+
+### 프론트엔드 영향
+
+마이페이지나 관리자 화면에서 “왜 이 사용자의 신뢰학점이 바뀌었는지”를 보여줄 수 있다.
+
+사용자-facing 화면에서는 다음 필드를 우선 사용한다.
+
+```text
+previousGrade
+nextGrade
+reason
+createdAt
+```
+
+`previousScore`, `nextScore`, `scoreChange`는 정책 확인이나 관리자용 화면에서만 노출하는 것을 권장한다.
 
 ### 확인 방법
 
@@ -187,6 +295,7 @@ npm run build
 
 ```bash
 curl -s https://damara.bluerack.org/api-docs.json | grep -A20 '"User"'
+curl -s https://damara.bluerack.org/api-docs.json | grep -A20 '"TrustEvent"'
 ```
 
 `servers` 값 확인:
@@ -213,7 +322,6 @@ curl -s https://damara.bluerack.org/api-docs.json | grep -A8 '"servers"'
 ```text
 사전 약속 확인 API
 노쇼 신고 API
-신뢰학점 변경 이력 조회 API
 관리자 신뢰도 수동 조정 API
 학교 인증 단계 API
 신뢰학점 기반 참여 제한/필터링 API

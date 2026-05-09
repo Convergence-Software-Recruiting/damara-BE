@@ -381,6 +381,7 @@ TrustService
 게시글 삭제 감점
 참여 취소 감점
 점수 변경 이력 저장
+신뢰 이벤트 조회 API
 ```
 
 ### 아직 구현 전
@@ -392,10 +393,58 @@ TrustService
 신뢰학점 기반 게시글 필터링
 신뢰학점 기반 참여 제한
 학교 구성원 인증 레벨
-신뢰 이벤트 조회 API
 ```
 
-## 14. 다음 구현 예정: 사전 약속 확인
+## 14. 신뢰 이벤트 조회 API
+
+신뢰학점은 숫자만 보여주면 사용자가 납득하기 어렵다.
+
+따라서 `trust_events`에 저장된 변경 이력을 조회하는 API를 추가한다.
+
+```text
+GET /api/users/:id/trust-events
+```
+
+요청 예시:
+
+```bash
+curl -s "https://damara.bluerack.org/api/users/{id}/trust-events?limit=20&offset=0"
+```
+
+응답 예시:
+
+```json
+{
+  "trustEvents": [
+    {
+      "type": "post_completed_author",
+      "scoreChange": 10,
+      "previousScore": 50,
+      "nextScore": 60,
+      "previousGrade": 3.5,
+      "nextGrade": 3.7,
+      "reason": "공동구매 거래 완료: 작성자 보상",
+      "createdAt": "2026-05-09T00:00:00.000Z"
+    }
+  ],
+  "total": 1,
+  "limit": 20,
+  "offset": 0
+}
+```
+
+프론트엔드는 사용자에게 다음 정보를 중심으로 보여주면 된다.
+
+```text
+reason
+previousGrade
+nextGrade
+createdAt
+```
+
+`scoreChange`, `previousScore`, `nextScore`는 내부 정책 점수라서 일반 사용자 화면에는 굳이 노출하지 않아도 된다.
+
+## 15. 다음 구현 예정: 사전 약속 확인
 
 이미지에서 제안한 “거래 분쟁 최소화를 위한 사전 약속 확인 절차”는 다음 단계에서 구현한다.
 
@@ -426,7 +475,7 @@ accepted
 
 이 기능이 들어가면 `agreement_confirmed` 이벤트를 `trust_events`에 기록할 수 있다.
 
-## 15. 다음 구현 예정: 노쇼 정책
+## 16. 다음 구현 예정: 노쇼 정책
 
 현재 `PARTICIPANT_NO_SHOW = -10` 정책 상수와 `participant_no_show` 이벤트 타입은 예약되어 있다.
 
@@ -444,7 +493,7 @@ accepted
 
 즉, 노쇼 감점은 신고 생성 시점이 아니라 확정 시점에 적용한다.
 
-## 16. 운영 주의사항
+## 17. 운영 주의사항
 
 현재 서버는 `sequelize.sync({ alter: true })`를 사용하고 있다.
 
@@ -458,7 +507,7 @@ trust_events
 
 운영 반영 전에는 마이그레이션 파일로 분리하는 것을 권장한다.
 
-## 17. 요약
+## 18. 요약
 
 이번 작업의 핵심은 신뢰도를 대학교 서비스에 맞는 신뢰학점 컨셉으로 리팩토링한 것이다.
 
