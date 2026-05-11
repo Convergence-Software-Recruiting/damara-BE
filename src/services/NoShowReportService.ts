@@ -8,12 +8,37 @@ import PostParticipantModel from "../models/PostParticipant";
 import UserModel from "../models/User";
 import { NoShowReportRepo } from "../repos/NoShowReportRepo";
 import { TrustService } from "./TrustService";
+import ENV from "../common/constants/ENV";
 
 interface CreateNoShowReportInput {
   postId: string;
   reporterId: string;
   reportedUserId: string;
   reason?: string | null;
+}
+
+async function assertAdminUser(adminUserId?: string | null) {
+  if (!adminUserId) {
+    throw new RouteError(HttpStatusCodes.BAD_REQUEST, "ADMIN_USER_ID_REQUIRED");
+  }
+
+  if (ENV.AdminUserIds.length === 0) {
+    throw new RouteError(
+      HttpStatusCodes.FORBIDDEN,
+      "ADMIN_USER_IDS_NOT_CONFIGURED"
+    );
+  }
+
+  const adminUser = await UserModel.findByPk(adminUserId, {
+    attributes: ["id"],
+  });
+  if (!adminUser) {
+    throw new RouteError(HttpStatusCodes.NOT_FOUND, "ADMIN_USER_NOT_FOUND");
+  }
+
+  if (!ENV.AdminUserIds.includes(adminUserId)) {
+    throw new RouteError(HttpStatusCodes.FORBIDDEN, "ADMIN_PERMISSION_REQUIRED");
+  }
 }
 
 export const NoShowReportService = {
@@ -87,7 +112,9 @@ export const NoShowReportService = {
     });
   },
 
-  async confirmReport(id: string) {
+  async confirmReport(id: string, adminUserId?: string | null) {
+    await assertAdminUser(adminUserId);
+
     const report = await NoShowReportModel.findByPk(id);
     if (!report) {
       throw new RouteError(HttpStatusCodes.NOT_FOUND, "NO_SHOW_REPORT_NOT_FOUND");
@@ -126,7 +153,9 @@ export const NoShowReportService = {
     };
   },
 
-  async rejectReport(id: string) {
+  async rejectReport(id: string, adminUserId?: string | null) {
+    await assertAdminUser(adminUserId);
+
     const report = await NoShowReportModel.findByPk(id);
     if (!report) {
       throw new RouteError(HttpStatusCodes.NOT_FOUND, "NO_SHOW_REPORT_NOT_FOUND");
@@ -146,7 +175,11 @@ export const NoShowReportService = {
     return await NoShowReportRepo.updateStatus(id, "rejected");
   },
 
-  async cancelReport(id: string, requesterId?: string | null) {
+  async cancelReport(
+    id: string,
+    requesterId?: string | null,
+    adminUserId?: string | null
+  ) {
     const report = await NoShowReportModel.findByPk(id);
     if (!report) {
       throw new RouteError(HttpStatusCodes.NOT_FOUND, "NO_SHOW_REPORT_NOT_FOUND");
@@ -163,20 +196,25 @@ export const NoShowReportService = {
       );
     }
 
-    if (!requesterId) {
-      throw new RouteError(
-        HttpStatusCodes.BAD_REQUEST,
-        "REQUESTER_ID_REQUIRED"
-      );
+    if (requesterId && requesterId === report.reporterId) {
+      return await NoShowReportRepo.updateStatus(id, "cancelled");
     }
 
-    if (requesterId !== report.reporterId) {
+    if (requesterId && !adminUserId) {
       throw new RouteError(
         HttpStatusCodes.FORBIDDEN,
         "NO_SHOW_REPORT_CANCEL_FORBIDDEN"
       );
     }
 
+    if (!requesterId && !adminUserId) {
+      throw new RouteError(
+        HttpStatusCodes.BAD_REQUEST,
+        "REQUESTER_OR_ADMIN_USER_ID_REQUIRED"
+      );
+    }
+
+    await assertAdminUser(adminUserId);
     return await NoShowReportRepo.updateStatus(id, "cancelled");
   },
 

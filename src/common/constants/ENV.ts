@@ -55,6 +55,7 @@ const envSchema = z.object({
   DB_PORT: z.coerce.number().int().positive().optional().default(3306),
 
   API_BASE_URL: z.string().url().optional(),
+  ADMIN_USER_IDS: z.string().optional().default(""),
   DB_FORCE_SYNC: z
     .string()
     .optional()
@@ -76,6 +77,7 @@ const parsed = envSchema.parse({
   DB_PORT: process.env.DB_PORT,
 
   API_BASE_URL: process.env.API_BASE_URL,
+  ADMIN_USER_IDS: process.env.ADMIN_USER_IDS,
   DB_FORCE_SYNC: process.env.DB_FORCE_SYNC,
 
   KAKAO_CLIENT_ID: process.env.KAKAO_CLIENT_ID,
@@ -94,6 +96,9 @@ const ENV = {
   DbPort: parsed.DB_PORT,
 
   ApiBaseUrl: parsed.API_BASE_URL || `http://localhost:${parsed.PORT}`,
+  AdminUserIds: parsed.ADMIN_USER_IDS.split(",")
+    .map((id) => id.trim())
+    .filter(Boolean),
   DbForceSync: parsed.DB_FORCE_SYNC ?? false,
 
   KakaoClientId: parsed.KAKAO_CLIENT_ID,

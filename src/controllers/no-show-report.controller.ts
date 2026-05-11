@@ -102,7 +102,9 @@ export async function confirmNoShowReport(
 ) {
   try {
     const { id } = req.params;
-    const result = await NoShowReportService.confirmReport(id);
+    const adminUserId = (req.headers["x-admin-id"] ||
+      req.body?.adminUserId) as string | undefined;
+    const result = await NoShowReportService.confirmReport(id, adminUserId);
 
     res.status(HttpStatusCodes.OK).json(result);
   } catch (error) {
@@ -121,7 +123,9 @@ export async function rejectNoShowReport(
 ) {
   try {
     const { id } = req.params;
-    const report = await NoShowReportService.rejectReport(id);
+    const adminUserId = (req.headers["x-admin-id"] ||
+      req.body?.adminUserId) as string | undefined;
+    const report = await NoShowReportService.rejectReport(id, adminUserId);
 
     res.status(HttpStatusCodes.OK).json(report);
   } catch (error) {
@@ -140,9 +144,16 @@ export async function cancelNoShowReport(
 ) {
   try {
     const { id } = req.params;
-    const { requesterId } = req.body ?? {};
+    const { requesterId, adminUserId } = req.body ?? {};
+    const adminId = (req.headers["x-admin-id"] || adminUserId) as
+      | string
+      | undefined;
 
-    const report = await NoShowReportService.cancelReport(id, requesterId);
+    const report = await NoShowReportService.cancelReport(
+      id,
+      requesterId,
+      adminId
+    );
 
     res.status(HttpStatusCodes.OK).json(report);
   } catch (error) {
