@@ -5,6 +5,14 @@ import { sequelize } from "../db";
 import PostModel from "./Post";
 import UserModel from "./User";
 
+export const POST_PARTICIPANT_AGREEMENT_STATUSES = [
+  "pending",
+  "accepted",
+] as const;
+
+export type PostParticipantAgreementStatus =
+  (typeof POST_PARTICIPANT_AGREEMENT_STATUSES)[number];
+
 // ----------------------------
 // TypeScript 타입 정의
 // ----------------------------
@@ -18,6 +26,8 @@ export interface PostParticipantAttributes {
   id: string;
   postId: string; // posts.id와 외래키 관계
   userId: string; // users.id와 외래키 관계
+  agreementStatus: PostParticipantAgreementStatus;
+  agreementAcceptedAt: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -27,7 +37,7 @@ export interface PostParticipantAttributes {
  */
 export type PostParticipantCreationAttributes = Optional<
   PostParticipantAttributes,
-  "id" | "createdAt" | "updatedAt"
+  "id" | "agreementStatus" | "agreementAcceptedAt" | "createdAt" | "updatedAt"
 >;
 
 /**
@@ -40,6 +50,8 @@ export class PostParticipantModel
   public id!: string;
   public postId!: string;
   public userId!: string;
+  public agreementStatus!: PostParticipantAgreementStatus;
+  public agreementAcceptedAt!: Date | null;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -74,6 +86,17 @@ PostParticipantModel.init(
         key: "id",
       },
       onDelete: "CASCADE", // User 삭제 시 참여자 정보도 삭제
+    },
+    agreementStatus: {
+      type: DataTypes.ENUM(...POST_PARTICIPANT_AGREEMENT_STATUSES),
+      allowNull: false,
+      defaultValue: "pending",
+      field: "agreement_status",
+    },
+    agreementAcceptedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: "agreement_accepted_at",
     },
   },
   {
