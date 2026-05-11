@@ -21,7 +21,7 @@ export const TRUST_POLICY = {
   AUTHOR_CANCELLED: -5,
   AUTHOR_DELETED_POST: -5,
   PARTICIPANT_CANCELLED: -3,
-  PARTICIPANT_NO_SHOW: -10,
+  PARTICIPANT_NO_SHOW: -15,
 } as const;
 
 type TrustEventMetadata = Record<string, unknown>;
@@ -170,6 +170,24 @@ export const TrustService = {
       type: "participant_cancelled",
       scoreChange: TRUST_POLICY.PARTICIPANT_CANCELLED,
       reason: "공동구매 참여 취소: 참여자 감점",
+    });
+  },
+
+  async recordParticipantNoShow(
+    postId: string,
+    participantUserId: string,
+    reporterId: string
+  ) {
+    return await this.applyEvent({
+      userId: participantUserId,
+      postId,
+      actorUserId: reporterId,
+      type: "participant_no_show",
+      scoreChange: TRUST_POLICY.PARTICIPANT_NO_SHOW,
+      reason: "공동구매 노쇼 확정: 참여자 감점",
+      metadata: {
+        displayGradeDrop: 0.3,
+      },
     });
   },
 
