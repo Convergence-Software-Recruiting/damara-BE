@@ -27,6 +27,385 @@ src/routes/**/*.ts
 https://damara.bluerack.org/api-docs.json
 ```
 
+## 2026-05-11 - 노쇼 신고/확정 API 및 참여 제한 추가
+
+브랜치:
+
+```text
+feature/participant-agreement
+```
+
+변경 전 기준 커밋:
+
+```text
+3fd573d
+```
+
+### 변경 요약
+
+사전 약속 확인을 완료한 참여자를 대상으로 노쇼 신고를 남기고, 신고 확정 시에만 신뢰학점을 낮추는 API를 추가했다.
+
+노쇼 확정 감점은 사용자 표시 신뢰학점 기준 약 `0.3` 하락이 되도록 설계했다.
+
+```text
+participant_no_show scoreChange: -15
+신뢰학점 환산: -15 * 0.02 = -0.3
+```
+
+### 신규 API
+
+```text
+POST /api/posts/{postId}/no-show-reports
+GET /api/posts/{postId}/no-show-reports
+GET /api/no-show-reports/{id}
+PATCH /api/no-show-reports/{id}/confirm
+PATCH /api/no-show-reports/{id}/reject
+PATCH /api/no-show-reports/{id}/cancel
+GET /api/posts/{id}/participation-eligibility/{userId}
+```
+
+### 노쇼 신고 생성
+
+```text
+POST /api/posts/{postId}/no-show-reports
+```
+
+요청 바디:
+
+```json
+{
+  "reporterId": "a87522bd-bc79-47b0-a73f-46ea4068a158",
+  "reportedUserId": "123e4567-e89b-12d3-a456-426614174000",
+  "reason": "약속 장소에 오지 않았습니다."
+}
+```
+
+정책:
+
+```text
+게시글 작성자만 신고 가능
+신고 대상은 해당 게시글의 accepted 참여자여야 함
+같은 게시글/대상 사용자에 pending 또는 confirmed 신고가 있으면 중복 생성 불가
+신고 생성 시점에는 신뢰점수를 변경하지 않음
+```
+
+### 노쇼 신고 확정
+
+```text
+PATCH /api/no-show-reports/{id}/confirm
+```
+
+관리자 권한:
+
+```text
+header: x-admin-id
+또는 body.adminUserId
+```
+
+`x-admin-id` 또는 `adminUserId`는 서버 환경변수 `ADMIN_USER_IDS`에 포함된 사용자 UUID여야 한다.
+
+성공 응답:
+
+```json
+{
+  "report": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "status": "confirmed"
+  },
+  "trustEvent": {
+    "type": "participant_no_show",
+    "scoreChange": -15,
+    "previousGrade": 3.5,
+    "nextGrade": 3.2
+  }
+}
+```
+
+확정 시에만 `trust_events`에 다음 이벤트가 기록된다.
+
+```text
+type: participant_no_show
+scoreChange: -15
+```
+
+이미 `confirmed` 상태인 신고를 다시 확정하면 신뢰 이벤트를 중복 생성하지 않는다.
+
+### 노쇼 신고 반려
+
+```text
+PATCH /api/no-show-reports/{id}/reject
+```
+
+`pending` 신고만 반려할 수 있고, 관리자 권한 검증을 통과해야 한다. 반려 시 신뢰점수는 변경하지 않는다.
+
+### 노쇼 신고 취소
+
+```text
+PATCH /api/no-show-reports/{id}/cancel
+```
+
+요청 예시:
+
+```json
+{
+  "requesterId": "a87522bd-bc79-47b0-a73f-46ea4068a158"
+}
+```
+
+취소 정책:
+
+```text
+pending 신고만 취소 가능
+신고자 본인은 requesterId로 취소 가능
+관리자는 x-admin-id 또는 adminUserId로 취소 가능
+취소 시 신뢰점수는 변경하지 않음
+이미 cancelled 상태인 신고는 그대로 반환
+```
+
+관리자 권한 검증:
+
+```text
+ADMIN_USER_IDS=uuid1,uuid2
+```
+
+`PATCH /api/no-show-reports/{id}/confirm`, `reject`, 관리자 `cancel`은 위 allowlist에 포함된 관리자 UUID만 수행할 수 있다.
+
+### 신뢰학점 기반 참여 제한
+
+신규 조회 API:
+
+```text
+GET /api/posts/{id}/participation-eligibility/{userId}
+```
+
+응답 예시:
+
+```json
+{
+  "userId": "123e4567-e89b-12d3-a456-426614174000",
+  "postId": "123e4567-e89b-12d3-a456-426614174000",
+  "trustScore": 35,
+  "trustGrade": 3.2,
+  "canParticipate": true,
+  "restrictionLevel": "warning",
+  "message": "거래 전 약속 조건을 다시 확인해주세요."
+}
+```
+
+정책:
+
+```text
+3.5 이상: normal
+3.0 이상 3.5 미만: warning
+2.8 이상 3.0 미만: extra_agreement_required
+2.8 미만: blocked
+```
+
+`POST /api/posts/{id}/participate`는 `blocked` 사용자에게 `403 TRUST_GRADE_TOO_LOW`를 반환한다.
+
+### 신규 Swagger 스키마
+
+```text
+components.schemas.NoShowReport
+```
+
+주요 필드:
+
+```text
+id
+postId
+reporterId
+reportedUserId
+status
+reason
+resolvedAt
+createdAt
+updatedAt
+```
+
+`status` 값:
+
+```text
+pending
+confirmed
+rejected
+cancelled
+```
+
+## 2026-05-11 - 사전 약속 확인 API 추가
+
+브랜치:
+
+```text
+feature/participant-agreement
+```
+
+변경 전 기준 커밋:
+
+```text
+3fd573d
+```
+
+### 변경 요약
+
+공동구매 참여자가 거래 전 약속 조건을 확인했는지 기록하는 API를 추가했다.
+
+기존 참여 흐름:
+
+```text
+POST /api/posts/{id}/participate
+= 참여 row 생성
+= currentQuantity 즉시 증가
+```
+
+변경 후 참여 흐름:
+
+```text
+POST /api/posts/{id}/participate
+= agreementStatus=pending 참여 row 생성
+= currentQuantity는 아직 증가하지 않음
+
+PATCH /api/posts/{postId}/participants/{userId}/agreement
+= agreementStatus=accepted 변경
+= agreementAcceptedAt 기록
+= currentQuantity 증가
+```
+
+### 신규 API
+
+```text
+PATCH /api/posts/{postId}/participants/{userId}/agreement
+```
+
+요청 바디:
+
+```text
+없음
+```
+
+성공 응답:
+
+```json
+{
+  "participant": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "postId": "123e4567-e89b-12d3-a456-426614174000",
+    "userId": "a87522bd-bc79-47b0-a73f-46ea4068a158",
+    "agreementStatus": "accepted",
+    "agreementAcceptedAt": "2026-05-11T12:00:00.000Z"
+  },
+  "post": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "currentQuantity": 1
+  }
+}
+```
+
+에러 응답:
+
+```text
+404 PARTICIPANT_NOT_FOUND
+```
+
+### Swagger 스키마 변경
+
+신규 스키마:
+
+```text
+components.schemas.PostParticipant
+```
+
+주요 필드:
+
+```text
+id
+postId
+userId
+agreementStatus
+agreementAcceptedAt
+user
+createdAt
+updatedAt
+```
+
+`agreementStatus` 값:
+
+```text
+pending
+accepted
+```
+
+`components.schemas.Post.currentQuantity` 설명도 변경했다.
+
+기존:
+
+```text
+현재 참여 인원
+```
+
+변경:
+
+```text
+사전 약속 확인을 완료한 참여 인원
+```
+
+### 기존 API 응답 영향
+
+`POST /api/posts/{id}/participate` 응답의 `participant`에 다음 필드가 추가된다.
+
+```text
+agreementStatus
+agreementAcceptedAt
+```
+
+신규 참여 직후 기본값:
+
+```json
+{
+  "agreementStatus": "pending",
+  "agreementAcceptedAt": null
+}
+```
+
+`GET /api/posts/{id}/participants` 응답도 `PostParticipant` 스키마를 따른다.
+
+### 프론트엔드 영향
+
+프론트엔드는 참여 신청 직후 바로 최종 참여자로 표시하지 말고, 약속 확인 버튼을 통해 다음 API를 호출해야 한다.
+
+```text
+PATCH /api/posts/{postId}/participants/{userId}/agreement
+```
+
+화면 상태 권장:
+
+```text
+pending: 약속 확인 필요
+accepted: 참여 확정
+```
+
+게시글의 `currentQuantity`는 `accepted` 참여자 수로 해석한다.
+
+참여 취소 시에는 `accepted` 참여자 취소에만 기존 `participant_cancelled` 신뢰 이벤트와 감점이 적용된다. `pending` 상태에서 취소하면 최종 참여 확정 전 취소로 보고 신뢰점수를 변경하지 않는다.
+
+### 신뢰 이벤트 영향
+
+약속 확인이 처음 완료될 때 `trust_events`에 다음 이벤트가 기록된다.
+
+```text
+type: agreement_confirmed
+scoreChange: 0
+```
+
+중복 호출 시 이미 `accepted` 상태면 신뢰 이벤트를 추가로 만들지 않는다.
+
+### 확인 방법
+
+```bash
+curl -X PATCH "http://localhost:3000/api/posts/{postId}/participants/{userId}/agreement"
+curl -s http://localhost:3000/api-docs.json | grep -A40 "PostParticipant"
+```
+
 ## 2026-05-09 - 신뢰학점 스키마 반영
 
 브랜치:
