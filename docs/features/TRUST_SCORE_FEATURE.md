@@ -162,7 +162,7 @@ trustGrade = Number((2.5 + (trustScore / 100) * 2).toFixed(1));
 | 공동구매 취소 | 작성자 | -5 | -0.1 | 게시글 상태가 `cancelled`가 될 때 |
 | 공동구매 게시글 삭제 | 작성자 | -5 | -0.1 | 게시글 삭제 시 |
 | 공동구매 참여 취소 | 참여자 | -3 | -0.1 미만 | 참여자가 참여를 취소할 때 |
-| 노쇼 확정 | 대상 참여자 | -10 | -0.2 | 아직 API 미구현, 정책 상수만 예약 |
+| 노쇼 확정 | 대상 참여자 | -15 | -0.3 | 노쇼 신고가 `confirmed` 처리될 때 |
 
 주의:
 
@@ -259,8 +259,8 @@ trustGrade
 | `post_cancelled_by_author` | 작성자 거래 취소 감점 | 사용 |
 | `post_deleted_by_author` | 작성자 게시글 삭제 감점 | 사용 |
 | `participant_cancelled` | 참여자 참여 취소 감점 | 사용 |
-| `participant_no_show` | 노쇼 확정 감점 | 예약 |
-| `agreement_confirmed` | 사전 약속 확인 | 예약 |
+| `participant_no_show` | 노쇼 확정 감점 | 사용 |
+| `agreement_confirmed` | 사전 약속 확인 | 사용 |
 | `manual_adjustment` | 관리자 또는 legacy 수동 조정 | 사용 가능 |
 
 ## 11. 현재 코드 적용 위치
@@ -475,23 +475,25 @@ accepted
 
 이 기능이 들어가면 `agreement_confirmed` 이벤트를 `trust_events`에 기록할 수 있다.
 
-## 16. 다음 구현 예정: 노쇼 정책
+## 16. 구현됨: 노쇼 정책
 
-현재 `PARTICIPANT_NO_SHOW = -10` 정책 상수와 `participant_no_show` 이벤트 타입은 예약되어 있다.
+현재 `PARTICIPANT_NO_SHOW = -15` 정책 상수와 `participant_no_show` 이벤트 타입을 사용한다.
 
-다만 노쇼는 악용 가능성이 있으므로, 바로 감점하지 않고 신고/확정 단계를 두는 것이 안전하다.
+노쇼는 악용 가능성이 있으므로, 바로 감점하지 않고 신고/확정 단계를 둔다.
 
-추천 흐름:
+현재 흐름:
 
 ```text
 1. 작성자가 참여자를 노쇼로 신고
 2. no_show_reports row 생성
 3. 상태는 pending
 4. 관리자 또는 검증 로직이 confirmed 처리
-5. confirmed 시 TrustService로 -10 적용
+5. confirmed 시 TrustService로 -15 적용
 ```
 
 즉, 노쇼 감점은 신고 생성 시점이 아니라 확정 시점에 적용한다.
+
+내부 점수 -15는 현재 신뢰학점 변환식에서 표시 학점 약 -0.3에 해당한다.
 
 ## 17. 운영 주의사항
 
@@ -503,6 +505,7 @@ accepted
 
 ```text
 trust_events
+no_show_reports
 ```
 
 운영 반영 전에는 마이그레이션 파일로 분리하는 것을 권장한다.
@@ -533,5 +536,5 @@ completed/cancelled/delete/leave 이벤트 기준 명확화
 거래 취소 작성자: -5점, -0.1
 게시글 삭제 작성자: -5점, -0.1
 참여 취소 참여자: -3점
-노쇼 확정 참여자: -10점, -0.2 예정
+노쇼 확정 참여자: -15점, -0.3
 ```
