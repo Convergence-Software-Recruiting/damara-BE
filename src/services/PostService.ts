@@ -161,7 +161,7 @@ export const PostService = {
         console.error("Failed to update trust score for author:", error);
       }
 
-      const participants = await PostParticipantRepo.findByPostId(id);
+      const participants = await PostParticipantRepo.findAcceptedByPostId(id);
       const participantUserIds: string[] = [];
 
       for (const participant of participants) {
@@ -255,7 +255,7 @@ export const PostService = {
         }
 
         // 참여자들에게 +5점
-        const participants = await PostParticipantRepo.findByPostId(id);
+        const participants = await PostParticipantRepo.findAcceptedByPostId(id);
         const participantUserIds: string[] = [];
 
         for (const participant of participants) {
@@ -351,7 +351,8 @@ export const PostService = {
 export const PostParticipantService = {
   /**
    * 공동구매 참여
-   * - 참여 후 currentQuantity 업데이트
+   * - 참여 row는 pending으로 생성
+   * - currentQuantity는 약속 확인 완료 인원 기준으로 업데이트
    * - 주최자에게 새 참여자 알림 생성
    */
   async joinPost(postId: string, userId: string) {
@@ -362,7 +363,7 @@ export const PostParticipantService = {
     });
 
     // currentQuantity 업데이트
-    const count = await PostParticipantRepo.countByPostId(postId);
+    const count = await PostParticipantRepo.countAcceptedByPostId(postId);
     await PostModel.update(
       { currentQuantity: count },
       { where: { id: postId } }
@@ -384,26 +385,28 @@ export const PostParticipantService = {
 
   /**
    * 참여 취소
-   * - 취소 후 currentQuantity 업데이트
-   * - 참여자 내부 신뢰점수 -3점
+   * - 취소 후 currentQuantity를 약속 확인 완료 인원 기준으로 업데이트
+   * - accepted 참여 취소 시 참여자 내부 신뢰점수 -3점
    * - 주최자에게 참여자 취소 알림 생성
    */
   async leavePost(postId: string, userId: string) {
-    await PostParticipantRepo.delete(postId, userId);
+    const participant = await PostParticipantRepo.delete(postId, userId);
 
     // currentQuantity 업데이트
-    const count = await PostParticipantRepo.countByPostId(postId);
+    const count = await PostParticipantRepo.countAcceptedByPostId(postId);
     await PostModel.update(
       { currentQuantity: count },
       { where: { id: postId } }
     );
 
-    // 참여자 신뢰도 감소
-    try {
-      await TrustService.recordParticipantCancelled(postId, userId);
-    } catch (error) {
-      // 신뢰도 업데이트 실패해도 참여 취소는 성공으로 처리
-      console.error("Failed to update trust score for participant:", error);
+    // 약속 확인 완료 참여자가 취소한 경우에만 신뢰도 감소
+    if (participant.agreementStatus === "accepted") {
+      try {
+        await TrustService.recordParticipantCancelled(postId, userId);
+      } catch (error) {
+        // 신뢰도 업데이트 실패해도 참여 취소는 성공으로 처리
+        console.error("Failed to update trust score for participant:", error);
+      }
     }
 
     // 주최자에게 참여자 취소 알림 생성
@@ -426,6 +429,35 @@ export const PostParticipantService = {
   },
 
   /**
+   * 사전 약속 확인
+   * - pending 참여자를 accepted로 변경
+   * - accepted 참여자 수를 currentQuantity에 반영
+   * - 중복 호출 시 상태만 반환하고 신뢰 이벤트는 추가 기록하지 않음
+   */
+  async confirmAgreement(postId: string, userId: string) {
+    const { participant, changed } = await PostParticipantRepo.acceptAgreement(
+      postId,
+      userId
+    );
+
+    const count = await PostParticipantRepo.countAcceptedByPostId(postId);
+    await PostModel.update(
+      { currentQuantity: count },
+      { where: { id: postId } }
+    );
+
+    if (changed) {
+      try {
+        await TrustService.recordAgreementConfirmed(postId, userId);
+      } catch (error) {
+        console.error("Failed to record agreement confirmation:", error);
+      }
+    }
+
+    return participant;
+  },
+
+  /**
    * 사용자가 참여한 게시글 목록 조회
    */
   async getParticipatedPosts(userId: string) {
@@ -438,4 +470,5 @@ export const PostParticipantService = {
   async isParticipant(postId: string, userId: string) {
     return await PostParticipantRepo.isParticipant(postId, userId);
   },
+
 };

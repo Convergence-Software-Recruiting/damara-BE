@@ -55,12 +55,18 @@ export const PostParticipantRepo = {
    * 참여 취소
    */
   async delete(postId: string, userId: string) {
-    const deleted = await PostParticipantModel.destroy({
+    const participant = await PostParticipantModel.findOne({
       where: { postId, userId },
     });
-    if (deleted === 0) {
+
+    if (!participant) {
       throw new RouteError(HttpStatusCodes.NOT_FOUND, "PARTICIPANT_NOT_FOUND");
     }
+
+    const deletedParticipant = participant.get();
+    await participant.destroy();
+
+    return deletedParticipant;
   },
 
   /**
@@ -76,6 +82,18 @@ export const PostParticipantRepo = {
           attributes: ["id", "nickname", "studentId", "avatarUrl"],
         },
       ],
+      order: [["createdAt", "ASC"]],
+    });
+
+    return participants.map((p) => p.get());
+  },
+
+  /**
+   * 게시글의 약속 확인 완료 참여자 목록 조회
+   */
+  async findAcceptedByPostId(postId: string) {
+    const participants = await PostParticipantModel.findAll({
+      where: { postId, agreementStatus: "accepted" },
       order: [["createdAt", "ASC"]],
     });
 
@@ -118,6 +136,15 @@ export const PostParticipantRepo = {
   },
 
   /**
+   * 약속 확인을 완료한 참여자 수 조회
+   */
+  async countAcceptedByPostId(postId: string) {
+    return await PostParticipantModel.count({
+      where: { postId, agreementStatus: "accepted" },
+    });
+  },
+
+  /**
    * 사용자가 특정 게시글에 참여했는지 확인
    */
   async isParticipant(postId: string, userId: string) {
@@ -125,5 +152,35 @@ export const PostParticipantRepo = {
       where: { postId, userId },
     });
     return participant !== null;
+  },
+
+  /**
+   * 참여자의 사전 약속 확인 처리
+   */
+  async acceptAgreement(postId: string, userId: string) {
+    const participant = await PostParticipantModel.findOne({
+      where: { postId, userId },
+    });
+
+    if (!participant) {
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "PARTICIPANT_NOT_FOUND");
+    }
+
+    if (participant.agreementStatus === "accepted") {
+      return {
+        participant: participant.get(),
+        changed: false,
+      };
+    }
+
+    await participant.update({
+      agreementStatus: "accepted",
+      agreementAcceptedAt: new Date(),
+    });
+
+    return {
+      participant: participant.get(),
+      changed: true,
+    };
   },
 };

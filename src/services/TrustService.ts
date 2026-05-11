@@ -172,4 +172,15 @@ export const TrustService = {
       reason: "공동구매 참여 취소: 참여자 감점",
     });
   },
+
+  async recordAgreementConfirmed(postId: string, participantUserId: string) {
+    return await this.applyEvent({
+      userId: participantUserId,
+      postId,
+      actorUserId: participantUserId,
+      type: "agreement_confirmed",
+      scoreChange: 0,
+      reason: "공동구매 사전 약속 확인",
+    });
+  },
 };
