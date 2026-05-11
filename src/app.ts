@@ -29,6 +29,7 @@ import "./models/ChatRoom";
 import "./models/Message";
 import "./models/PostParticipant";
 import "./models/TrustEvent";
+import "./models/NoShowReport";
 
 const app = express();
 app.set("trust proxy", true);
