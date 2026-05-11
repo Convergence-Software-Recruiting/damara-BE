@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  cancelNoShowReport,
   confirmNoShowReport,
   getNoShowReportById,
   rejectNoShowReport,
@@ -95,5 +96,48 @@ noShowReportRouter.patch("/:id/confirm", confirmNoShowReport);
  *         description: 노쇼 신고를 찾을 수 없음
  */
 noShowReportRouter.patch("/:id/reject", rejectNoShowReport);
+
+/**
+ * @swagger
+ * /api/no-show-reports/{id}/cancel:
+ *   patch:
+ *     summary: 노쇼 신고 취소
+ *     tags: [NoShowReports]
+ *     description: pending 상태의 노쇼 신고를 신고자 본인이 취소합니다.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 노쇼 신고 UUID
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               requesterId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: 신고자 본인 취소 시 사용하는 사용자 UUID
+ *           example:
+ *             requesterId: "a87522bd-bc79-47b0-a73f-46ea4068a158"
+ *     responses:
+ *       200:
+ *         description: 노쇼 신고 취소 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/NoShowReport'
+ *       400:
+ *         description: 요청자 ID 누락 또는 pending 상태가 아닌 신고
+ *       403:
+ *         description: 취소 권한 없음
+ *       404:
+ *         description: 노쇼 신고를 찾을 수 없음
+ */
+noShowReportRouter.patch("/:id/cancel", cancelNoShowReport);
 
 export default noShowReportRouter;

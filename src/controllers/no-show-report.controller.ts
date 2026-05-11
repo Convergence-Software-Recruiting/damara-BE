@@ -128,3 +128,24 @@ export async function rejectNoShowReport(
     next(error);
   }
 }
+
+/**
+ * 노쇼 신고 취소
+ * PATCH /api/no-show-reports/:id/cancel
+ */
+export async function cancelNoShowReport(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+    const { requesterId } = req.body ?? {};
+
+    const report = await NoShowReportService.cancelReport(id, requesterId);
+
+    res.status(HttpStatusCodes.OK).json(report);
+  } catch (error) {
+    next(error);
+  }
+}

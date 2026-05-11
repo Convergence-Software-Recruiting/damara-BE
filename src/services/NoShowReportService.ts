@@ -146,6 +146,40 @@ export const NoShowReportService = {
     return await NoShowReportRepo.updateStatus(id, "rejected");
   },
 
+  async cancelReport(id: string, requesterId?: string | null) {
+    const report = await NoShowReportModel.findByPk(id);
+    if (!report) {
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "NO_SHOW_REPORT_NOT_FOUND");
+    }
+
+    if (report.status === "cancelled") {
+      return report.get();
+    }
+
+    if (report.status !== "pending") {
+      throw new RouteError(
+        HttpStatusCodes.BAD_REQUEST,
+        "NO_SHOW_REPORT_NOT_PENDING"
+      );
+    }
+
+    if (!requesterId) {
+      throw new RouteError(
+        HttpStatusCodes.BAD_REQUEST,
+        "REQUESTER_ID_REQUIRED"
+      );
+    }
+
+    if (requesterId !== report.reporterId) {
+      throw new RouteError(
+        HttpStatusCodes.FORBIDDEN,
+        "NO_SHOW_REPORT_CANCEL_FORBIDDEN"
+      );
+    }
+
+    return await NoShowReportRepo.updateStatus(id, "cancelled");
+  },
+
   async getReport(id: string) {
     const report = await NoShowReportRepo.findById(id);
     if (!report) {
