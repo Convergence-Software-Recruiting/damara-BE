@@ -19,4 +19,7 @@ export default {
   Notifications: {
     Base: "/notifications",
   },
+  NoShowReports: {
+    Base: "/no-show-reports",
+  },
 } as const;

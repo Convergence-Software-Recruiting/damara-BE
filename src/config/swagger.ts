@@ -393,6 +393,71 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        NoShowReport: {
+          type: "object",
+          required: [
+            "id",
+            "postId",
+            "reporterId",
+            "reportedUserId",
+            "status",
+          ],
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              description: "노쇼 신고 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            postId: {
+              type: "string",
+              format: "uuid",
+              description: "게시글 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            reporterId: {
+              type: "string",
+              format: "uuid",
+              description: "신고자 UUID. 현재 정책에서는 게시글 작성자입니다.",
+              example: "a87522bd-bc79-47b0-a73f-46ea4068a158",
+            },
+            reportedUserId: {
+              type: "string",
+              format: "uuid",
+              description: "노쇼 신고 대상 참여자 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            status: {
+              type: "string",
+              enum: ["pending", "confirmed", "rejected", "cancelled"],
+              description:
+                "노쇼 신고 상태 (pending: 대기, confirmed: 확정, rejected: 반려, cancelled: 취소)",
+              example: "pending",
+            },
+            reason: {
+              type: "string",
+              nullable: true,
+              description: "신고 사유",
+              example: "약속 장소에 오지 않았습니다.",
+            },
+            resolvedAt: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              description: "확정/반려 처리 일시",
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              description: "생성일시",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              description: "수정일시",
+            },
+          },
+        },
         ChatRoom: {
           type: "object",
           required: ["id", "postId"],
