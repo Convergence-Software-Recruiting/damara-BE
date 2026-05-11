@@ -409,3 +409,25 @@ export async function checkParticipation(
     next(error);
   }
 }
+
+/**
+ * 신뢰학점 기반 참여 가능 여부 조회
+ * GET /api/posts/:id/participation-eligibility/:userId
+ */
+export async function getParticipationEligibility(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id, userId } = req.params;
+    const eligibility = await PostParticipantService.getParticipationEligibility(
+      id,
+      userId
+    );
+
+    res.status(HttpStatusCodes.OK).json(eligibility);
+  } catch (error) {
+    next(error);
+  }
+}

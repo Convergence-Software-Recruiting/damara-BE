@@ -353,9 +353,22 @@ export const PostParticipantService = {
    * 공동구매 참여
    * - 참여 row는 pending으로 생성
    * - currentQuantity는 약속 확인 완료 인원 기준으로 업데이트
+   * - 신뢰학점이 차단 기준보다 낮으면 참여 불가
    * - 주최자에게 새 참여자 알림 생성
    */
   async joinPost(postId: string, userId: string) {
+    const user = await UserModel.findByPk(userId);
+    if (!user) {
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "USER_NOT_FOUND");
+    }
+
+    const participationPolicy = TrustService.getParticipationPolicy(
+      user.trustScore
+    );
+    if (!participationPolicy.canParticipate) {
+      throw new RouteError(HttpStatusCodes.FORBIDDEN, "TRUST_GRADE_TOO_LOW");
+    }
+
     // 참여 처리
     const participant = await PostParticipantRepo.create({
       postId,
@@ -471,4 +484,31 @@ export const PostParticipantService = {
     return await PostParticipantRepo.isParticipant(postId, userId);
   },
 
+  /**
+   * 신뢰학점 기반 참여 가능 여부 조회
+   */
+  async getParticipationEligibility(postId: string, userId: string) {
+    const post = await PostModel.findByPk(postId, {
+      attributes: ["id"],
+    });
+    if (!post) {
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "POST_NOT_FOUND");
+    }
+
+    const user = await UserModel.findByPk(userId);
+    if (!user) {
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "USER_NOT_FOUND");
+    }
+
+    const participationPolicy = TrustService.getParticipationPolicy(
+      user.trustScore
+    );
+
+    return {
+      userId,
+      postId,
+      trustScore: user.trustScore,
+      ...participationPolicy,
+    };
+  },
 };

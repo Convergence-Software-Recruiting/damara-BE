@@ -14,6 +14,7 @@ import {
   confirmParticipantAgreement,
   getParticipatedPosts,
   checkParticipation,
+  getParticipationEligibility,
 } from "../../controllers/post.controller";
 import {
   addFavorite,
@@ -556,6 +557,62 @@ postRouter.get("/:postId/no-show-reports", getNoShowReportsByPost);
 
 /**
  * @swagger
+ * /api/posts/{id}/participation-eligibility/{userId}:
+ *   get:
+ *     summary: 신뢰학점 기반 참여 가능 여부 조회
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 게시글 UUID
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 사용자 UUID
+ *     responses:
+ *       200:
+ *         description: 참여 가능 여부 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 userId:
+ *                   type: string
+ *                   format: uuid
+ *                 postId:
+ *                   type: string
+ *                   format: uuid
+ *                 trustScore:
+ *                   type: integer
+ *                 trustGrade:
+ *                   type: number
+ *                   format: float
+ *                 canParticipate:
+ *                   type: boolean
+ *                 restrictionLevel:
+ *                   type: string
+ *                   enum: [normal, warning, extra_agreement_required, blocked]
+ *                 message:
+ *                   type: string
+ *                   nullable: true
+ *       404:
+ *         description: 게시글 또는 사용자를 찾을 수 없음
+ */
+postRouter.get(
+  "/:id/participation-eligibility/:userId",
+  getParticipationEligibility
+);
+
+/**
+ * @swagger
  * /api/posts/{id}/participate/{userId}:
  *   get:
  *     summary: 사용자가 특정 게시글에 참여했는지 확인
@@ -755,6 +812,8 @@ postRouter.delete("/:postId/favorite/:userId", removeFavorite);
  *                   $ref: '#/components/schemas/Post'
  *       400:
  *         description: 이미 참여했거나 작성자는 참여할 수 없음
+ *       403:
+ *         description: 신뢰학점이 낮아 참여 제한됨
  *       404:
  *         description: 게시글 또는 사용자를 찾을 수 없음
  */
