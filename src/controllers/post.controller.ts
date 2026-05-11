@@ -340,6 +340,36 @@ export async function getParticipants(
 }
 
 /**
+ * 사전 약속 확인
+ * PATCH /api/posts/:postId/participants/:userId/agreement
+ */
+export async function confirmParticipantAgreement(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { postId, userId } = req.params;
+
+    const participant = await PostParticipantService.confirmAgreement(
+      postId,
+      userId
+    );
+    const post = await PostService.getPostById(postId);
+
+    res.status(HttpStatusCodes.OK).json({
+      participant,
+      post: {
+        ...post,
+        currentQuantity: post.currentQuantity,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * 사용자가 참여한 게시글 목록 조회
  * GET /api/posts/user/:userId/participated
  */

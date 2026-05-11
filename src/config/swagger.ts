@@ -266,7 +266,7 @@ const options: swaggerJsdoc.Options = {
             },
             currentQuantity: {
               type: "integer",
-              description: "현재 참여 인원",
+              description: "사전 약속 확인을 완료한 참여 인원",
               example: 0,
             },
             status: {
@@ -312,6 +312,74 @@ const options: swaggerJsdoc.Options = {
               type: "boolean",
               description: "현재 사용자의 관심 등록 여부 (로그인한 사용자 기준)",
               example: true,
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              description: "생성일시",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              description: "수정일시",
+            },
+          },
+        },
+        PostParticipant: {
+          type: "object",
+          required: ["id", "postId", "userId", "agreementStatus"],
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              description: "참여 정보 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            postId: {
+              type: "string",
+              format: "uuid",
+              description: "게시글 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            userId: {
+              type: "string",
+              format: "uuid",
+              description: "참여자 UUID",
+              example: "a87522bd-bc79-47b0-a73f-46ea4068a158",
+            },
+            agreementStatus: {
+              type: "string",
+              enum: ["pending", "accepted"],
+              description:
+                "사전 약속 확인 상태 (pending: 미확인, accepted: 확인 완료)",
+              example: "accepted",
+            },
+            agreementAcceptedAt: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              description: "사전 약속 확인 일시",
+            },
+            user: {
+              type: "object",
+              nullable: true,
+              description: "참여자 요약 정보",
+              properties: {
+                id: {
+                  type: "string",
+                  format: "uuid",
+                },
+                nickname: {
+                  type: "string",
+                },
+                studentId: {
+                  type: "string",
+                },
+                avatarUrl: {
+                  type: "string",
+                  nullable: true,
+                },
+              },
             },
             createdAt: {
               type: "string",

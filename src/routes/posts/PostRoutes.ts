@@ -11,6 +11,7 @@ import {
   joinPost,
   leavePost,
   getParticipants,
+  confirmParticipantAgreement,
   getParticipatedPosts,
   checkParticipation,
 } from "../../controllers/post.controller";
@@ -19,7 +20,6 @@ import {
   removeFavorite,
   checkFavorite,
 } from "../../controllers/favorite.controller";
-
 const postRouter = Router();
 
 // 디버깅: 라우트 등록 확인
@@ -382,6 +382,49 @@ postRouter.get("/user/:userId/participated", getParticipatedPosts);
 
 /**
  * @swagger
+ * /api/posts/{postId}/participants/{userId}/agreement:
+ *   patch:
+ *     summary: 공동구매 사전 약속 확인
+ *     tags: [Posts]
+ *     description: 참여자가 거래 전 약속 조건을 확인했음을 기록합니다. 확인 완료된 참여자만 currentQuantity에 반영됩니다.
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 게시글 UUID
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 참여자 UUID
+ *     responses:
+ *       200:
+ *         description: 약속 확인 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 participant:
+ *                   $ref: '#/components/schemas/PostParticipant'
+ *                 post:
+ *                   $ref: '#/components/schemas/Post'
+ *       404:
+ *         description: 참여 정보를 찾을 수 없음
+ */
+// PATCH /api/posts/:postId/participants/:userId/agreement - 사전 약속 확인
+postRouter.patch(
+  "/:postId/participants/:userId/agreement",
+  confirmParticipantAgreement
+);
+
+/**
+ * @swagger
  * /api/posts/{id}/participants:
  *   get:
  *     summary: 게시글의 참여자 목록 조회
@@ -396,6 +439,12 @@ postRouter.get("/user/:userId/participated", getParticipatedPosts);
  *     responses:
  *       200:
  *         description: 참여자 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/PostParticipant'
  */
 // GET /api/posts/:id/participants - 참여자 목록 (더 구체적인 라우트를 먼저 배치)
 postRouter.get("/:id/participants", getParticipants);
@@ -565,6 +614,7 @@ postRouter.delete("/:postId/favorite/:userId", removeFavorite);
  *   post:
  *     summary: 공동구매 참여
  *     tags: [Posts]
+ *     description: 참여 row를 pending 상태로 생성합니다. 이후 약속 확인 API를 호출해야 currentQuantity에 반영됩니다.
  *     parameters:
  *       - in: path
  *         name: id
@@ -588,7 +638,16 @@ postRouter.delete("/:postId/favorite/:userId", removeFavorite);
  *             userId: "a87522bd-bc79-47b0-a73f-46ea4068a158"
  *     responses:
  *       201:
- *         description: 참여 성공
+ *         description: 참여 신청 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 participant:
+ *                   $ref: '#/components/schemas/PostParticipant'
+ *                 post:
+ *                   $ref: '#/components/schemas/Post'
  *       400:
  *         description: 이미 참여했거나 작성자는 참여할 수 없음
  *       404:
