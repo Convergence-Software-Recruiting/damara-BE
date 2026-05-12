@@ -5,11 +5,11 @@ import { PostCreationAttributes } from "../models/Post";
 import { RouteError } from "../common/util/route-errors";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
 import UserModel from "../models/User";
-import { UserService } from "./UserService";
 import { PostParticipantRepo } from "../repos/PostParticipantRepo";
 import PostModel from "../models/Post";
 import { FavoriteService } from "./FavoriteService";
 import { NotificationService } from "./NotificationService";
+import { TrustService } from "./TrustService";
 
 export const PostService = {
   /**
@@ -85,7 +85,7 @@ export const PostService = {
    * 게시글 상태 변경
    * - 작성자만 변경 가능
    * - 상태 전이 규칙 적용 (선택사항)
-   * - 상태 변경 시 신뢰점수 업데이트
+   * - 상태 변경 시 신뢰도 업데이트
    */
   async updatePostStatus(
     id: string,
@@ -152,11 +152,11 @@ export const PostService = {
       );
     }
 
-    // 상태 변경 시 신뢰점수 업데이트 (기존 로직 재사용)
-    if (newStatus === "closed") {
-      // 공동구매 완료: 주최자 +10점, 참여자 +5점
+    // 상태 변경 시 신뢰도 업데이트
+    if (newStatus === "completed") {
+      // 공동구매 거래 완료: 주최자 +10점, 참여자 +5점
       try {
-        await UserService.updateTrustScore(post.authorId, 10);
+        await TrustService.recordPostCompletedForAuthor(id, post.authorId);
       } catch (error) {
         console.error("Failed to update trust score for author:", error);
       }
@@ -166,7 +166,10 @@ export const PostService = {
 
       for (const participant of participants) {
         try {
-          await UserService.updateTrustScore(participant.userId, 5);
+          await TrustService.recordPostCompletedForParticipant(
+            id,
+            participant.userId
+          );
           participantUserIds.push(participant.userId);
         } catch (error) {
           console.error(
@@ -189,7 +192,7 @@ export const PostService = {
     } else if (newStatus === "cancelled") {
       // 공동구매 취소: 주최자 -5점
       try {
-        await UserService.updateTrustScore(post.authorId, -5);
+        await TrustService.recordPostCancelledByAuthor(id, post.authorId);
       } catch (error) {
         console.error("Failed to update trust score for author:", error);
       }
@@ -225,7 +228,7 @@ export const PostService = {
 
   /**
    * 부분 업데이트
-   * - status가 closed 또는 cancelled로 변경될 때 신뢰점수 업데이트
+   * - status가 completed 또는 cancelled로 변경될 때 신뢰도 업데이트
    */
   async updatePost(id: string, patch: Partial<PostCreationAttributes>) {
     // 이전 상태 확인
@@ -237,14 +240,17 @@ export const PostService = {
     const updatedPost = await PostRepo.update(id, patch);
     const newPost = updatedPost?.get();
 
-    // status 변경 시 신뢰점수 업데이트
+    // status 변경 시 신뢰도 업데이트
     if (patch.status && oldPost.status !== patch.status) {
-      if (patch.status === "closed") {
-        // 공동구매 완료: 주최자 +10점, 참여자 +5점
+      if (patch.status === "completed") {
+        // 공동구매 거래 완료: 주최자 +10점, 참여자 +5점
         try {
-          await UserService.updateTrustScore(oldPost.authorId, 10);
+          await TrustService.recordPostCompletedForAuthor(
+            id,
+            oldPost.authorId
+          );
         } catch (error) {
-          // 신뢰점수 업데이트 실패해도 게시글 업데이트는 성공으로 처리
+          // 신뢰도 업데이트 실패해도 게시글 업데이트는 성공으로 처리
           console.error("Failed to update trust score for author:", error);
         }
 
@@ -254,7 +260,10 @@ export const PostService = {
 
         for (const participant of participants) {
           try {
-            await UserService.updateTrustScore(participant.userId, 5);
+            await TrustService.recordPostCompletedForParticipant(
+              id,
+              participant.userId
+            );
             participantUserIds.push(participant.userId);
           } catch (error) {
             console.error(
@@ -277,7 +286,10 @@ export const PostService = {
       } else if (patch.status === "cancelled") {
         // 공동구매 취소: 주최자 -5점
         try {
-          await UserService.updateTrustScore(oldPost.authorId, -5);
+          await TrustService.recordPostCancelledByAuthor(
+            id,
+            oldPost.authorId
+          );
         } catch (error) {
           console.error("Failed to update trust score for author:", error);
         }
@@ -314,7 +326,7 @@ export const PostService = {
 
   /**
    * 삭제
-   * - 삭제 시 주최자 신뢰점수 -5점
+   * - 삭제 시 주최자 내부 신뢰점수 -5점
    */
   async deletePost(id: string) {
     // 삭제 전에 게시글 정보 조회
@@ -325,11 +337,11 @@ export const PostService = {
 
     await PostRepo.delete(id);
 
-    // 주최자 신뢰점수 감소
+    // 주최자 신뢰도 감소
     try {
-      await UserService.updateTrustScore(post.authorId, -5);
+      await TrustService.recordPostDeletedByAuthor(id, post.authorId);
     } catch (error) {
-      // 신뢰점수 업데이트 실패해도 게시글 삭제는 성공으로 처리
+      // 신뢰도 업데이트 실패해도 게시글 삭제는 성공으로 처리
       console.error("Failed to update trust score for author:", error);
     }
   },
@@ -373,7 +385,7 @@ export const PostParticipantService = {
   /**
    * 참여 취소
    * - 취소 후 currentQuantity 업데이트
-   * - 참여자 신뢰점수 -3점
+   * - 참여자 내부 신뢰점수 -3점
    * - 주최자에게 참여자 취소 알림 생성
    */
   async leavePost(postId: string, userId: string) {
@@ -386,11 +398,11 @@ export const PostParticipantService = {
       { where: { id: postId } }
     );
 
-    // 참여자 신뢰점수 감소
+    // 참여자 신뢰도 감소
     try {
-      await UserService.updateTrustScore(userId, -3);
+      await TrustService.recordParticipantCancelled(postId, userId);
     } catch (error) {
-      // 신뢰점수 업데이트 실패해도 참여 취소는 성공으로 처리
+      // 신뢰도 업데이트 실패해도 참여 취소는 성공으로 처리
       console.error("Failed to update trust score for participant:", error);
     }
 

@@ -72,6 +72,7 @@
   "department": "수정된학과",
   "avatarUrl": "http://3.38.145.117:3000/uploads/images/abc123.png",
   "trustScore": 50,
+  "trustGrade": 3.5,
   "createdAt": "...",
   "updatedAt": "..."
 }
@@ -98,6 +99,7 @@
   "department": "컴퓨터공학과",
   "avatarUrl": "http://3.38.145.117:3000/uploads/images/abc123.png",
   "trustScore": 50,
+  "trustGrade": 3.5,
   "createdAt": "...",
   "updatedAt": "..."
 }
@@ -115,6 +117,7 @@
   "department": "컴퓨터공학과",
   "avatarUrl": "http://3.38.145.117:3000/uploads/images/abc123.png",
   "trustScore": 75,
+  "trustGrade": 4.0,
   "createdAt": "...",
   "updatedAt": "..."
 }
@@ -262,6 +265,7 @@ Content-Type: application/json
   "department": "수정된학과",
   "avatarUrl": "http://3.38.145.117:3000/uploads/images/abc123.png",
   "trustScore": 50,
+  "trustGrade": 3.5,
   "createdAt": "2025-11-24T10:00:00.000Z",
   "updatedAt": "2025-11-24T12:00:00.000Z"
 }
@@ -483,4 +487,3 @@ curl -X POST "http://localhost:3000/api/users/login" \
 ## 📞 문의
 
 프로필 이미지 업로드 기능 관련 문의사항이 있으면 개발팀에 연락해주세요.
-

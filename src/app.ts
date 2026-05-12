@@ -28,6 +28,7 @@ import "./models/PostImage";
 import "./models/ChatRoom";
 import "./models/Message";
 import "./models/PostParticipant";
+import "./models/TrustEvent";
 
 const app = express();
 app.set("trust proxy", true);

@@ -549,7 +549,7 @@ src/
 ```
 
 **사용 방법:**
-자세한 내용은 [WEBSOCKET_GUIDE.md](./WEBSOCKET_GUIDE.md)를 참고하세요.
+자세한 내용은 [WEBSOCKET_GUIDE.md](../api/WEBSOCKET_GUIDE.md)를 참고하세요.
 
 **클라이언트 연결 예시:**
 

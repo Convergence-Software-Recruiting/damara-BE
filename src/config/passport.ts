@@ -8,6 +8,7 @@ import logger from "jet-logger";
 import { UserService } from "../services/UserService";
 import { UserRepo } from "../repos/UserRepo";
 import ENV from "../common/constants/ENV";
+import { TrustService } from "../services/TrustService";
 
 /**
  * Passport Local Strategy
@@ -100,7 +101,7 @@ passport.use(
         }
 
         const { passwordHash, ...userWithoutPassword } = user;
-        return done(null, userWithoutPassword);
+        return done(null, TrustService.withTrustGrade(userWithoutPassword));
       } catch (error) {
         return done(error as Error);
       }
@@ -127,7 +128,7 @@ passport.deserializeUser(async (id: string, done) => {
       return done(null, false);
     }
     const { passwordHash, ...userWithoutPassword } = user;
-    return done(null, userWithoutPassword);
+    return done(null, TrustService.withTrustGrade(userWithoutPassword));
   } catch (error) {
     return done(error as Error);
   }

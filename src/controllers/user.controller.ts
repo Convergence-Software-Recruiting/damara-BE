@@ -10,6 +10,7 @@
  */
 import { Request, Response, NextFunction } from "express";
 import { UserService } from "../services/UserService";
+import { TrustService } from "../services/TrustService";
 import { parseReq } from "../routes/common/validation/parseReq";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
 import {
@@ -137,6 +138,35 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     const user = await UserService.loginByStudentId(studentId, password);
 
     res.status(HttpStatusCodes.OK).json(user);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 사용자 신뢰 이벤트 이력 조회
+ * GET /api/users/:id/trust-events
+ *
+ * - 사용자의 신뢰점수가 왜 바뀌었는지 이력을 반환
+ * - previousGrade/nextGrade는 화면 표시용 신뢰학점
+ */
+export async function getUserTrustEvents(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+    const limit = req.query.limit
+      ? parseInt(req.query.limit as string, 10)
+      : 20;
+    const offset = req.query.offset
+      ? parseInt(req.query.offset as string, 10)
+      : 0;
+
+    const result = await TrustService.listEventsByUserId(id, limit, offset);
+
+    res.status(HttpStatusCodes.OK).json(result);
   } catch (error) {
     next(error);
   }

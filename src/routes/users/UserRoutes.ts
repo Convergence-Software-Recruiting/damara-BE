@@ -7,6 +7,7 @@ import {
   updateUser,
   deleteUser,
   login,
+  getUserTrustEvents,
 } from "../../controllers/user.controller";
 import { getFavorites } from "../../controllers/favorite.controller";
 
@@ -216,6 +217,57 @@ userRouter.post("/login", login);
  */
 // GET /api/users/:userId/favorites - 내가 관심 등록한 게시글 목록 조회 (더 구체적인 라우트를 먼저 배치)
 userRouter.get("/:userId/favorites", getFavorites);
+
+/**
+ * @swagger
+ * /api/users/{id}/trust-events:
+ *   get:
+ *     summary: 사용자 신뢰 이벤트 이력 조회
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 사용자 UUID
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: 조회 개수
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: 시작 위치
+ *     responses:
+ *       200:
+ *         description: 신뢰 이벤트 이력 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 trustEvents:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/TrustEvent'
+ *                 total:
+ *                   type: integer
+ *                   description: 전체 신뢰 이벤트 개수
+ *                 limit:
+ *                   type: integer
+ *                 offset:
+ *                   type: integer
+ *       404:
+ *         description: 사용자를 찾을 수 없음
+ */
+// GET /api/users/:id/trust-events - 사용자 신뢰 이벤트 이력 조회
+userRouter.get("/:id/trust-events", getUserTrustEvents);
 
 /**
  * @swagger
