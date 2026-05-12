@@ -16,12 +16,15 @@ export const TRUST_POLICY = {
   MIN_GRADE: 2.5,
   MAX_GRADE: 4.5,
   DEFAULT_GRADE: 3.5,
+  PARTICIPATION_WARNING_GRADE: 3.5,
+  PARTICIPATION_EXTRA_CONFIRM_GRADE: 3.0,
+  PARTICIPATION_BLOCK_GRADE: 2.8,
   AUTHOR_COMPLETED: 10,
   PARTICIPANT_COMPLETED: 5,
   AUTHOR_CANCELLED: -5,
   AUTHOR_DELETED_POST: -5,
   PARTICIPANT_CANCELLED: -3,
-  PARTICIPANT_NO_SHOW: -10,
+  PARTICIPANT_NO_SHOW: -15,
 } as const;
 
 type TrustEventMetadata = Record<string, unknown>;
@@ -59,6 +62,44 @@ export const TrustService = {
     return {
       ...user,
       trustGrade: this.calculateTrustGrade(user.trustScore),
+    };
+  },
+
+  getParticipationPolicy(trustScore: number) {
+    const trustGrade = this.calculateTrustGrade(trustScore);
+
+    if (trustGrade < TRUST_POLICY.PARTICIPATION_BLOCK_GRADE) {
+      return {
+        trustGrade,
+        canParticipate: false,
+        restrictionLevel: "blocked",
+        message: "신뢰학점이 낮아 일부 공동구매 참여가 제한됩니다.",
+      };
+    }
+
+    if (trustGrade < TRUST_POLICY.PARTICIPATION_EXTRA_CONFIRM_GRADE) {
+      return {
+        trustGrade,
+        canParticipate: true,
+        restrictionLevel: "extra_agreement_required",
+        message: "참여 전 약속 확인이 반드시 필요합니다.",
+      };
+    }
+
+    if (trustGrade < TRUST_POLICY.PARTICIPATION_WARNING_GRADE) {
+      return {
+        trustGrade,
+        canParticipate: true,
+        restrictionLevel: "warning",
+        message: "거래 전 약속 조건을 다시 확인해주세요.",
+      };
+    }
+
+    return {
+      trustGrade,
+      canParticipate: true,
+      restrictionLevel: "normal",
+      message: null,
     };
   },
 
@@ -170,6 +211,35 @@ export const TrustService = {
       type: "participant_cancelled",
       scoreChange: TRUST_POLICY.PARTICIPANT_CANCELLED,
       reason: "공동구매 참여 취소: 참여자 감점",
+    });
+  },
+
+  async recordParticipantNoShow(
+    postId: string,
+    participantUserId: string,
+    reporterId: string
+  ) {
+    return await this.applyEvent({
+      userId: participantUserId,
+      postId,
+      actorUserId: reporterId,
+      type: "participant_no_show",
+      scoreChange: TRUST_POLICY.PARTICIPANT_NO_SHOW,
+      reason: "공동구매 노쇼 확정: 참여자 감점",
+      metadata: {
+        displayGradeDrop: 0.3,
+      },
+    });
+  },
+
+  async recordAgreementConfirmed(postId: string, participantUserId: string) {
+    return await this.applyEvent({
+      userId: participantUserId,
+      postId,
+      actorUserId: participantUserId,
+      type: "agreement_confirmed",
+      scoreChange: 0,
+      reason: "공동구매 사전 약속 확인",
     });
   },
 };

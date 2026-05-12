@@ -340,6 +340,36 @@ export async function getParticipants(
 }
 
 /**
+ * 사전 약속 확인
+ * PATCH /api/posts/:postId/participants/:userId/agreement
+ */
+export async function confirmParticipantAgreement(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { postId, userId } = req.params;
+
+    const participant = await PostParticipantService.confirmAgreement(
+      postId,
+      userId
+    );
+    const post = await PostService.getPostById(postId);
+
+    res.status(HttpStatusCodes.OK).json({
+      participant,
+      post: {
+        ...post,
+        currentQuantity: post.currentQuantity,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * 사용자가 참여한 게시글 목록 조회
  * GET /api/posts/user/:userId/participated
  */
@@ -375,6 +405,28 @@ export async function checkParticipation(
     );
 
     res.status(HttpStatusCodes.OK).json({ isParticipant });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 신뢰학점 기반 참여 가능 여부 조회
+ * GET /api/posts/:id/participation-eligibility/:userId
+ */
+export async function getParticipationEligibility(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id, userId } = req.params;
+    const eligibility = await PostParticipantService.getParticipationEligibility(
+      id,
+      userId
+    );
+
+    res.status(HttpStatusCodes.OK).json(eligibility);
   } catch (error) {
     next(error);
   }

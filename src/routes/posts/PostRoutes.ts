@@ -11,14 +11,20 @@ import {
   joinPost,
   leavePost,
   getParticipants,
+  confirmParticipantAgreement,
   getParticipatedPosts,
   checkParticipation,
+  getParticipationEligibility,
 } from "../../controllers/post.controller";
 import {
   addFavorite,
   removeFavorite,
   checkFavorite,
 } from "../../controllers/favorite.controller";
+import {
+  createNoShowReport,
+  getNoShowReportsByPost,
+} from "../../controllers/no-show-report.controller";
 
 const postRouter = Router();
 
@@ -382,6 +388,49 @@ postRouter.get("/user/:userId/participated", getParticipatedPosts);
 
 /**
  * @swagger
+ * /api/posts/{postId}/participants/{userId}/agreement:
+ *   patch:
+ *     summary: 공동구매 사전 약속 확인
+ *     tags: [Posts]
+ *     description: 참여자가 거래 전 약속 조건을 확인했음을 기록합니다. 확인 완료된 참여자만 currentQuantity에 반영됩니다.
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 게시글 UUID
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 참여자 UUID
+ *     responses:
+ *       200:
+ *         description: 약속 확인 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 participant:
+ *                   $ref: '#/components/schemas/PostParticipant'
+ *                 post:
+ *                   $ref: '#/components/schemas/Post'
+ *       404:
+ *         description: 참여 정보를 찾을 수 없음
+ */
+// PATCH /api/posts/:postId/participants/:userId/agreement - 사전 약속 확인
+postRouter.patch(
+  "/:postId/participants/:userId/agreement",
+  confirmParticipantAgreement
+);
+
+/**
+ * @swagger
  * /api/posts/{id}/participants:
  *   get:
  *     summary: 게시글의 참여자 목록 조회
@@ -396,9 +445,171 @@ postRouter.get("/user/:userId/participated", getParticipatedPosts);
  *     responses:
  *       200:
  *         description: 참여자 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/PostParticipant'
  */
 // GET /api/posts/:id/participants - 참여자 목록 (더 구체적인 라우트를 먼저 배치)
 postRouter.get("/:id/participants", getParticipants);
+
+/**
+ * @swagger
+ * /api/posts/{postId}/no-show-reports:
+ *   post:
+ *     summary: 노쇼 신고 생성
+ *     tags: [NoShowReports]
+ *     description: 게시글 작성자가 약속 확인 완료 참여자를 노쇼로 신고합니다. 신고 생성 시점에는 신뢰점수를 변경하지 않습니다.
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 게시글 UUID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - reporterId
+ *               - reportedUserId
+ *             properties:
+ *               reporterId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: 신고자 UUID. 현재 정책에서는 게시글 작성자만 신고할 수 있습니다.
+ *               reportedUserId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: 노쇼 신고 대상 참여자 UUID
+ *               reason:
+ *                 type: string
+ *                 maxLength: 500
+ *                 nullable: true
+ *                 description: 신고 사유
+ *           example:
+ *             reporterId: "a87522bd-bc79-47b0-a73f-46ea4068a158"
+ *             reportedUserId: "123e4567-e89b-12d3-a456-426614174000"
+ *             reason: "약속 장소에 오지 않았습니다."
+ *     responses:
+ *       201:
+ *         description: 노쇼 신고 생성 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/NoShowReport'
+ *       400:
+ *         description: 약속 확인 미완료 참여자 또는 잘못된 요청
+ *       403:
+ *         description: 게시글 작성자가 아닌 사용자의 신고
+ *       404:
+ *         description: 게시글, 사용자, 참여 정보를 찾을 수 없음
+ *       409:
+ *         description: 이미 열린 노쇼 신고가 있음
+ */
+postRouter.post("/:postId/no-show-reports", createNoShowReport);
+
+/**
+ * @swagger
+ * /api/posts/{postId}/no-show-reports:
+ *   get:
+ *     summary: 게시글별 노쇼 신고 목록 조회
+ *     tags: [NoShowReports]
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 게시글 UUID
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: 조회 개수
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: 시작 위치
+ *     responses:
+ *       200:
+ *         description: 노쇼 신고 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/NoShowReport'
+ *       404:
+ *         description: 게시글을 찾을 수 없음
+ */
+postRouter.get("/:postId/no-show-reports", getNoShowReportsByPost);
+
+/**
+ * @swagger
+ * /api/posts/{id}/participation-eligibility/{userId}:
+ *   get:
+ *     summary: 신뢰학점 기반 참여 가능 여부 조회
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 게시글 UUID
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 사용자 UUID
+ *     responses:
+ *       200:
+ *         description: 참여 가능 여부 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 userId:
+ *                   type: string
+ *                   format: uuid
+ *                 postId:
+ *                   type: string
+ *                   format: uuid
+ *                 trustScore:
+ *                   type: integer
+ *                 trustGrade:
+ *                   type: number
+ *                   format: float
+ *                 canParticipate:
+ *                   type: boolean
+ *                 restrictionLevel:
+ *                   type: string
+ *                   enum: [normal, warning, extra_agreement_required, blocked]
+ *                 message:
+ *                   type: string
+ *                   nullable: true
+ *       404:
+ *         description: 게시글 또는 사용자를 찾을 수 없음
+ */
+postRouter.get(
+  "/:id/participation-eligibility/:userId",
+  getParticipationEligibility
+);
 
 /**
  * @swagger
@@ -565,6 +776,7 @@ postRouter.delete("/:postId/favorite/:userId", removeFavorite);
  *   post:
  *     summary: 공동구매 참여
  *     tags: [Posts]
+ *     description: 참여 row를 pending 상태로 생성합니다. 이후 약속 확인 API를 호출해야 currentQuantity에 반영됩니다.
  *     parameters:
  *       - in: path
  *         name: id
@@ -588,9 +800,20 @@ postRouter.delete("/:postId/favorite/:userId", removeFavorite);
  *             userId: "a87522bd-bc79-47b0-a73f-46ea4068a158"
  *     responses:
  *       201:
- *         description: 참여 성공
+ *         description: 참여 신청 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 participant:
+ *                   $ref: '#/components/schemas/PostParticipant'
+ *                 post:
+ *                   $ref: '#/components/schemas/Post'
  *       400:
  *         description: 이미 참여했거나 작성자는 참여할 수 없음
+ *       403:
+ *         description: 신뢰학점이 낮아 참여 제한됨
  *       404:
  *         description: 게시글 또는 사용자를 찾을 수 없음
  */

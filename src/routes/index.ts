@@ -6,6 +6,7 @@ import postRouter from "./posts/PostRoutes";
 import uploadRouter from "./upload/UploadRoutes";
 import chatRouter from "./chat/ChatRoutes";
 import notificationRouter from "./notifications/NotificationRoutes";
+import noShowReportRouter from "./no-show-reports/NoShowReportRoutes";
 
 const BaseRouter = Router();
 
@@ -23,5 +24,8 @@ BaseRouter.use(Paths.Chat.Base, chatRouter);
 
 // Notification 라우터: /api/notifications
 BaseRouter.use(Paths.Notifications.Base, notificationRouter);
+
+// NoShowReport 라우터: /api/no-show-reports
+BaseRouter.use(Paths.NoShowReports.Base, noShowReportRouter);
 
 export default BaseRouter;

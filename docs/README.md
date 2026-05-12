@@ -16,6 +16,9 @@ docs/
 │   ├── AVATAR_UPLOAD_FEATURE.md
 │   ├── CATEGORY_FEATURE.md
 │   ├── CHAT_FEATURE_ONBOARDING.md
+│   ├── NEXT_FEATURE_ROADMAP.md
+│   ├── NO_SHOW_REPORT_FEATURE.md
+│   ├── PARTICIPANT_AGREEMENT_FEATURE.md
 │   └── TRUST_SCORE_FEATURE.md
 └── templates/
     └── DEVELOPMENT_REPORT_TEMPLATE.md
@@ -52,6 +55,9 @@ https://damara.bluerack.org/api-docs.json
 - [아바타 업로드](./features/AVATAR_UPLOAD_FEATURE.md)
 - [게시글 카테고리](./features/CATEGORY_FEATURE.md)
 - [채팅 기능 온보딩](./features/CHAT_FEATURE_ONBOARDING.md)
+- [다음 기능 로드맵](./features/NEXT_FEATURE_ROADMAP.md)
+- [노쇼 신고/확정 API](./features/NO_SHOW_REPORT_FEATURE.md)
+- [사전 약속 확인 API](./features/PARTICIPANT_AGREEMENT_FEATURE.md)
 - [신뢰학점](./features/TRUST_SCORE_FEATURE.md)
 
 ## 문서 작성 규칙
