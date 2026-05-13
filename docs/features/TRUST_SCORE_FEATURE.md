@@ -408,7 +408,7 @@ GET /api/users/:id/trust-events
 요청 예시:
 
 ```bash
-curl -s "https://damara.bluerack.org/api/users/{id}/trust-events?limit=20&offset=0"
+curl -s "http://be.damara.bluerack.org/api/users/{id}/trust-events?limit=20&offset=0"
 ```
 
 응답 예시:

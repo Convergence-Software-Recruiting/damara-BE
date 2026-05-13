@@ -24,7 +24,7 @@ src/routes/**/*.ts
 배포 환경에서는 다음 URL로 최종 OpenAPI JSON을 확인한다.
 
 ```text
-https://damara.bluerack.org/api-docs.json
+http://be.damara.bluerack.org/api-docs.json
 ```
 
 ## 2026-05-12 - 홈 피드 목록 API 확장
@@ -130,8 +130,8 @@ DB 테이블, 컬럼, enum, 관계 변경은 없다.
 ### 배포 후 확인
 
 ```bash
-curl -s "https://damara.bluerack.org/api/posts?sort=popular&status=open&limit=6" | head
-curl -s "https://damara.bluerack.org/api-docs.json" | head
+curl -s "http://be.damara.bluerack.org/api/posts?sort=popular&status=open&limit=6" | head
+curl -s "http://be.damara.bluerack.org/api-docs.json" | head
 ```
 
 ## 2026-05-09 - 신뢰학점 스키마 반영
@@ -318,7 +318,7 @@ offset: 시작 위치, 기본값 0
 예시:
 
 ```bash
-curl -s "https://damara.bluerack.org/api/users/{id}/trust-events?limit=20&offset=0"
+curl -s "http://be.damara.bluerack.org/api/users/{id}/trust-events?limit=20&offset=0"
 ```
 
 ### 응답
@@ -401,14 +401,14 @@ npm run build
 배포 후 Swagger JSON 확인:
 
 ```bash
-curl -s https://damara.bluerack.org/api-docs.json | grep -A20 '"User"'
-curl -s https://damara.bluerack.org/api-docs.json | grep -A20 '"TrustEvent"'
+curl -s http://be.damara.bluerack.org/api-docs.json | grep -A20 '"User"'
+curl -s http://be.damara.bluerack.org/api-docs.json | grep -A20 '"TrustEvent"'
 ```
 
 `servers` 값 확인:
 
 ```bash
-curl -s https://damara.bluerack.org/api-docs.json | grep -A8 '"servers"'
+curl -s http://be.damara.bluerack.org/api-docs.json | grep -A8 '"servers"'
 ```
 
 정상 배포 상태에서는 `servers`에 HTTPS 서버가 잡혀야 한다.
@@ -416,7 +416,7 @@ curl -s https://damara.bluerack.org/api-docs.json | grep -A8 '"servers"'
 ```json
 [
   {
-    "url": "https://damara.bluerack.org",
+    "url": "http://be.damara.bluerack.org",
     "description": "Current server (자동 감지)"
   }
 ]

@@ -37,7 +37,7 @@ DB_PORT=3306
 
 DB_FORCE_SYNC=false
 DISABLE_HELMET=TRUE
-API_BASE_URL=http://13.124.135.212:3000
+API_BASE_URL=http://be.damara.bluerack.org
 ENVEOF
     echo "✅ .env 파일 생성 완료"
 else
@@ -68,8 +68,8 @@ echo ""
 echo "📋 서버 로그 (최근 20줄):"
 pm2 logs damara --lines 20 --nostream
 echo ""
-echo "🌐 Swagger 접속: http://13.124.135.212:3000/api-docs"
-echo "📡 API 엔드포인트: http://13.124.135.212:3000/api"
+echo "🌐 Swagger 접속: http://be.damara.bluerack.org/api-docs"
+echo "📡 API 엔드포인트: http://be.damara.bluerack.org/api"
 echo ""
 echo "💡 로그 확인: pm2 logs damara"
 echo "💡 서버 재시작: pm2 restart damara --update-env"

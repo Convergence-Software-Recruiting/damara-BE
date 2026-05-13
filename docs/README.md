@@ -32,13 +32,13 @@ API 응답, 요청, 스키마 변경을 확인하려면 다음 문서를 우선 
 Swagger UI:
 
 ```text
-https://damara.bluerack.org/api-docs
+http://be.damara.bluerack.org/api-docs
 ```
 
 OpenAPI JSON:
 
 ```text
-https://damara.bluerack.org/api-docs.json
+http://be.damara.bluerack.org/api-docs.json
 ```
 
 ## 백엔드 개발자가 먼저 볼 문서
