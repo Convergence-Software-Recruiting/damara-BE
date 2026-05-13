@@ -27,6 +27,66 @@ src/routes/**/*.ts
 https://damara.bluerack.org/api-docs.json
 ```
 
+## 2026-05-13 - OpenAPI 스냅샷, lint, diff 도구 추가
+
+브랜치:
+
+```text
+feature/api-docs-tooling
+```
+
+변경 전 기준 커밋:
+
+```text
+7a8eeb8
+```
+
+### 변경 요약
+
+Swagger UI와 `/api-docs.json`은 그대로 유지하면서, API 계약 변경을 파일과 CLI로 추적할 수 있도록 OpenAPI 도구 체계를 추가했다.
+
+### 추가 파일
+
+```text
+docs/openapi/openapi.json
+docs/api/OPENAPI_TOOLING.md
+.spectral.yaml
+scripts/export-openapi.ts
+```
+
+### 추가 npm script
+
+```text
+openapi:generate
+openapi:lint
+openapi:diff
+openapi:diff:breaking
+```
+
+### Swagger/OpenAPI 스키마 정리
+
+Spectral의 OpenAPI 기본 검사를 통과하도록 기존 Swagger 설정의 유효성 오류를 정리했다.
+
+```text
+info.contact.studentId -> info.contact.x-student-id
+Favorite.post의 $ref sibling 제거
+전역 tags 정의 추가
+```
+
+### API 계약 영향
+
+요청 path, query, body, status code, 응답 필드는 바뀌지 않았다.
+
+이번 변경은 API 문서를 생성, 검사, 비교하는 운영 방식 변경이다.
+
+### 검증 명령
+
+```bash
+npm run openapi:generate
+npm run openapi:lint
+npm run openapi:diff:breaking -- docs/openapi/openapi.json docs/openapi/openapi.json
+```
+
 ## 2026-05-09 - 신뢰학점 스키마 반영
 
 브랜치:
