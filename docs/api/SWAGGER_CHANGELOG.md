@@ -27,6 +27,113 @@ src/routes/**/*.ts
 https://damara.bluerack.org/api-docs.json
 ```
 
+## 2026-05-12 - 홈 피드 목록 API 확장
+
+브랜치:
+
+```text
+feature/home-feed-api
+```
+
+변경 전 기준 커밋:
+
+```text
+7a8eeb8
+```
+
+### 변경 요약
+
+프론트엔드 메인 홈 화면이 배너, 인기 공동구매 카드, 정렬 탭, 검색, 필터 중심으로 변경되어 기존 게시글 목록 API를 홈 피드용으로 확장했다.
+
+새 엔드포인트를 만들지 않고 기존 목록 API를 유지해 다음 화면 영역을 같은 계약으로 처리한다.
+
+```text
+GET /api/posts
+```
+
+### 추가 쿼리 파라미터
+
+```text
+sort: latest | deadline | popular
+status: open | closed | in_progress | completed | cancelled
+keyword: 제목/내용/픽업 장소 검색어
+q: keyword와 같은 의미의 검색어 alias
+userId: isFavorite 계산용 현재 사용자 UUID
+x-user-id header: userId와 같은 의미의 현재 사용자 UUID
+```
+
+기존 쿼리는 그대로 유지한다.
+
+```text
+limit
+offset
+category
+```
+
+### 응답 변경
+
+`GET /api/posts` 목록 응답의 각 게시글에 상세 조회와 동일하게 다음 필드가 포함된다.
+
+```text
+favoriteCount
+isFavorite
+```
+
+기존 배열 응답 형식은 유지하므로 기존 클라이언트의 파싱 구조는 바뀌지 않는다.
+
+### 프론트엔드 호출 기준
+
+홈 상단 인기 카드:
+
+```text
+GET /api/posts?sort=popular&status=open&limit=6
+```
+
+최신순 탭:
+
+```text
+GET /api/posts?sort=latest&status=open&limit=20&offset=0
+```
+
+마감임박순 탭:
+
+```text
+GET /api/posts?sort=deadline&status=open&limit=20&offset=0
+```
+
+카테고리 필터:
+
+```text
+GET /api/posts?category=daily&sort=latest&status=open
+```
+
+검색:
+
+```text
+GET /api/posts?keyword=물티슈&status=open
+```
+
+로그인 사용자 기준 하트 표시가 필요하면 `x-user-id` 헤더 또는 `userId` 쿼리를 함께 전달한다.
+
+### Swagger 변경
+
+```text
+src/routes/posts/PostRoutes.ts
+```
+
+`GET /api/posts` Swagger에 홈 피드용 쿼리 파라미터와 응답 설명을 추가했다.
+
+### DB/ERD 영향
+
+DB 테이블, 컬럼, enum, 관계 변경은 없다.
+
+### 배포 후 확인
+
+```bash
+curl -s "https://damara.bluerack.org/api/posts?sort=popular&status=open&limit=6" | head
+curl -s "https://damara.bluerack.org/api-docs.json" | head
+```
+
 ## 2026-05-09 - 신뢰학점 스키마 반영
 
 브랜치:
