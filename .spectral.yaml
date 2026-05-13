@@ -1,0 +1,40 @@
+extends:
+  - spectral:oas
+
+rules:
+  info-contact: off
+  oas3-unused-component: off
+  operation-operationId: off
+  operation-description: warn
+  operation-tags: warn
+  damara-path-kebab-case:
+    description: API path segments should use kebab-case, or path parameters in braces.
+    message: "Path '{{property}}' should use kebab-case segments."
+    severity: warn
+    given: $.paths
+    then:
+      field: "@key"
+      function: pattern
+      functionOptions:
+        match: ^\/([a-z0-9]+(-[a-z0-9]+)*|\{[A-Za-z0-9_]+\})(\/([a-z0-9]+(-[a-z0-9]+)*|\{[A-Za-z0-9_]+\}))*$
+  damara-4xx-response:
+    description: Mutating operations should document at least one common 4xx error response.
+    message: "{{path}} should document at least one common 4xx response."
+    severity: warn
+    given:
+      - $.paths[*].post.responses
+      - $.paths[*].put.responses
+      - $.paths[*].patch.responses
+      - $.paths[*].delete.responses
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          anyOf:
+            - required: ["400"]
+            - required: ["401"]
+            - required: ["403"]
+            - required: ["404"]
+            - required: ["409"]
+            - required: ["422"]

@@ -7,8 +7,11 @@ DAMARA 백엔드 문서는 목적별로 폴더를 나눠 관리한다.
 ```text
 docs/
 ├── api/
+│   ├── OPENAPI_TOOLING.md
 │   ├── SWAGGER_CHANGELOG.md
 │   └── WEBSOCKET_GUIDE.md
+├── openapi/
+│   └── openapi.json
 ├── architecture/
 │   ├── DOMAIN_DESIGN.md
 │   └── ERD_CHANGELOG.md
@@ -26,6 +29,7 @@ docs/
 API 응답, 요청, 스키마 변경을 확인하려면 다음 문서를 우선 본다.
 
 - [Swagger/OpenAPI 변경 이력](./api/SWAGGER_CHANGELOG.md)
+- [OpenAPI 도구 사용 가이드](./api/OPENAPI_TOOLING.md)
 - [신뢰학점 기능 문서](./features/TRUST_SCORE_FEATURE.md)
 - [WebSocket 가이드](./api/WEBSOCKET_GUIDE.md)
 
@@ -45,6 +49,7 @@ https://damara.bluerack.org/api-docs.json
 
 - [도메인 설계](./architecture/DOMAIN_DESIGN.md)
 - [ERD/DB 변경 이력](./architecture/ERD_CHANGELOG.md)
+- [OpenAPI 도구 사용 가이드](./api/OPENAPI_TOOLING.md)
 - [개발 보고서 템플릿](./templates/DEVELOPMENT_REPORT_TEMPLATE.md)
 
 ## 기능별 개발 보고서
@@ -52,6 +57,7 @@ https://damara.bluerack.org/api-docs.json
 - [아바타 업로드](./features/AVATAR_UPLOAD_FEATURE.md)
 - [게시글 카테고리](./features/CATEGORY_FEATURE.md)
 - [채팅 기능 온보딩](./features/CHAT_FEATURE_ONBOARDING.md)
+- [OpenAPI 변경 감지 및 품질 검사 도구](./features/OPENAPI_TOOLING_FEATURE.md)
 - [신뢰학점](./features/TRUST_SCORE_FEATURE.md)
 
 ## 문서 작성 규칙
