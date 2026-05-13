@@ -4,6 +4,8 @@ import { PostModel, PostCreationAttributes } from "../models/Post";
 import PostImageModel from "../models/PostImage";
 import { RouteError } from "../common/util/route-errors";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
+import { Op, Order } from "sequelize";
+import { PostListOptions } from "../types/post-list";
 
 export const PostRepo = {
   /**
@@ -60,10 +62,19 @@ export const PostRepo = {
 
   /**
    * 전체 조회 + pagination (이미지 포함)
-   * category 필터링 지원
+   * category/status/keyword 필터링 및 홈 피드 정렬 지원
    */
-  async list(limit = 20, offset = 0, category?: string | null) {
+  async list(options: PostListOptions = {}) {
+    const {
+      limit = 20,
+      offset = 0,
+      category,
+      status,
+      keyword,
+      sort = "latest",
+    } = options;
     const whereClause: any = {};
+
     // category가 제공되고 빈 문자열이 아닐 때만 필터링
     if (
       category &&
@@ -81,7 +92,32 @@ export const PostRepo = {
       console.log("PostRepo.list - 전체 조회 (카테고리 없음)");
     }
 
-    const posts = await PostModel.findAll({
+    if (status) {
+      whereClause.status = status;
+    }
+
+    const normalizedKeyword =
+      keyword && String(keyword).trim() !== ""
+        ? String(keyword).trim()
+        : null;
+
+    if (normalizedKeyword) {
+      whereClause[Op.or] = [
+        { title: { [Op.like]: `%${normalizedKeyword}%` } },
+        { content: { [Op.like]: `%${normalizedKeyword}%` } },
+        { pickupLocation: { [Op.like]: `%${normalizedKeyword}%` } },
+      ];
+    }
+
+    const order: Order =
+      sort === "deadline"
+        ? [
+            ["deadline", "ASC"],
+            ["createdAt", "DESC"],
+          ]
+        : [["createdAt", "DESC"]];
+
+    const queryOptions: any = {
       where: whereClause,
       include: [
         {
@@ -91,10 +127,15 @@ export const PostRepo = {
           order: [["sortOrder", "ASC"]],
         },
       ],
-      order: [["createdAt", "DESC"]],
-      limit,
-      offset,
-    });
+      order,
+    };
+
+    if (sort !== "popular") {
+      queryOptions.limit = limit;
+      queryOptions.offset = offset;
+    }
+
+    const posts = await PostModel.findAll(queryOptions);
 
     const result = posts.map((p) => p.get());
 

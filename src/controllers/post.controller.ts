@@ -16,13 +16,45 @@ import {
   updatePostStatusSchema,
   UpdatePostStatusReq,
 } from "../routes/common/validation/post-status-schemas";
+import { PostListSort, PostListStatus } from "../types/post-list";
+
+const POST_LIST_SORTS: PostListSort[] = ["latest", "deadline", "popular"];
+const POST_LIST_STATUSES: PostListStatus[] = [
+  "open",
+  "closed",
+  "in_progress",
+  "completed",
+  "cancelled",
+];
+
+function getSingleValue(value: unknown): string | undefined {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  if (rawValue === undefined || rawValue === null) {
+    return undefined;
+  }
+
+  const valueString = String(rawValue).trim();
+  return valueString === "" ? undefined : valueString;
+}
+
+function parseNonNegativeInteger(value: unknown, fallback: number) {
+  const stringValue = getSingleValue(value);
+  if (!stringValue) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(stringValue, 10);
+  return Number.isNaN(parsed) || parsed < 0 ? fallback : parsed;
+}
 
 /**
- * 공동구매 상품 전체 목록
- * GET /api/posts?limit&offset&category
+ * 공동구매 상품 전체 목록 / 홈 피드 목록
+ * GET /api/posts?limit&offset&category&sort&status&keyword&userId
  *
  * - pagination 기본값은 (20, 0)
  * - category 쿼리 파라미터로 필터링 가능
+ * - sort(latest/deadline/popular), status, keyword 검색 지원
+ * - userId 또는 x-user-id가 있으면 isFavorite를 사용자 기준으로 계산
  * - Service.listPosts로 위임하여 DB 접근을 추상화
  */
 export async function getAllPosts(
@@ -31,18 +63,47 @@ export async function getAllPosts(
   next: NextFunction
 ) {
   try {
-    const limit = req.query.limit
-      ? parseInt(req.query.limit as string, 10)
-      : 20;
-    const offset = req.query.offset
-      ? parseInt(req.query.offset as string, 10)
-      : 0;
-    const category = req.query.category
-      ? String(req.query.category).trim()
-      : undefined;
+    const limit = parseNonNegativeInteger(req.query.limit, 20);
+    const offset = parseNonNegativeInteger(req.query.offset, 0);
+    const category = getSingleValue(req.query.category);
+    const keyword =
+      getSingleValue(req.query.keyword) || getSingleValue(req.query.q);
+    const userId =
+      getSingleValue(req.headers["x-user-id"]) ||
+      getSingleValue(req.query.userId);
+    const sortValue = getSingleValue(req.query.sort) || "latest";
+    const statusValue = getSingleValue(req.query.status);
 
-    logger.info(`getAllPosts - 카테고리 파라미터: ${category}`);
-    const posts = await PostService.listPosts(limit, offset, category);
+    if (!POST_LIST_SORTS.includes(sortValue as PostListSort)) {
+      return res.status(HttpStatusCodes.BAD_REQUEST).json({
+        error: "INVALID_SORT",
+        message: "sort는 latest, deadline, popular 중 하나여야 합니다.",
+      });
+    }
+
+    if (
+      statusValue &&
+      !POST_LIST_STATUSES.includes(statusValue as PostListStatus)
+    ) {
+      return res.status(HttpStatusCodes.BAD_REQUEST).json({
+        error: "INVALID_STATUS",
+        message:
+          "status는 open, closed, in_progress, completed, cancelled 중 하나여야 합니다.",
+      });
+    }
+
+    logger.info(
+      `getAllPosts - category=${category}, sort=${sortValue}, status=${statusValue}, keyword=${keyword}`
+    );
+    const posts = await PostService.listPosts({
+      limit,
+      offset,
+      category,
+      keyword,
+      userId,
+      sort: sortValue as PostListSort,
+      status: statusValue as PostListStatus | undefined,
+    });
     logger.info(`getAllPosts - 반환된 게시글 수: ${posts.length}`);
 
     res.status(HttpStatusCodes.OK).json(posts);
