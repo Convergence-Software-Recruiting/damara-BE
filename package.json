@@ -8,7 +8,11 @@
     "start": "NODE_ENV=development node dist/src/server.js",
     "lint": "eslint .",
     "test": "NODE_ENV=test vitest",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "openapi:generate": "DOTENV_CONFIG_QUIET=true ts-node --files scripts/export-openapi.ts",
+    "openapi:lint": "npm run openapi:generate && spectral lint docs/openapi/openapi.json --ruleset .spectral.yaml",
+    "openapi:diff": "oasdiff changelog --format markdown",
+    "openapi:diff:breaking": "oasdiff breaking --fail-on ERR --format text"
   },
   "engines": {
     "node": ">=16.0.0"
@@ -52,6 +56,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@oasdiff-js/oasdiff-js": "^1.0.0",
+    "@stoplight/spectral-cli": "^6.16.0",
     "@stylistic/eslint-plugin-js": "^4.4.1",
     "@stylistic/eslint-plugin-ts": "^4.4.1",
     "@swc/core": "^1.15.1",
@@ -68,6 +74,7 @@
     "@types/pg": "^8.15.6",
     "@types/supertest": "^6.0.3",
     "@types/uuid": "^10.0.0",
+    "ajv": "^8.20.0",
     "eslint": "^9.39.1",
     "eslint-plugin-n": "^17.23.1",
     "find": "^0.3.0",

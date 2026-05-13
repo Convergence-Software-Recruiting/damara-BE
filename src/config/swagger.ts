@@ -18,7 +18,7 @@ const options: swaggerJsdoc.Options = {
         "공동구매 플랫폼 API 문서. TypeScript + Express + Sequelize + MySQL로 구현되었습니다.",
       contact: {
         name: "최원빈",
-        studentId: "60203042",
+        "x-student-id": "60203042",
       },
     },
     servers: [
@@ -28,6 +28,28 @@ const options: swaggerJsdoc.Options = {
           ENV.NodeEnv === "production"
             ? "Production server"
             : "Development server",
+      },
+    ],
+    tags: [
+      {
+        name: "Posts",
+        description: "공동구매 게시글 API",
+      },
+      {
+        name: "Users",
+        description: "사용자 API",
+      },
+      {
+        name: "Upload",
+        description: "이미지 업로드 API",
+      },
+      {
+        name: "Chat",
+        description: "채팅 API",
+      },
+      {
+        name: "Notifications",
+        description: "알림 API",
       },
     ],
     components: {
@@ -528,9 +550,8 @@ const options: swaggerJsdoc.Options = {
               example: "123e4567-e89b-12d3-a456-426614174000",
             },
             post: {
-              type: "object",
               description: "관심 등록한 게시글 정보",
-              $ref: "#/components/schemas/Post",
+              allOf: [{ $ref: "#/components/schemas/Post" }],
             },
             createdAt: {
               type: "string",
