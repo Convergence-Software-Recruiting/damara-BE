@@ -30,9 +30,15 @@ logger.info("PostRoutes: 라우터 초기화됨");
  * @swagger
  * /api/posts:
  *   get:
- *     summary: 전체 상품 조회 (페이징 및 카테고리 필터링 가능)
+ *     summary: 홈 피드 상품 목록 조회 (페이징, 검색, 필터, 정렬 가능)
  *     tags: [Posts]
  *     parameters:
+ *       - in: header
+ *         name: x-user-id
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 현재 사용자 UUID. 전달하면 각 게시글의 isFavorite를 사용자 기준으로 계산합니다.
  *       - in: query
  *         name: limit
  *         schema:
@@ -52,9 +58,42 @@ logger.info("PostRoutes: 라우터 초기화됨");
  *           enum: [food, daily, beauty, electronics, school, freemarket]
  *         description: "카테고리 필터 (food=먹거리, daily=일상용품, beauty=뷰티·패션, electronics=전자기기, school=학용품, freemarket=프리마켓)"
  *         example: food
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           enum: [latest, deadline, popular]
+ *           default: latest
+ *         description: "정렬 방식 (latest=최신순, deadline=마감임박순, popular=인기순)"
+ *         example: popular
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [open, closed, in_progress, completed, cancelled]
+ *         description: 게시글 상태 필터. 홈 화면 모집중 목록은 open을 사용합니다.
+ *         example: open
+ *       - in: query
+ *         name: keyword
+ *         schema:
+ *           type: string
+ *         description: 제목, 내용, 픽업 장소 검색어. q 쿼리도 같은 의미로 사용할 수 있습니다.
+ *         example: 물티슈
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *         description: keyword와 같은 의미의 검색어 alias입니다.
+ *         example: 물티슈
+ *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 현재 사용자 UUID. x-user-id 헤더를 쓰기 어려운 클라이언트용 대체 파라미터입니다.
  *     responses:
  *       200:
- *         description: 상품 목록 조회 성공
+ *         description: 상품 목록 조회 성공. 각 항목에는 favoriteCount와 isFavorite가 포함됩니다.
  *         content:
  *           application/json:
  *             schema:

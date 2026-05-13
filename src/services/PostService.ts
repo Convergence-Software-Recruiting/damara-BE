@@ -10,6 +10,56 @@ import PostModel from "../models/Post";
 import { FavoriteService } from "./FavoriteService";
 import { NotificationService } from "./NotificationService";
 import { TrustService } from "./TrustService";
+import { PostListOptions } from "../types/post-list";
+
+type PostListItem = Awaited<ReturnType<typeof PostRepo.list>>[number];
+type EnrichedPostListItem = PostListItem & {
+  favoriteCount: number;
+  isFavorite: boolean;
+};
+
+const getPostCreatedTime = (post: PostListItem) => {
+  if (!post.createdAt) {
+    return 0;
+  }
+
+  const createdTime = new Date(post.createdAt).getTime();
+  return Number.isNaN(createdTime) ? 0 : createdTime;
+};
+
+async function enrichPostListItem(
+  post: PostListItem,
+  userId?: string
+): Promise<EnrichedPostListItem> {
+  const favoriteCount = await FavoriteService.getFavoriteCount(post.id);
+  const isFavorite = userId
+    ? await FavoriteService.isFavorite(post.id, userId)
+    : false;
+
+  return {
+    ...post,
+    favoriteCount,
+    isFavorite,
+  };
+}
+
+function comparePopularPosts(
+  a: EnrichedPostListItem,
+  b: EnrichedPostListItem
+) {
+  const favoriteDiff = b.favoriteCount - a.favoriteCount;
+  if (favoriteDiff !== 0) {
+    return favoriteDiff;
+  }
+
+  const participantDiff =
+    Number(b.currentQuantity || 0) - Number(a.currentQuantity || 0);
+  if (participantDiff !== 0) {
+    return participantDiff;
+  }
+
+  return getPostCreatedTime(b) - getPostCreatedTime(a);
+}
 
 export const PostService = {
   /**
@@ -56,10 +106,40 @@ export const PostService = {
 
   /**
    * 전체 조회 + pagination
-   * category 필터링 지원
+   * category/status/keyword 필터링과 홈 피드 정렬 지원
    */
-  async listPosts(limit = 20, offset = 0, category?: string | null) {
-    return await PostRepo.list(limit, offset, category);
+  async listPosts(
+    limitOrOptions: number | PostListOptions = 20,
+    offset = 0,
+    category?: string | null
+  ) {
+    const options: PostListOptions =
+      typeof limitOrOptions === "number"
+        ? { limit: limitOrOptions, offset, category }
+        : limitOrOptions;
+    const limit = options.limit ?? 20;
+    const normalizedOffset = options.offset ?? 0;
+    const userId =
+      options.userId && String(options.userId).trim() !== ""
+        ? String(options.userId).trim()
+        : undefined;
+
+    const posts = await PostRepo.list({
+      ...options,
+      limit,
+      offset: normalizedOffset,
+    });
+    const enrichedPosts = await Promise.all(
+      posts.map((post) => enrichPostListItem(post, userId))
+    );
+
+    if (options.sort === "popular") {
+      return enrichedPosts
+        .sort(comparePopularPosts)
+        .slice(normalizedOffset, normalizedOffset + limit);
+    }
+
+    return enrichedPosts;
   },
 
   /**
