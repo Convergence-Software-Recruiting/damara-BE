@@ -16,6 +16,106 @@ DB 구조가 바뀌면 다음 내용을 기록한다.
 6. API 응답 영향
 7. 배포 시 마이그레이션 주의점
 
+## 2026-05-14 - 참여자별 진행 상태 컬럼 추가
+
+브랜치:
+
+```text
+feature/participant-status
+```
+
+변경 전 기준 커밋:
+
+```text
+8953132
+```
+
+### 변경 요약
+
+내 공구 화면에서 사용자별 참여 진행 상태를 표시하기 위해 `post_participants` 테이블에 상태 컬럼을 추가한다.
+
+게시글 전체 상태는 기존 `posts.status`가 계속 담당하고, 참여자별 상태는 `post_participants.participant_status`가 담당한다.
+
+### 변경된 테이블
+
+```text
+post_participants
+```
+
+### 신규 컬럼
+
+```text
+participant_status
+```
+
+정의:
+
+```text
+type: ENUM('participating', 'payment_pending', 'pickup_ready', 'received')
+nullable: false
+default: 'participating'
+```
+
+상태 의미:
+
+```text
+participating = 참여중
+payment_pending = 입금대기
+pickup_ready = 수령예정
+received = 수령완료
+```
+
+### 관계 변경
+
+관계 변경은 없다.
+
+기존 관계:
+
+```text
+posts N:M users
+중간 테이블: post_participants
+```
+
+### API 영향
+
+다음 응답에 `participantStatus`가 추가된다.
+
+```text
+GET /api/posts/{id}
+GET /api/posts/{id}/participants
+GET /api/posts/user/{userId}/participated
+```
+
+상태 변경 API가 추가된다.
+
+```text
+PATCH /api/posts/{id}/participants/{userId}/status
+```
+
+Swagger 변경 사항은 다음 문서에서 관리한다.
+
+```text
+docs/api/SWAGGER_CHANGELOG.md
+```
+
+### 배포 주의점
+
+현재 서버는 `sequelize.sync({ alter: true })`를 사용하지만, 운영 DB에서는 명시적인 ALTER를 먼저 적용하는 편이 안전하다.
+
+로컬/개발 환경에서는 `sync({ alter: true })`가 기존 `users` 인덱스 경고로 중단되어도 `syncDatabase()`가 `post_participants.participant_status` 컬럼을 별도로 확인하고 없으면 추가한다.
+
+운영 반영용 SQL:
+
+```sql
+ALTER TABLE post_participants
+  ADD COLUMN participant_status ENUM(
+    'participating',
+    'payment_pending',
+    'pickup_ready',
+    'received'
+  ) NOT NULL DEFAULT 'participating';
+```
+
 ## 2026-05-09 - 신뢰 이벤트 이력 테이블 추가
 
 브랜치:
