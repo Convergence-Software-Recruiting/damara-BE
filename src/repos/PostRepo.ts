@@ -2,6 +2,7 @@
 
 import { PostModel, PostCreationAttributes } from "../models/Post";
 import PostImageModel from "../models/PostImage";
+import UserModel from "../models/User";
 import { RouteError } from "../common/util/route-errors";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
 import { Op, Order } from "sequelize";
@@ -58,6 +59,36 @@ export const PostRepo = {
     });
 
     return post ? post.get() : null;
+  },
+
+  /**
+   * 상세 화면용 상품 조회 (이미지 + 작성자 공개 프로필 포함)
+   */
+  async findDetailById(id: string) {
+    const post = await PostModel.findByPk(id, {
+      include: [
+        {
+          model: PostImageModel,
+          as: "images",
+          attributes: ["id", "imageUrl", "sortOrder"],
+          order: [["sortOrder", "ASC"]],
+        },
+        {
+          model: UserModel,
+          as: "author",
+          attributes: [
+            "id",
+            "nickname",
+            "studentId",
+            "department",
+            "avatarUrl",
+            "trustScore",
+          ],
+        },
+      ],
+    });
+
+    return post ? post.get({ plain: true }) : null;
   },
 
   /**

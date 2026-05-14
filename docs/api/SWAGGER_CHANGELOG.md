@@ -27,6 +27,121 @@ src/routes/**/*.ts
 https://damara.bluerack.org/api-docs.json
 ```
 
+## 2026-05-14 - 게시글 상세 응답에 작성자/참여자 프로필 추가
+
+브랜치:
+
+```text
+feature/post-detail-profiles
+```
+
+변경 전 기준 커밋:
+
+```text
+19bbe6d
+```
+
+### 변경 요약
+
+공구 상세 화면에서 게시글 본문, 작성자 프로필, 참여자 프로필, 관심/참여 상태를 한 번에 렌더링할 수 있도록 `GET /api/posts/{id}` 응답을 상세 화면용 스키마로 확장했다.
+
+### Swagger/OpenAPI 스키마 변경
+
+대상 파일:
+
+```text
+src/config/swagger.ts
+src/routes/posts/PostRoutes.ts
+```
+
+추가된 스키마:
+
+```text
+components.schemas.PublicUserProfile
+components.schemas.PostParticipantProfile
+components.schemas.PostDetail
+```
+
+변경된 API:
+
+```text
+GET /api/posts/{id}
+```
+
+변경 전 응답 스키마:
+
+```text
+Post
+```
+
+변경 후 응답 스키마:
+
+```text
+PostDetail
+```
+
+### API 응답 영향
+
+기존 상세 응답 필드는 유지하면서 다음 필드를 추가한다.
+
+```json
+{
+  "author": {
+    "id": "a87522bd-bc79-47b0-a73f-46ea4068a158",
+    "nickname": "다마라 공식",
+    "studentId": "20241234",
+    "department": "생활용품 판매자",
+    "avatarUrl": "https://example.com/avatar.jpg",
+    "trustGrade": 4.3
+  },
+  "participants": [
+    {
+      "id": "7f7b9a5c-0e86-4f93-bd11-31e9bde8a7f2",
+      "userId": "123e4567-e89b-12d3-a456-426614174000",
+      "joinedAt": "2026-05-14T10:00:00.000Z",
+      "user": {
+        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "nickname": "참여자 1",
+        "studentId": "20241234",
+        "department": "컴퓨터공학과",
+        "avatarUrl": null,
+        "trustGrade": 4.1
+      }
+    }
+  ],
+  "participantCount": 1,
+  "isParticipant": false
+}
+```
+
+보안/노출 기준:
+
+```text
+passwordHash, email은 상세 프로필에 포함하지 않는다.
+trustScore는 내부 정책 점수이므로 상세 프로필에는 포함하지 않고 trustGrade만 노출한다.
+```
+
+### 프론트엔드 영향
+
+상세 화면에서 별도 사용자 조회 API를 추가 호출하지 않고 다음 영역을 렌더링할 수 있다.
+
+```text
+주최자/판매자 프로필: author
+참여자 프로필 목록: participants
+참여 버튼 상태: isParticipant
+관심 버튼 상태: isFavorite
+참여자 수 표시: currentQuantity 또는 participantCount
+```
+
+사용자별 하트/참여 상태가 필요하면 기존과 동일하게 `x-user-id` 헤더 또는 `userId` 쿼리를 전달한다.
+
+확인 명령:
+
+```bash
+curl -s "http://localhost:3000/api/posts/{postId}?userId={userId}"
+curl -s "http://localhost:3000/api-docs.json"
+```
+
 ## 2026-05-13 - OpenAPI 스냅샷, lint, diff 도구 추가
 
 브랜치:

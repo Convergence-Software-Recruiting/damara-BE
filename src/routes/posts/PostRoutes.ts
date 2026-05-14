@@ -672,6 +672,7 @@ postRouter.delete("/:id", deletePost);
  * /api/posts/{id}:
  *   get:
  *     summary: 상품 상세 조회
+ *     description: 상세 화면에 필요한 게시글 정보, 작성자 공개 프로필, 참여자 공개 프로필, 관심/참여 상태를 함께 조회합니다.
  *     tags: [Posts]
  *     parameters:
  *       - in: path
@@ -694,11 +695,11 @@ postRouter.delete("/:id", deletePost);
  *         description: 사용자 ID (isFavorite 확인용, 선택사항)
  *     responses:
  *       200:
- *         description: 상품 상세 정보 (favoriteCount, isFavorite 포함)
+ *         description: 상품 상세 정보 (author, participants, favoriteCount, isFavorite, isParticipant 포함)
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Post'
+ *               $ref: '#/components/schemas/PostDetail'
  *       404:
  *         description: 상품을 찾을 수 없음
  */

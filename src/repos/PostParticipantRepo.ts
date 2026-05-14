@@ -83,6 +83,32 @@ export const PostParticipantRepo = {
   },
 
   /**
+   * 상세 화면용 참여자 목록 조회 (참여자 공개 프로필 포함)
+   */
+  async findProfilesByPostId(postId: string) {
+    const participants = await PostParticipantModel.findAll({
+      where: { postId },
+      include: [
+        {
+          model: UserModel,
+          as: "user",
+          attributes: [
+            "id",
+            "nickname",
+            "studentId",
+            "department",
+            "avatarUrl",
+            "trustScore",
+          ],
+        },
+      ],
+      order: [["createdAt", "ASC"]],
+    });
+
+    return participants.map((p) => p.get({ plain: true }));
+  },
+
+  /**
    * 사용자가 참여한 게시글 목록 조회
    */
   async findByUserId(userId: string) {
