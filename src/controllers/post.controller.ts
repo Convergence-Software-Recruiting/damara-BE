@@ -16,6 +16,10 @@ import {
   updatePostStatusSchema,
   UpdatePostStatusReq,
 } from "../routes/common/validation/post-status-schemas";
+import {
+  updateParticipantStatusSchema,
+  UpdateParticipantStatusReq,
+} from "../routes/common/validation/participant-status-schemas";
 import { PostListSort, PostListStatus } from "../types/post-list";
 
 const POST_LIST_SORTS: PostListSort[] = ["latest", "deadline", "popular"];
@@ -413,6 +417,44 @@ export async function getParticipatedPosts(
     const posts = await PostParticipantService.getParticipatedPosts(userId);
 
     res.status(HttpStatusCodes.OK).json(posts);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 참여자별 진행 상태 변경
+ * PATCH /api/posts/:id/participants/:userId/status
+ * body: { participantStatus, actorUserId? }
+ */
+export async function updateParticipantStatus(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id, userId } = req.params;
+    const validatedData = parseReq<UpdateParticipantStatusReq>(
+      updateParticipantStatusSchema
+    )(req.body);
+    const actorUserId =
+      validatedData.actorUserId || getSingleValue(req.headers["x-user-id"]);
+
+    if (!actorUserId) {
+      return res.status(HttpStatusCodes.BAD_REQUEST).json({
+        error: "ACTOR_USER_ID_REQUIRED",
+        message: "상태를 변경하는 사용자 ID가 필요합니다.",
+      });
+    }
+
+    const participant = await PostParticipantService.updateParticipantStatus(
+      id,
+      userId,
+      validatedData.participantStatus,
+      actorUserId
+    );
+
+    res.status(HttpStatusCodes.OK).json(participant);
   } catch (error) {
     next(error);
   }

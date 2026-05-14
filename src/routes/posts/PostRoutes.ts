@@ -12,6 +12,7 @@ import {
   leavePost,
   getParticipants,
   getParticipatedPosts,
+  updateParticipantStatus,
   checkParticipation,
 } from "../../controllers/post.controller";
 import {
@@ -415,6 +416,12 @@ logger.info("✓ PATCH /api/posts/:id/status 라우트 등록됨");
  *     responses:
  *       200:
  *         description: 참여한 게시글 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/ParticipatedPost'
  */
 // GET /api/posts/user/:userId/participated - 사용자가 참여한 게시글 목록 (더 구체적인 라우트를 먼저 배치)
 postRouter.get("/user/:userId/participated", getParticipatedPosts);
@@ -435,9 +442,78 @@ postRouter.get("/user/:userId/participated", getParticipatedPosts);
  *     responses:
  *       200:
  *         description: 참여자 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/PostParticipant'
  */
 // GET /api/posts/:id/participants - 참여자 목록 (더 구체적인 라우트를 먼저 배치)
 postRouter.get("/:id/participants", getParticipants);
+
+/**
+ * @swagger
+ * /api/posts/{id}/participants/{userId}/status:
+ *   patch:
+ *     summary: 참여자 상태 변경
+ *     description: 작성자 또는 해당 참여자 본인이 참여자별 진행 상태를 변경합니다.
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 게시글 UUID
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 상태를 변경할 참여자 UUID
+ *       - in: header
+ *         name: x-user-id
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 상태 변경 요청자 UUID. body.actorUserId 대신 사용할 수 있습니다.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - participantStatus
+ *             properties:
+ *               participantStatus:
+ *                 $ref: '#/components/schemas/ParticipantStatus'
+ *               actorUserId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: 상태 변경 요청자 UUID. x-user-id 헤더를 쓰면 생략할 수 있습니다.
+ *           example:
+ *             participantStatus: payment_pending
+ *             actorUserId: "a87522bd-bc79-47b0-a73f-46ea4068a158"
+ *     responses:
+ *       200:
+ *         description: 참여자 상태 변경 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PostParticipant'
+ *       400:
+ *         description: 유효성 검증 실패 또는 요청자 ID 누락
+ *       403:
+ *         description: 작성자 또는 해당 참여자가 아님
+ *       404:
+ *         description: 게시글 또는 참여 정보를 찾을 수 없음
+ */
+// PATCH /api/posts/:id/participants/:userId/status - 참여자 상태 변경
+postRouter.patch("/:id/participants/:userId/status", updateParticipantStatus);
 
 /**
  * @swagger

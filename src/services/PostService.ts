@@ -11,6 +11,7 @@ import { FavoriteService } from "./FavoriteService";
 import { NotificationService } from "./NotificationService";
 import { TrustService } from "./TrustService";
 import { PostListOptions } from "../types/post-list";
+import { ParticipantStatus } from "../types/participant-status";
 
 type PostListItem = Awaited<ReturnType<typeof PostRepo.list>>[number];
 type EnrichedPostListItem = PostListItem & {
@@ -133,6 +134,7 @@ export const PostService = {
     const participantProfiles = participants.map((participant) => ({
       id: participant.id,
       userId: participant.userId,
+      participantStatus: participant.participantStatus,
       joinedAt: participant.createdAt,
       user: toPublicUserProfile(participant.user),
     }));
@@ -558,6 +560,39 @@ export const PostParticipantService = {
    */
   async getParticipatedPosts(userId: string) {
     return await PostParticipantRepo.findByUserId(userId);
+  },
+
+  /**
+   * 참여자별 진행 상태 변경
+   * - 작성자 또는 해당 참여자 본인만 변경 가능
+   */
+  async updateParticipantStatus(
+    postId: string,
+    userId: string,
+    participantStatus: ParticipantStatus,
+    actorUserId: string
+  ) {
+    const post = await PostModel.findByPk(postId, {
+      attributes: ["id", "authorId"],
+    });
+    if (!post) {
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "POST_NOT_FOUND");
+    }
+
+    const canUpdate =
+      actorUserId === post.authorId || actorUserId === userId;
+    if (!canUpdate) {
+      throw new RouteError(
+        HttpStatusCodes.FORBIDDEN,
+        "PARTICIPANT_STATUS_FORBIDDEN"
+      );
+    }
+
+    return await PostParticipantRepo.updateStatus(
+      postId,
+      userId,
+      participantStatus
+    );
   },
 
   /**

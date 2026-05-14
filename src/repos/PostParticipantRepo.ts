@@ -7,6 +7,7 @@ import PostModel from "../models/Post";
 import UserModel from "../models/User";
 import { RouteError } from "../common/util/route-errors";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
+import { ParticipantStatus } from "../types/participant-status";
 
 export const PostParticipantRepo = {
   /**
@@ -132,6 +133,35 @@ export const PostParticipantRepo = {
     });
 
     return participants.map((p) => p.get());
+  },
+
+  /**
+   * 참여자별 진행 상태 변경
+   */
+  async updateStatus(
+    postId: string,
+    userId: string,
+    participantStatus: ParticipantStatus
+  ) {
+    const participant = await PostParticipantModel.findOne({
+      where: { postId, userId },
+      include: [
+        {
+          model: UserModel,
+          as: "user",
+          attributes: ["id", "nickname", "studentId", "avatarUrl"],
+        },
+      ],
+    });
+
+    if (!participant) {
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "PARTICIPANT_NOT_FOUND");
+    }
+
+    participant.participantStatus = participantStatus;
+    await participant.save();
+
+    return participant.get({ plain: true });
   },
 
   /**
