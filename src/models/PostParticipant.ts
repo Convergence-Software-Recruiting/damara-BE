@@ -4,6 +4,10 @@ import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../db";
 import PostModel from "./Post";
 import UserModel from "./User";
+import {
+  PARTICIPANT_STATUSES,
+  ParticipantStatus,
+} from "../types/participant-status";
 
 // ----------------------------
 // TypeScript 타입 정의
@@ -18,6 +22,7 @@ export interface PostParticipantAttributes {
   id: string;
   postId: string; // posts.id와 외래키 관계
   userId: string; // users.id와 외래키 관계
+  participantStatus: ParticipantStatus; // 참여자별 진행 상태
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -27,7 +32,7 @@ export interface PostParticipantAttributes {
  */
 export type PostParticipantCreationAttributes = Optional<
   PostParticipantAttributes,
-  "id" | "createdAt" | "updatedAt"
+  "id" | "participantStatus" | "createdAt" | "updatedAt"
 >;
 
 /**
@@ -40,6 +45,7 @@ export class PostParticipantModel
   public id!: string;
   public postId!: string;
   public userId!: string;
+  public participantStatus!: ParticipantStatus;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -74,6 +80,12 @@ PostParticipantModel.init(
         key: "id",
       },
       onDelete: "CASCADE", // User 삭제 시 참여자 정보도 삭제
+    },
+    participantStatus: {
+      type: DataTypes.ENUM(...PARTICIPANT_STATUSES),
+      allowNull: false,
+      defaultValue: "participating",
+      field: "participant_status",
     },
   },
   {

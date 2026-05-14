@@ -11,6 +11,7 @@ import morgan from "morgan";
 import session from "express-session";
 import passport from "passport";
 import logger from "jet-logger";
+import { DataTypes } from "sequelize";
 import BaseRouter from "./routes";
 import Paths from "./common/constants/Paths";
 import HttpStatusCodes from "./common/constants/HttpStatusCodes";
@@ -20,6 +21,7 @@ import { setupSwagger } from "./config/swagger";
 import ENV from "./common/constants/ENV";
 import authRouter from "./routes/auth/AuthRoutes";
 import "./config/passport";
+import { PARTICIPANT_STATUSES } from "./types/participant-status";
 
 // 모든 모델을 import하여 Sequelize가 테이블을 인식하도록 함
 import "./models/User";
@@ -51,7 +53,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   );
   res.header(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Requested-With"
+    "Content-Type, Authorization, X-Requested-With, X-User-Id"
   );
 
   // Preflight (OPTIONS) 요청은 여기서 바로 종료
@@ -156,6 +158,34 @@ app.use("/auth", authRouter);
  * Database Sync Helper
  * ---------------------------------------------------------------------------
  */
+async function ensureParticipantStatusColumn() {
+  try {
+    const queryInterface = sequelize.getQueryInterface();
+    const table = await queryInterface.describeTable("post_participants");
+
+    if (!table.participant_status) {
+      await queryInterface.addColumn(
+        "post_participants",
+        "participant_status",
+        {
+          type: DataTypes.ENUM(...PARTICIPANT_STATUSES),
+          allowNull: false,
+          defaultValue: "participating",
+        }
+      );
+      logger.info("✓ post_participants.participant_status 컬럼 추가 완료");
+      return;
+    }
+
+    logger.info("✓ post_participants.participant_status 컬럼 확인 완료");
+  } catch (error) {
+    logger.warn(
+      "post_participants.participant_status 컬럼 확인 중 경고 발생"
+    );
+    logger.warn(error, true);
+  }
+}
+
 export async function syncDatabase() {
   if (!ENV.DbForceSync) {
     logger.info("DB_FORCE_SYNC=false → 기존 데이터 유지");
@@ -167,10 +197,12 @@ export async function syncDatabase() {
       logger.warn("데이터베이스 테이블 동기화 중 경고 발생 (무시 가능)");
       logger.warn(error, true);
     }
+    await ensureParticipantStatusColumn();
     return;
   }
   try {
     await sequelize.sync({ force: true });
+    await ensureParticipantStatusColumn();
     logger.info("✓ 데이터베이스 force sync 완료");
   } catch (error) {
     logger.err("✗ 데이터베이스 동기화 실패");
