@@ -347,6 +347,215 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        PublicUserProfile: {
+          type: "object",
+          required: ["id", "nickname", "studentId", "trustGrade"],
+          description:
+            "게시글 상세 화면에 노출하는 사용자 공개 프로필. passwordHash, email, trustScore는 포함하지 않습니다.",
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              description: "사용자 UUID",
+              example: "a87522bd-bc79-47b0-a73f-46ea4068a158",
+            },
+            nickname: {
+              type: "string",
+              description: "닉네임",
+              example: "다마라 공식",
+            },
+            studentId: {
+              type: "string",
+              description: "학번",
+              example: "20241234",
+            },
+            department: {
+              type: "string",
+              nullable: true,
+              description: "학과/부서",
+              example: "생활용품 판매자",
+            },
+            avatarUrl: {
+              type: "string",
+              format: "uri",
+              nullable: true,
+              description: "프로필 이미지 URL",
+              example: "https://example.com/avatar.jpg",
+            },
+            trustGrade: {
+              type: "number",
+              format: "float",
+              description: "사용자에게 표시하는 신뢰학점",
+              minimum: 2.5,
+              maximum: 4.5,
+              example: 4.3,
+            },
+          },
+        },
+        PostParticipantProfile: {
+          type: "object",
+          required: ["id", "userId", "joinedAt", "user"],
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              description: "참여 row UUID",
+              example: "7f7b9a5c-0e86-4f93-bd11-31e9bde8a7f2",
+            },
+            userId: {
+              type: "string",
+              format: "uuid",
+              description: "참여자 사용자 UUID",
+              example: "a87522bd-bc79-47b0-a73f-46ea4068a158",
+            },
+            joinedAt: {
+              type: "string",
+              format: "date-time",
+              description: "공동구매 참여 시각",
+            },
+            user: {
+              $ref: "#/components/schemas/PublicUserProfile",
+            },
+          },
+        },
+        PostDetail: {
+          type: "object",
+          required: [
+            "id",
+            "authorId",
+            "title",
+            "content",
+            "price",
+            "minParticipants",
+            "deadline",
+            "author",
+            "participants",
+            "participantCount",
+            "isParticipant",
+          ],
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              description: "게시글 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            authorId: {
+              type: "string",
+              format: "uuid",
+              description: "작성자 UUID",
+              example: "a87522bd-bc79-47b0-a73f-46ea4068a158",
+            },
+            title: {
+              type: "string",
+              description: "상품명",
+              example: "물티슈 공동구매",
+            },
+            content: {
+              type: "string",
+              description: "상품 설명",
+              example:
+                "도톰한 엠보싱 원단으로 부드럽고 촉촉한 물티슈입니다.",
+            },
+            price: {
+              type: "number",
+              description: "가격",
+              example: 5900,
+            },
+            minParticipants: {
+              type: "integer",
+              description: "최소 참여 인원",
+              example: 3,
+            },
+            currentQuantity: {
+              type: "integer",
+              description: "현재 참여 인원",
+              example: 1,
+            },
+            status: {
+              type: "string",
+              enum: ["open", "closed", "in_progress", "completed", "cancelled"],
+              description: "상품 상태",
+              example: "open",
+            },
+            deadline: {
+              type: "string",
+              format: "date-time",
+              description: "마감 시간",
+              example: "2026-04-17T23:59:59.000Z",
+            },
+            pickupLocation: {
+              type: "string",
+              nullable: true,
+              description: "픽업 장소",
+              example: "명지대 정문앞",
+            },
+            category: {
+              type: "string",
+              nullable: true,
+              enum: [
+                "food",
+                "daily",
+                "beauty",
+                "electronics",
+                "school",
+                "freemarket",
+              ],
+              description: "카테고리 ID",
+              example: "daily",
+            },
+            images: {
+              type: "array",
+              items: {
+                type: "string",
+                description: "이미지 URL",
+              },
+              description: "이미지 URL 배열",
+              example: ["https://example.com/wipes.jpg"],
+            },
+            favoriteCount: {
+              type: "integer",
+              description: "관심 등록 수",
+              example: 12,
+            },
+            isFavorite: {
+              type: "boolean",
+              description: "현재 사용자의 관심 등록 여부",
+              example: true,
+            },
+            author: {
+              $ref: "#/components/schemas/PublicUserProfile",
+            },
+            participants: {
+              type: "array",
+              description: "현재 공동구매 참여자 공개 프로필 목록",
+              items: {
+                $ref: "#/components/schemas/PostParticipantProfile",
+              },
+            },
+            participantCount: {
+              type: "integer",
+              description: "참여자 프로필 목록 기준 참여자 수",
+              example: 2,
+            },
+            isParticipant: {
+              type: "boolean",
+              description:
+                "현재 사용자가 이 공동구매에 참여 중인지 여부. x-user-id 또는 userId가 없으면 false입니다.",
+              example: false,
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              description: "생성일시",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              description: "수정일시",
+            },
+          },
+        },
         ChatRoom: {
           type: "object",
           required: ["id", "postId"],
