@@ -2,6 +2,7 @@ import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import { Express, Request, Response, NextFunction } from "express";
 import ENV from "../common/constants/ENV";
+import { PARTICIPANT_STATUSES } from "../types/participant-status";
 
 // 환경 변수에서 API 베이스 URL 가져오기 (배포 환경에서 설정)
 const getServerUrl = () => {
@@ -347,6 +348,13 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        ParticipantStatus: {
+          type: "string",
+          enum: PARTICIPANT_STATUSES,
+          description:
+            "참여자별 진행 상태 (participating=참여중, payment_pending=입금대기, pickup_ready=수령예정, received=수령완료)",
+          example: "participating",
+        },
         PublicUserProfile: {
           type: "object",
           required: ["id", "nickname", "studentId", "trustGrade"],
@@ -408,6 +416,9 @@ const options: swaggerJsdoc.Options = {
               description: "참여자 사용자 UUID",
               example: "a87522bd-bc79-47b0-a73f-46ea4068a158",
             },
+            participantStatus: {
+              $ref: "#/components/schemas/ParticipantStatus",
+            },
             joinedAt: {
               type: "string",
               format: "date-time",
@@ -415,6 +426,139 @@ const options: swaggerJsdoc.Options = {
             },
             user: {
               $ref: "#/components/schemas/PublicUserProfile",
+            },
+          },
+        },
+        PostParticipant: {
+          type: "object",
+          required: ["id", "postId", "userId", "participantStatus"],
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              description: "참여 row UUID",
+              example: "7f7b9a5c-0e86-4f93-bd11-31e9bde8a7f2",
+            },
+            postId: {
+              type: "string",
+              format: "uuid",
+              description: "게시글 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            userId: {
+              type: "string",
+              format: "uuid",
+              description: "참여자 사용자 UUID",
+              example: "a87522bd-bc79-47b0-a73f-46ea4068a158",
+            },
+            participantStatus: {
+              $ref: "#/components/schemas/ParticipantStatus",
+            },
+            user: {
+              type: "object",
+              nullable: true,
+              properties: {
+                id: {
+                  type: "string",
+                  format: "uuid",
+                },
+                nickname: {
+                  type: "string",
+                  example: "참여자 1",
+                },
+                studentId: {
+                  type: "string",
+                  example: "20241234",
+                },
+                avatarUrl: {
+                  type: "string",
+                  format: "uri",
+                  nullable: true,
+                },
+              },
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              description: "참여 생성일시",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              description: "참여 수정일시",
+            },
+          },
+        },
+        ParticipatedPost: {
+          type: "object",
+          required: ["id", "postId", "userId", "participantStatus", "post"],
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              description: "참여 row UUID",
+              example: "7f7b9a5c-0e86-4f93-bd11-31e9bde8a7f2",
+            },
+            postId: {
+              type: "string",
+              format: "uuid",
+              description: "게시글 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            userId: {
+              type: "string",
+              format: "uuid",
+              description: "참여자 사용자 UUID",
+              example: "a87522bd-bc79-47b0-a73f-46ea4068a158",
+            },
+            participantStatus: {
+              $ref: "#/components/schemas/ParticipantStatus",
+            },
+            post: {
+              type: "object",
+              properties: {
+                id: {
+                  type: "string",
+                  format: "uuid",
+                },
+                title: {
+                  type: "string",
+                  example: "물티슈 공동구매",
+                },
+                price: {
+                  type: "number",
+                  example: 5900,
+                },
+                minParticipants: {
+                  type: "integer",
+                  example: 3,
+                },
+                status: {
+                  type: "string",
+                  enum: [
+                    "open",
+                    "closed",
+                    "in_progress",
+                    "completed",
+                    "cancelled",
+                  ],
+                  example: "open",
+                },
+                deadline: {
+                  type: "string",
+                  format: "date-time",
+                },
+              },
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              description: "참여 생성일시",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              description: "참여 수정일시",
             },
           },
         },

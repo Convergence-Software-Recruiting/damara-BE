@@ -349,6 +349,17 @@
           }
         }
       },
+      "ParticipantStatus": {
+        "type": "string",
+        "enum": [
+          "participating",
+          "payment_pending",
+          "pickup_ready",
+          "received"
+        ],
+        "description": "참여자별 진행 상태 (participating=참여중, payment_pending=입금대기, pickup_ready=수령예정, received=수령완료)",
+        "example": "participating"
+      },
       "PublicUserProfile": {
         "type": "object",
         "required": [
@@ -419,6 +430,9 @@
             "description": "참여자 사용자 UUID",
             "example": "a87522bd-bc79-47b0-a73f-46ea4068a158"
           },
+          "participantStatus": {
+            "$ref": "#/components/schemas/ParticipantStatus"
+          },
           "joinedAt": {
             "type": "string",
             "format": "date-time",
@@ -426,6 +440,150 @@
           },
           "user": {
             "$ref": "#/components/schemas/PublicUserProfile"
+          }
+        }
+      },
+      "PostParticipant": {
+        "type": "object",
+        "required": [
+          "id",
+          "postId",
+          "userId",
+          "participantStatus"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "참여 row UUID",
+            "example": "7f7b9a5c-0e86-4f93-bd11-31e9bde8a7f2"
+          },
+          "postId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "게시글 UUID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "참여자 사용자 UUID",
+            "example": "a87522bd-bc79-47b0-a73f-46ea4068a158"
+          },
+          "participantStatus": {
+            "$ref": "#/components/schemas/ParticipantStatus"
+          },
+          "user": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "nickname": {
+                "type": "string",
+                "example": "참여자 1"
+              },
+              "studentId": {
+                "type": "string",
+                "example": "20241234"
+              },
+              "avatarUrl": {
+                "type": "string",
+                "format": "uri",
+                "nullable": true
+              }
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "참여 생성일시"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "참여 수정일시"
+          }
+        }
+      },
+      "ParticipatedPost": {
+        "type": "object",
+        "required": [
+          "id",
+          "postId",
+          "userId",
+          "participantStatus",
+          "post"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "참여 row UUID",
+            "example": "7f7b9a5c-0e86-4f93-bd11-31e9bde8a7f2"
+          },
+          "postId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "게시글 UUID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "참여자 사용자 UUID",
+            "example": "a87522bd-bc79-47b0-a73f-46ea4068a158"
+          },
+          "participantStatus": {
+            "$ref": "#/components/schemas/ParticipantStatus"
+          },
+          "post": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "title": {
+                "type": "string",
+                "example": "물티슈 공동구매"
+              },
+              "price": {
+                "type": "number",
+                "example": 5900
+              },
+              "minParticipants": {
+                "type": "integer",
+                "example": 3
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "open",
+                  "closed",
+                  "in_progress",
+                  "completed",
+                  "cancelled"
+                ],
+                "example": "open"
+              },
+              "deadline": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "참여 생성일시"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "참여 수정일시"
           }
         }
       },
@@ -2282,7 +2440,17 @@
         ],
         "responses": {
           "200": {
-            "description": "참여한 게시글 목록 조회 성공"
+            "description": "참여한 게시글 목록 조회 성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ParticipatedPost"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2306,7 +2474,105 @@
         ],
         "responses": {
           "200": {
-            "description": "참여자 목록 조회 성공"
+            "description": "참여자 목록 조회 성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PostParticipant"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/posts/{id}/participants/{userId}/status": {
+      "patch": {
+        "summary": "참여자 상태 변경",
+        "description": "작성자 또는 해당 참여자 본인이 참여자별 진행 상태를 변경합니다.",
+        "tags": [
+          "Posts"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "게시글 UUID"
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "상태를 변경할 참여자 UUID"
+          },
+          {
+            "in": "header",
+            "name": "x-user-id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "상태 변경 요청자 UUID. body.actorUserId 대신 사용할 수 있습니다."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "participantStatus"
+                ],
+                "properties": {
+                  "participantStatus": {
+                    "$ref": "#/components/schemas/ParticipantStatus"
+                  },
+                  "actorUserId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "상태 변경 요청자 UUID. x-user-id 헤더를 쓰면 생략할 수 있습니다."
+                  }
+                }
+              },
+              "example": {
+                "participantStatus": "payment_pending",
+                "actorUserId": "a87522bd-bc79-47b0-a73f-46ea4068a158"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "참여자 상태 변경 성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostParticipant"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "유효성 검증 실패 또는 요청자 ID 누락"
+          },
+          "403": {
+            "description": "작성자 또는 해당 참여자가 아님"
+          },
+          "404": {
+            "description": "게시글 또는 참여 정보를 찾을 수 없음"
           }
         }
       }
