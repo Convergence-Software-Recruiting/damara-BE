@@ -17,6 +17,22 @@ type EnrichedPostListItem = PostListItem & {
   favoriteCount: number;
   isFavorite: boolean;
 };
+type PublicUserProfileSource = {
+  id: string;
+  nickname: string;
+  studentId: string;
+  department: string | null;
+  avatarUrl: string | null;
+  trustScore: number;
+};
+type PostDetailSource = Awaited<ReturnType<typeof PostRepo.findDetailById>> & {
+  author?: PublicUserProfileSource | null;
+};
+type PostParticipantProfileSource = Awaited<
+  ReturnType<typeof PostParticipantRepo.findProfilesByPostId>
+>[number] & {
+  user?: PublicUserProfileSource | null;
+};
 
 const getPostCreatedTime = (post: PostListItem) => {
   if (!post.createdAt) {
@@ -61,6 +77,19 @@ function comparePopularPosts(
   return getPostCreatedTime(b) - getPostCreatedTime(a);
 }
 
+function toPublicUserProfile(user?: PublicUserProfileSource | null) {
+  if (!user) {
+    return null;
+  }
+
+  const { trustScore, ...profile } = user;
+
+  return {
+    ...profile,
+    trustGrade: TrustService.calculateTrustGrade(Number(trustScore || 0)),
+  };
+}
+
 export const PostService = {
   /**
    * 공동구매 상품 등록
@@ -83,7 +112,7 @@ export const PostService = {
    * - favoriteCount와 isFavorite 포함
    */
   async getPostById(id: string, userId?: string) {
-    const post = await PostRepo.findById(id);
+    const post = (await PostRepo.findDetailById(id)) as PostDetailSource;
     if (!post) {
       throw new RouteError(HttpStatusCodes.NOT_FOUND, "POST_NOT_FOUND");
     }
@@ -97,10 +126,29 @@ export const PostService = {
       isFavorite = await FavoriteService.isFavorite(id, userId);
     }
 
+    const participants =
+      (await PostParticipantRepo.findProfilesByPostId(
+        id
+      )) as PostParticipantProfileSource[];
+    const participantProfiles = participants.map((participant) => ({
+      id: participant.id,
+      userId: participant.userId,
+      joinedAt: participant.createdAt,
+      user: toPublicUserProfile(participant.user),
+    }));
+    const isParticipant = userId
+      ? participants.some((participant) => participant.userId === userId)
+      : false;
+    const { author, ...postWithoutAuthor } = post;
+
     return {
-      ...post,
+      ...postWithoutAuthor,
+      author: toPublicUserProfile(author),
+      participants: participantProfiles,
+      participantCount: participantProfiles.length,
       favoriteCount,
       isFavorite,
+      isParticipant,
     };
   },
 
