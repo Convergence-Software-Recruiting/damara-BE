@@ -562,6 +562,105 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        MyPostsSummary: {
+          type: "object",
+          required: ["registered", "participated", "favorites", "meta"],
+          properties: {
+            registered: {
+              type: "object",
+              required: ["inProgress", "deadlineSoon", "completed"],
+              description: "등록한 공구 탭 상단 요약",
+              properties: {
+                inProgress: {
+                  type: "integer",
+                  description:
+                    "작성자가 등록한 활성 공구 수. open, closed, in_progress 상태를 포함합니다.",
+                  example: 3,
+                },
+                deadlineSoon: {
+                  type: "integer",
+                  description:
+                    "작성자가 등록한 모집중(open) 공구 중 deadlineSoonHours 이내 마감 수",
+                  example: 1,
+                },
+                completed: {
+                  type: "integer",
+                  description: "작성자가 등록한 거래완료 공구 수",
+                  example: 5,
+                },
+              },
+            },
+            participated: {
+              type: "object",
+              required: [
+                "participating",
+                "paymentPending",
+                "pickupReady",
+                "received",
+              ],
+              description: "참여한 공구 탭 상단 요약",
+              properties: {
+                participating: {
+                  type: "integer",
+                  description: "참여중 상태 수",
+                  example: 4,
+                },
+                paymentPending: {
+                  type: "integer",
+                  description: "입금대기 상태 수",
+                  example: 1,
+                },
+                pickupReady: {
+                  type: "integer",
+                  description: "수령예정 상태 수",
+                  example: 2,
+                },
+                received: {
+                  type: "integer",
+                  description: "수령완료 상태 수",
+                  example: 6,
+                },
+              },
+            },
+            favorites: {
+              type: "object",
+              required: ["total", "deadlineSoon", "recent"],
+              description: "관심 공구 탭 상단 요약",
+              properties: {
+                total: {
+                  type: "integer",
+                  description: "찜한 상품 전체 수",
+                  example: 8,
+                },
+                deadlineSoon: {
+                  type: "integer",
+                  description:
+                    "찜한 모집중(open) 공구 중 deadlineSoonHours 이내 마감 수",
+                  example: 2,
+                },
+                recent: {
+                  type: "integer",
+                  description: "recentDays 이내 최근 관심 등록 수",
+                  example: 3,
+                },
+              },
+            },
+            meta: {
+              type: "object",
+              required: ["deadlineSoonHours", "recentDays"],
+              properties: {
+                deadlineSoonHours: {
+                  type: "integer",
+                  example: 24,
+                },
+                recentDays: {
+                  type: "integer",
+                  example: 7,
+                },
+              },
+            },
+          },
+        },
         PostDetail: {
           type: "object",
           required: [
