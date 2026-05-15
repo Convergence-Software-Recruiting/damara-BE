@@ -27,6 +27,265 @@ src/routes/**/*.ts
 https://damara.bluerack.org/api-docs.json
 ```
 
+## 2026-05-15 - 내 공구 탭 요약 API 추가
+
+브랜치:
+
+```text
+feature/participant-status
+```
+
+변경 전 기준 커밋:
+
+```text
+d7461d0
+```
+
+### 변경 요약
+
+내 공구 화면의 세 탭 상단 카운트를 프론트엔드가 목록 전체를 내려받아 직접 세지 않아도 되도록 요약 API를 추가했다.
+
+### 추가된 API
+
+```text
+GET /api/users/{userId}/my-posts/summary
+```
+
+쿼리 파라미터:
+
+```text
+deadlineSoonHours: 마감임박 기준 시간. 기본값 24
+recentDays: 최근 추가 기준 일수. 기본값 7
+```
+
+### 응답 예시
+
+```json
+{
+  "registered": {
+    "inProgress": 3,
+    "deadlineSoon": 1,
+    "completed": 5
+  },
+  "participated": {
+    "participating": 4,
+    "paymentPending": 1,
+    "pickupReady": 2,
+    "received": 6
+  },
+  "favorites": {
+    "total": 8,
+    "deadlineSoon": 2,
+    "recent": 3
+  },
+  "meta": {
+    "deadlineSoonHours": 24,
+    "recentDays": 7
+  }
+}
+```
+
+### 집계 기준
+
+등록한 공구:
+
+```text
+inProgress = 작성자가 등록한 active 공구 수(open, closed, in_progress)
+deadlineSoon = 작성자가 등록한 모집중(open) 공구 중 현재 시각 이후 deadlineSoonHours 이내 마감
+completed = 작성자가 등록한 completed 공구 수
+```
+
+참여한 공구:
+
+```text
+participating = participantStatus participating
+paymentPending = participantStatus payment_pending
+pickupReady = participantStatus pickup_ready
+received = participantStatus received
+```
+
+관심 공구:
+
+```text
+total = 찜한 상품 전체 수
+deadlineSoon = 찜한 모집중(open) 공구 중 현재 시각 이후 deadlineSoonHours 이내 마감
+recent = recentDays 이내 관심 등록 수
+```
+
+### 프론트엔드 영향
+
+내 공구 화면 상단 카운트는 다음 값으로 바로 렌더링할 수 있다.
+
+```text
+등록한 공구: registered.inProgress, registered.deadlineSoon, registered.completed
+참여한 공구: participated.participating, participated.paymentPending, participated.received
+관심 공구: favorites.total, favorites.deadlineSoon, favorites.recent
+```
+
+`participated.pickupReady`는 카드 배지 또는 추후 상단 지표에 사용할 수 있도록 함께 내려준다.
+
+확인 명령:
+
+```bash
+curl -s "http://localhost:3000/api/users/{userId}/my-posts/summary"
+curl -s "http://localhost:3000/api/users/{userId}/my-posts/summary?deadlineSoonHours=48&recentDays=3"
+```
+
+## 2026-05-14 - 참여자별 진행 상태 API 추가
+
+브랜치:
+
+```text
+feature/participant-status
+```
+
+변경 전 기준 커밋:
+
+```text
+8953132
+```
+
+### 변경 요약
+
+내 공구 화면에서 참여자별 진행 상태를 표시하고 변경할 수 있도록 참여 row에 `participantStatus`를 추가했다.
+
+게시글 전체 진행 상태는 기존 `posts.status`를 유지하고, 사용자별 상태는 `post_participants.participant_status`를 기준으로 내려준다.
+
+### Swagger/OpenAPI 스키마 변경
+
+대상 파일:
+
+```text
+src/config/swagger.ts
+src/routes/posts/PostRoutes.ts
+```
+
+추가된 스키마:
+
+```text
+components.schemas.ParticipantStatus
+components.schemas.PostParticipant
+components.schemas.ParticipatedPost
+```
+
+변경된 스키마:
+
+```text
+components.schemas.PostParticipantProfile
+```
+
+추가된 API:
+
+```text
+PATCH /api/posts/{id}/participants/{userId}/status
+```
+
+변경된 API 응답:
+
+```text
+GET /api/posts/{id}
+GET /api/posts/{id}/participants
+GET /api/posts/user/{userId}/participated
+```
+
+### 참여 상태값
+
+```text
+participating = 참여중
+payment_pending = 입금대기
+pickup_ready = 수령예정
+received = 수령완료
+```
+
+### 신규 API 요청 예시
+
+```json
+{
+  "participantStatus": "payment_pending",
+  "actorUserId": "a87522bd-bc79-47b0-a73f-46ea4068a158"
+}
+```
+
+`actorUserId`는 `x-user-id` 헤더로도 전달할 수 있다.
+
+권한 기준:
+
+```text
+게시글 작성자 또는 해당 참여자 본인만 변경 가능
+```
+
+### API 응답 영향
+
+상세 응답의 참여자 목록:
+
+```json
+{
+  "participants": [
+    {
+      "id": "7f7b9a5c-0e86-4f93-bd11-31e9bde8a7f2",
+      "userId": "123e4567-e89b-12d3-a456-426614174000",
+      "participantStatus": "participating",
+      "joinedAt": "2026-05-14T10:00:00.000Z",
+      "user": {
+        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "nickname": "참여자 1",
+        "studentId": "20241234",
+        "department": "컴퓨터공학과",
+        "avatarUrl": null,
+        "trustGrade": 4.1
+      }
+    }
+  ]
+}
+```
+
+내 참여 공구 응답:
+
+```json
+{
+  "id": "7f7b9a5c-0e86-4f93-bd11-31e9bde8a7f2",
+  "postId": "123e4567-e89b-12d3-a456-426614174000",
+  "userId": "a87522bd-bc79-47b0-a73f-46ea4068a158",
+  "participantStatus": "payment_pending",
+  "post": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "title": "물티슈 공동구매",
+    "price": 5900,
+    "minParticipants": 3,
+    "status": "open",
+    "deadline": "2026-06-17T23:59:59.000Z"
+  }
+}
+```
+
+### 프론트엔드 영향
+
+내 공구 화면의 참여 공구 탭은 `participantStatus`로 배지를 분기한다.
+
+```text
+participating -> 참여중
+payment_pending -> 입금대기
+pickup_ready -> 수령예정
+received -> 수령완료
+```
+
+상태 변경 버튼은 다음 API를 호출한다.
+
+```bash
+curl -X PATCH "http://localhost:3000/api/posts/{postId}/participants/{userId}/status" \
+  -H "Content-Type: application/json" \
+  -d '{"participantStatus":"payment_pending","actorUserId":"{actorUserId}"}'
+```
+
+확인 명령:
+
+```bash
+curl -s "http://localhost:3000/api/posts/{postId}?userId={userId}"
+curl -s "http://localhost:3000/api/posts/{postId}/participants"
+curl -s "http://localhost:3000/api/posts/user/{userId}/participated"
+curl -s "http://localhost:3000/api-docs.json"
+```
+
 ## 2026-05-14 - 게시글 상세 응답에 작성자/참여자 프로필 추가
 
 브랜치:

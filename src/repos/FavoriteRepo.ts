@@ -5,6 +5,7 @@ import PostModel from "../models/Post";
 import UserModel from "../models/User";
 import { RouteError } from "../common/util/route-errors";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
+import { Op } from "sequelize";
 
 export const FavoriteRepo = {
   /**
@@ -118,5 +119,41 @@ export const FavoriteRepo = {
       where: { userId },
     });
   },
-};
 
+  /**
+   * 사용자 관심 공구 중 마감임박 게시글 수 조회
+   */
+  async countDeadlineSoonByUserId(userId: string, from: Date, to: Date) {
+    return await FavoriteModel.count({
+      where: { userId },
+      include: [
+        {
+          model: PostModel,
+          as: "post",
+          required: true,
+          where: {
+            status: "open",
+            deadline: {
+              [Op.gte]: from,
+              [Op.lte]: to,
+            },
+          },
+        },
+      ],
+    });
+  },
+
+  /**
+   * 사용자가 최근 관심 등록한 공구 수 조회
+   */
+  async countRecentByUserId(userId: string, since: Date) {
+    return await FavoriteModel.count({
+      where: {
+        userId,
+        createdAt: {
+          [Op.gte]: since,
+        },
+      },
+    });
+  },
+};

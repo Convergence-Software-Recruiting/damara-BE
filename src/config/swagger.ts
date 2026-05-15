@@ -2,6 +2,7 @@ import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import { Express, Request, Response, NextFunction } from "express";
 import ENV from "../common/constants/ENV";
+import { PARTICIPANT_STATUSES } from "../types/participant-status";
 
 // 환경 변수에서 API 베이스 URL 가져오기 (배포 환경에서 설정)
 const getServerUrl = () => {
@@ -347,6 +348,13 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        ParticipantStatus: {
+          type: "string",
+          enum: PARTICIPANT_STATUSES,
+          description:
+            "참여자별 진행 상태 (participating=참여중, payment_pending=입금대기, pickup_ready=수령예정, received=수령완료)",
+          example: "participating",
+        },
         PublicUserProfile: {
           type: "object",
           required: ["id", "nickname", "studentId", "trustGrade"],
@@ -408,6 +416,9 @@ const options: swaggerJsdoc.Options = {
               description: "참여자 사용자 UUID",
               example: "a87522bd-bc79-47b0-a73f-46ea4068a158",
             },
+            participantStatus: {
+              $ref: "#/components/schemas/ParticipantStatus",
+            },
             joinedAt: {
               type: "string",
               format: "date-time",
@@ -415,6 +426,238 @@ const options: swaggerJsdoc.Options = {
             },
             user: {
               $ref: "#/components/schemas/PublicUserProfile",
+            },
+          },
+        },
+        PostParticipant: {
+          type: "object",
+          required: ["id", "postId", "userId", "participantStatus"],
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              description: "참여 row UUID",
+              example: "7f7b9a5c-0e86-4f93-bd11-31e9bde8a7f2",
+            },
+            postId: {
+              type: "string",
+              format: "uuid",
+              description: "게시글 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            userId: {
+              type: "string",
+              format: "uuid",
+              description: "참여자 사용자 UUID",
+              example: "a87522bd-bc79-47b0-a73f-46ea4068a158",
+            },
+            participantStatus: {
+              $ref: "#/components/schemas/ParticipantStatus",
+            },
+            user: {
+              type: "object",
+              nullable: true,
+              properties: {
+                id: {
+                  type: "string",
+                  format: "uuid",
+                },
+                nickname: {
+                  type: "string",
+                  example: "참여자 1",
+                },
+                studentId: {
+                  type: "string",
+                  example: "20241234",
+                },
+                avatarUrl: {
+                  type: "string",
+                  format: "uri",
+                  nullable: true,
+                },
+              },
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              description: "참여 생성일시",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              description: "참여 수정일시",
+            },
+          },
+        },
+        ParticipatedPost: {
+          type: "object",
+          required: ["id", "postId", "userId", "participantStatus", "post"],
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              description: "참여 row UUID",
+              example: "7f7b9a5c-0e86-4f93-bd11-31e9bde8a7f2",
+            },
+            postId: {
+              type: "string",
+              format: "uuid",
+              description: "게시글 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            userId: {
+              type: "string",
+              format: "uuid",
+              description: "참여자 사용자 UUID",
+              example: "a87522bd-bc79-47b0-a73f-46ea4068a158",
+            },
+            participantStatus: {
+              $ref: "#/components/schemas/ParticipantStatus",
+            },
+            post: {
+              type: "object",
+              properties: {
+                id: {
+                  type: "string",
+                  format: "uuid",
+                },
+                title: {
+                  type: "string",
+                  example: "물티슈 공동구매",
+                },
+                price: {
+                  type: "number",
+                  example: 5900,
+                },
+                minParticipants: {
+                  type: "integer",
+                  example: 3,
+                },
+                status: {
+                  type: "string",
+                  enum: [
+                    "open",
+                    "closed",
+                    "in_progress",
+                    "completed",
+                    "cancelled",
+                  ],
+                  example: "open",
+                },
+                deadline: {
+                  type: "string",
+                  format: "date-time",
+                },
+              },
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              description: "참여 생성일시",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              description: "참여 수정일시",
+            },
+          },
+        },
+        MyPostsSummary: {
+          type: "object",
+          required: ["registered", "participated", "favorites", "meta"],
+          properties: {
+            registered: {
+              type: "object",
+              required: ["inProgress", "deadlineSoon", "completed"],
+              description: "등록한 공구 탭 상단 요약",
+              properties: {
+                inProgress: {
+                  type: "integer",
+                  description:
+                    "작성자가 등록한 활성 공구 수. open, closed, in_progress 상태를 포함합니다.",
+                  example: 3,
+                },
+                deadlineSoon: {
+                  type: "integer",
+                  description:
+                    "작성자가 등록한 모집중(open) 공구 중 deadlineSoonHours 이내 마감 수",
+                  example: 1,
+                },
+                completed: {
+                  type: "integer",
+                  description: "작성자가 등록한 거래완료 공구 수",
+                  example: 5,
+                },
+              },
+            },
+            participated: {
+              type: "object",
+              required: [
+                "participating",
+                "paymentPending",
+                "pickupReady",
+                "received",
+              ],
+              description: "참여한 공구 탭 상단 요약",
+              properties: {
+                participating: {
+                  type: "integer",
+                  description: "참여중 상태 수",
+                  example: 4,
+                },
+                paymentPending: {
+                  type: "integer",
+                  description: "입금대기 상태 수",
+                  example: 1,
+                },
+                pickupReady: {
+                  type: "integer",
+                  description: "수령예정 상태 수",
+                  example: 2,
+                },
+                received: {
+                  type: "integer",
+                  description: "수령완료 상태 수",
+                  example: 6,
+                },
+              },
+            },
+            favorites: {
+              type: "object",
+              required: ["total", "deadlineSoon", "recent"],
+              description: "관심 공구 탭 상단 요약",
+              properties: {
+                total: {
+                  type: "integer",
+                  description: "찜한 상품 전체 수",
+                  example: 8,
+                },
+                deadlineSoon: {
+                  type: "integer",
+                  description:
+                    "찜한 모집중(open) 공구 중 deadlineSoonHours 이내 마감 수",
+                  example: 2,
+                },
+                recent: {
+                  type: "integer",
+                  description: "recentDays 이내 최근 관심 등록 수",
+                  example: 3,
+                },
+              },
+            },
+            meta: {
+              type: "object",
+              required: ["deadlineSoonHours", "recentDays"],
+              properties: {
+                deadlineSoonHours: {
+                  type: "integer",
+                  example: 24,
+                },
+                recentDays: {
+                  type: "integer",
+                  example: 7,
+                },
+              },
             },
           },
         },

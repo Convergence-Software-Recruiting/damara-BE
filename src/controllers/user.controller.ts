@@ -22,6 +22,16 @@ import {
   LoginReq,
 } from "../routes/common/validation/user-schemas";
 
+function parsePositiveInteger(value: unknown, fallback: number) {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  if (rawValue === undefined || rawValue === null) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(String(rawValue), 10);
+  return Number.isNaN(parsed) || parsed <= 0 ? fallback : parsed;
+}
+
 /**
  * 회원가입
  * POST /api/users
@@ -167,6 +177,34 @@ export async function getUserTrustEvents(
     const result = await TrustService.listEventsByUserId(id, limit, offset);
 
     res.status(HttpStatusCodes.OK).json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 내 공구 화면 상단 요약 조회
+ * GET /api/users/:userId/my-posts/summary
+ */
+export async function getMyPostsSummary(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { userId } = req.params;
+    const deadlineSoonHours = parsePositiveInteger(
+      req.query.deadlineSoonHours,
+      24
+    );
+    const recentDays = parsePositiveInteger(req.query.recentDays, 7);
+
+    const summary = await UserService.getMyPostsSummary(userId, {
+      deadlineSoonHours,
+      recentDays,
+    });
+
+    res.status(HttpStatusCodes.OK).json(summary);
   } catch (error) {
     next(error);
   }
