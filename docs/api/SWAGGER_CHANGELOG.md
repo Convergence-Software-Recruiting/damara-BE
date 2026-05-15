@@ -27,6 +27,110 @@ src/routes/**/*.ts
 https://damara.bluerack.org/api-docs.json
 ```
 
+## 2026-05-15 - 내 공구 탭 요약 API 추가
+
+브랜치:
+
+```text
+feature/participant-status
+```
+
+변경 전 기준 커밋:
+
+```text
+d7461d0
+```
+
+### 변경 요약
+
+내 공구 화면의 세 탭 상단 카운트를 프론트엔드가 목록 전체를 내려받아 직접 세지 않아도 되도록 요약 API를 추가했다.
+
+### 추가된 API
+
+```text
+GET /api/users/{userId}/my-posts/summary
+```
+
+쿼리 파라미터:
+
+```text
+deadlineSoonHours: 마감임박 기준 시간. 기본값 24
+recentDays: 최근 추가 기준 일수. 기본값 7
+```
+
+### 응답 예시
+
+```json
+{
+  "registered": {
+    "inProgress": 3,
+    "deadlineSoon": 1,
+    "completed": 5
+  },
+  "participated": {
+    "participating": 4,
+    "paymentPending": 1,
+    "pickupReady": 2,
+    "received": 6
+  },
+  "favorites": {
+    "total": 8,
+    "deadlineSoon": 2,
+    "recent": 3
+  },
+  "meta": {
+    "deadlineSoonHours": 24,
+    "recentDays": 7
+  }
+}
+```
+
+### 집계 기준
+
+등록한 공구:
+
+```text
+inProgress = 작성자가 등록한 active 공구 수(open, closed, in_progress)
+deadlineSoon = 작성자가 등록한 모집중(open) 공구 중 현재 시각 이후 deadlineSoonHours 이내 마감
+completed = 작성자가 등록한 completed 공구 수
+```
+
+참여한 공구:
+
+```text
+participating = participantStatus participating
+paymentPending = participantStatus payment_pending
+pickupReady = participantStatus pickup_ready
+received = participantStatus received
+```
+
+관심 공구:
+
+```text
+total = 찜한 상품 전체 수
+deadlineSoon = 찜한 모집중(open) 공구 중 현재 시각 이후 deadlineSoonHours 이내 마감
+recent = recentDays 이내 관심 등록 수
+```
+
+### 프론트엔드 영향
+
+내 공구 화면 상단 카운트는 다음 값으로 바로 렌더링할 수 있다.
+
+```text
+등록한 공구: registered.inProgress, registered.deadlineSoon, registered.completed
+참여한 공구: participated.participating, participated.paymentPending, participated.received
+관심 공구: favorites.total, favorites.deadlineSoon, favorites.recent
+```
+
+`participated.pickupReady`는 카드 배지 또는 추후 상단 지표에 사용할 수 있도록 함께 내려준다.
+
+확인 명령:
+
+```bash
+curl -s "http://localhost:3000/api/users/{userId}/my-posts/summary"
+curl -s "http://localhost:3000/api/users/{userId}/my-posts/summary?deadlineSoonHours=48&recentDays=3"
+```
+
 ## 2026-05-14 - 참여자별 진행 상태 API 추가
 
 브랜치:
