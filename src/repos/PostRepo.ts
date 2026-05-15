@@ -204,6 +204,41 @@ export const PostRepo = {
   },
 
   /**
+   * 작성자별 상태 카운트 조회
+   */
+  async countByAuthorIdAndStatuses(authorId: string, statuses: string[]) {
+    return await PostModel.count({
+      where: {
+        authorId,
+        status: {
+          [Op.in]: statuses,
+        },
+      },
+    });
+  },
+
+  /**
+   * 작성자별 마감임박 게시글 수 조회
+   * - 모집중(open) 게시글 중 현재 시각 이후, 기준 시간 이내 마감만 포함
+   */
+  async countDeadlineSoonByAuthorId(
+    authorId: string,
+    from: Date,
+    to: Date
+  ) {
+    return await PostModel.count({
+      where: {
+        authorId,
+        status: "open",
+        deadline: {
+          [Op.gte]: from,
+          [Op.lte]: to,
+        },
+      },
+    });
+  },
+
+  /**
    * 부분 업데이트
    */
   async update(id: string, patch: Partial<PostCreationAttributes>) {

@@ -11,6 +11,14 @@ import {
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
 import bcrypt from "bcrypt";
 import { TrustService } from "./TrustService";
+import { PostRepo } from "../repos/PostRepo";
+import { FavoriteRepo } from "../repos/FavoriteRepo";
+import { PostParticipantRepo } from "../repos/PostParticipantRepo";
+
+type MyPostsSummaryOptions = {
+  deadlineSoonHours: number;
+  recentDays: number;
+};
 
 export const UserService = {
   /**
@@ -112,6 +120,79 @@ export const UserService = {
     });
 
     return event.nextScore;
+  },
+
+  /**
+   * 내 공구 화면 상단 요약 카운트
+   */
+  async getMyPostsSummary(userId: string, options: MyPostsSummaryOptions) {
+    const user = await UserRepo.findById(userId);
+    if (!user) {
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "USER_NOT_FOUND");
+    }
+
+    const now = new Date();
+    const deadlineSoonUntil = new Date(
+      now.getTime() + options.deadlineSoonHours * 60 * 60 * 1000
+    );
+    const recentSince = new Date(
+      now.getTime() - options.recentDays * 24 * 60 * 60 * 1000
+    );
+
+    const [
+      registeredInProgress,
+      registeredDeadlineSoon,
+      registeredCompleted,
+      participatedParticipating,
+      participatedPaymentPending,
+      participatedPickupReady,
+      participatedReceived,
+      favoriteTotal,
+      favoriteDeadlineSoon,
+      favoriteRecent,
+    ] = await Promise.all([
+      PostRepo.countByAuthorIdAndStatuses(userId, [
+        "open",
+        "closed",
+        "in_progress",
+      ]),
+      PostRepo.countDeadlineSoonByAuthorId(
+        userId,
+        now,
+        deadlineSoonUntil
+      ),
+      PostRepo.countByAuthorIdAndStatuses(userId, ["completed"]),
+      PostParticipantRepo.countByUserIdAndStatus(userId, "participating"),
+      PostParticipantRepo.countByUserIdAndStatus(userId, "payment_pending"),
+      PostParticipantRepo.countByUserIdAndStatus(userId, "pickup_ready"),
+      PostParticipantRepo.countByUserIdAndStatus(userId, "received"),
+      FavoriteRepo.countByUserId(userId),
+      FavoriteRepo.countDeadlineSoonByUserId(userId, now, deadlineSoonUntil),
+      FavoriteRepo.countRecentByUserId(userId, recentSince),
+    ]);
+
+    return {
+      registered: {
+        inProgress: registeredInProgress,
+        deadlineSoon: registeredDeadlineSoon,
+        completed: registeredCompleted,
+      },
+      participated: {
+        participating: participatedParticipating,
+        paymentPending: participatedPaymentPending,
+        pickupReady: participatedPickupReady,
+        received: participatedReceived,
+      },
+      favorites: {
+        total: favoriteTotal,
+        deadlineSoon: favoriteDeadlineSoon,
+        recent: favoriteRecent,
+      },
+      meta: {
+        deadlineSoonHours: options.deadlineSoonHours,
+        recentDays: options.recentDays,
+      },
+    };
   },
 
   /**

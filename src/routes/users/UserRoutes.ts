@@ -8,6 +8,7 @@ import {
   deleteUser,
   login,
   getUserTrustEvents,
+  getMyPostsSummary,
 } from "../../controllers/user.controller";
 import { getFavorites } from "../../controllers/favorite.controller";
 
@@ -217,6 +218,46 @@ userRouter.post("/login", login);
  */
 // GET /api/users/:userId/favorites - 내가 관심 등록한 게시글 목록 조회 (더 구체적인 라우트를 먼저 배치)
 userRouter.get("/:userId/favorites", getFavorites);
+
+/**
+ * @swagger
+ * /api/users/{userId}/my-posts/summary:
+ *   get:
+ *     summary: 내 공구 화면 상단 요약 조회
+ *     description: 등록한 공구, 참여한 공구, 관심 공구 탭 상단에 표시할 카운트를 한 번에 조회합니다.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 사용자 UUID
+ *       - in: query
+ *         name: deadlineSoonHours
+ *         schema:
+ *           type: integer
+ *           default: 24
+ *         description: 마감임박으로 볼 현재 시각 이후 시간 범위
+ *       - in: query
+ *         name: recentDays
+ *         schema:
+ *           type: integer
+ *           default: 7
+ *         description: 최근 추가로 볼 관심 등록 기준 일수
+ *     responses:
+ *       200:
+ *         description: 내 공구 요약 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MyPostsSummary'
+ *       404:
+ *         description: 사용자를 찾을 수 없음
+ */
+// GET /api/users/:userId/my-posts/summary - 내 공구 탭 상단 요약 조회
+userRouter.get("/:userId/my-posts/summary", getMyPostsSummary);
 
 /**
  * @swagger

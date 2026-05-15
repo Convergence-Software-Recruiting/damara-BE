@@ -136,6 +136,18 @@ export const PostParticipantRepo = {
   },
 
   /**
+   * 사용자별 참여 상태 카운트 조회
+   */
+  async countByUserIdAndStatus(
+    userId: string,
+    participantStatus: ParticipantStatus
+  ) {
+    return await PostParticipantModel.count({
+      where: { userId, participantStatus },
+    });
+  },
+
+  /**
    * 참여자별 진행 상태 변경
    */
   async updateStatus(
