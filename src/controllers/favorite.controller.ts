@@ -44,11 +44,9 @@ export async function removeFavorite(
   try {
     const { postId, userId } = req.params;
 
-    await FavoriteService.removeFavorite(postId, userId);
+    const favorite = await FavoriteService.removeFavorite(postId, userId);
 
-    res.status(HttpStatusCodes.OK).json({
-      message: "관심 해제되었습니다.",
-    });
+    res.status(HttpStatusCodes.OK).json(favorite);
   } catch (error) {
     next(error);
   }
@@ -99,4 +97,3 @@ export async function getFavorites(
     next(error);
   }
 }
-

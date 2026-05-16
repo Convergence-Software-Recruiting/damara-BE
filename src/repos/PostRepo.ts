@@ -5,8 +5,77 @@ import PostImageModel from "../models/PostImage";
 import UserModel from "../models/User";
 import { RouteError } from "../common/util/route-errors";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
-import { Op, Order } from "sequelize";
+import { literal, Op, Order } from "sequelize";
 import { PostListOptions } from "../types/post-list";
+
+const CATEGORY_SEARCH_LABELS: Record<string, string[]> = {
+  food: ["food", "먹거리"],
+  daily: ["daily", "생활용품", "일상용품"],
+  beauty: ["beauty", "뷰티", "패션", "뷰티·패션", "뷰티・패션"],
+  electronics: ["electronics", "전자기기"],
+  school: ["school", "학용품"],
+  freemarket: ["freemarket", "프리마켓"],
+};
+
+function findCategoryValuesByKeyword(keyword: string) {
+  const normalizedKeyword = keyword.toLowerCase();
+
+  return Object.entries(CATEGORY_SEARCH_LABELS)
+    .filter(([category, labels]) => {
+      const values = [category, ...labels].map((label) => label.toLowerCase());
+      return values.some(
+        (label) =>
+          label.includes(normalizedKeyword) ||
+          normalizedKeyword.includes(label)
+      );
+    })
+    .map(([category]) => category);
+}
+
+function buildPostListWhere(options: PostListOptions = {}) {
+  const { category, status, keyword } = options;
+  const whereClause: any = {};
+
+  if (
+    category &&
+    category !== null &&
+    category !== undefined &&
+    String(category).trim() !== ""
+  ) {
+    whereClause.category = String(category).trim();
+  }
+
+  if (status) {
+    whereClause.status = status;
+  }
+
+  const normalizedKeyword =
+    keyword && String(keyword).trim() !== ""
+      ? String(keyword).trim()
+      : null;
+
+  if (normalizedKeyword) {
+    const keywordFilters: any[] = [
+      { title: { [Op.like]: `%${normalizedKeyword}%` } },
+      { content: { [Op.like]: `%${normalizedKeyword}%` } },
+      { pickupLocation: { [Op.like]: `%${normalizedKeyword}%` } },
+      { category: { [Op.like]: `%${normalizedKeyword}%` } },
+    ];
+    const categoryValues = findCategoryValuesByKeyword(normalizedKeyword);
+
+    if (categoryValues.length > 0) {
+      keywordFilters.push({
+        category: {
+          [Op.in]: categoryValues,
+        },
+      });
+    }
+
+    whereClause[Op.or] = keywordFilters;
+  }
+
+  return whereClause;
+}
 
 export const PostRepo = {
   /**
@@ -99,50 +168,14 @@ export const PostRepo = {
     const {
       limit = 20,
       offset = 0,
-      category,
-      status,
-      keyword,
       sort = "latest",
     } = options;
-    const whereClause: any = {};
-
-    // category가 제공되고 빈 문자열이 아닐 때만 필터링
-    if (
-      category &&
-      category !== null &&
-      category !== undefined &&
-      String(category).trim() !== ""
-    ) {
-      const categoryValue = String(category).trim();
-      whereClause.category = categoryValue;
-      console.log("PostRepo.list - 카테고리 필터링:", {
-        요청카테고리: categoryValue,
-        whereClause카테고리: whereClause.category,
-      });
-    } else {
-      console.log("PostRepo.list - 전체 조회 (카테고리 없음)");
-    }
-
-    if (status) {
-      whereClause.status = status;
-    }
-
-    const normalizedKeyword =
-      keyword && String(keyword).trim() !== ""
-        ? String(keyword).trim()
-        : null;
-
-    if (normalizedKeyword) {
-      whereClause[Op.or] = [
-        { title: { [Op.like]: `%${normalizedKeyword}%` } },
-        { content: { [Op.like]: `%${normalizedKeyword}%` } },
-        { pickupLocation: { [Op.like]: `%${normalizedKeyword}%` } },
-      ];
-    }
+    const whereClause = buildPostListWhere(options);
 
     const order: Order =
       sort === "deadline"
         ? [
+            [literal("CASE WHEN deadline >= NOW() THEN 0 ELSE 1 END"), "ASC"],
             ["deadline", "ASC"],
             ["createdAt", "DESC"],
           ]
@@ -170,15 +203,16 @@ export const PostRepo = {
 
     const result = posts.map((p) => p.get());
 
-    // 디버깅: 조회된 게시글들의 카테고리 확인
-    if (whereClause.category) {
-      console.log(
-        "PostRepo.list - 조회된 게시글 카테고리:",
-        result.map((p) => ({ id: p.id, title: p.title, category: p.category }))
-      );
-    }
-
     return result;
+  },
+
+  /**
+   * 목록 필터 기준 전체 개수 조회
+   */
+  async count(options: PostListOptions = {}) {
+    return await PostModel.count({
+      where: buildPostListWhere(options),
+    });
   },
 
   /**

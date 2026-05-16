@@ -8,7 +8,14 @@ export const FavoriteService = {
    * 관심 등록
    */
   async addFavorite(postId: string, userId: string) {
-    return await FavoriteRepo.create({ postId, userId });
+    const favorite = await FavoriteRepo.create({ postId, userId });
+    const favoriteCount = await this.getFavoriteCount(postId);
+
+    return {
+      ...favorite,
+      isFavorite: true,
+      favoriteCount,
+    };
   },
 
   /**
@@ -16,6 +23,13 @@ export const FavoriteService = {
    */
   async removeFavorite(postId: string, userId: string) {
     await FavoriteRepo.delete(postId, userId);
+    const favoriteCount = await this.getFavoriteCount(postId);
+
+    return {
+      message: "관심 해제되었습니다.",
+      isFavorite: false,
+      favoriteCount,
+    };
   },
 
   /**
@@ -35,6 +49,8 @@ export const FavoriteService = {
     return {
       favorites,
       total,
+      limit,
+      offset,
     };
   },
 
@@ -45,4 +61,3 @@ export const FavoriteService = {
     return await FavoriteRepo.countByPostId(postId);
   },
 };
-

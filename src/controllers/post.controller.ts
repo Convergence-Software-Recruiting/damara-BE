@@ -108,7 +108,7 @@ export async function getAllPosts(
       sort: sortValue as PostListSort,
       status: statusValue as PostListStatus | undefined,
     });
-    logger.info(`getAllPosts - 반환된 게시글 수: ${posts.length}`);
+    logger.info(`getAllPosts - 반환된 게시글 수: ${posts.items.length}`);
 
     res.status(HttpStatusCodes.OK).json(posts);
   } catch (error) {
@@ -343,15 +343,12 @@ export async function joinPost(
       });
     }
 
-    const participant = await PostParticipantService.joinPost(id, userId);
-    const post = await PostService.getPostById(id);
+    await PostParticipantService.joinPost(id, userId);
+    const post = await PostService.getParticipationPostSnapshot(id);
 
     res.status(HttpStatusCodes.CREATED).json({
-      participant,
-      post: {
-        ...post,
-        currentQuantity: post.currentQuantity,
-      },
+      isParticipant: true,
+      post,
     });
   } catch (error) {
     next(error);
@@ -371,13 +368,11 @@ export async function leavePost(
     const { id, userId } = req.params;
 
     await PostParticipantService.leavePost(id, userId);
-    const post = await PostService.getPostById(id);
+    const post = await PostService.getParticipationPostSnapshot(id);
 
     res.status(HttpStatusCodes.OK).json({
-      post: {
-        ...post,
-        currentQuantity: post.currentQuantity,
-      },
+      isParticipant: false,
+      post,
     });
   } catch (error) {
     next(error);
