@@ -27,6 +27,145 @@ src/routes/**/*.ts
 https://damara.bluerack.org/api-docs.json
 ```
 
+## 2026-05-16 - Post UI 계약 응답 보강
+
+브랜치:
+
+```text
+feature/post-ui-contract
+```
+
+변경 전 기준 커밋:
+
+```text
+26bbce5
+```
+
+### 변경 요약
+
+홈, 카테고리, 검색, 상세, 참여, 찜 화면이 카드 상태를 별도 API 조합 없이 렌더링할 수 있도록 Post 관련 응답 계약을 보강했다.
+
+### 변경된 API
+
+```text
+GET /api/posts
+GET /api/posts/{id}
+POST /api/posts/{id}/participate
+DELETE /api/posts/{id}/participate/{userId}
+POST /api/posts/{postId}/favorite
+DELETE /api/posts/{postId}/favorite/{userId}
+```
+
+### GET /api/posts 응답 변경
+
+기존에는 배열을 직접 반환했다.
+
+```json
+[
+  {
+    "id": "postId"
+  }
+]
+```
+
+변경 후에는 페이지 메타데이터를 포함한 객체를 반환한다.
+
+```json
+{
+  "items": [
+    {
+      "id": "postId",
+      "favoriteCount": 12,
+      "isFavorite": true,
+      "isParticipant": false,
+      "isOwner": false,
+      "thumbnailUrl": "https://example.com/image.jpg",
+      "deadlineStatus": "closingSoon",
+      "deadlineLabel": "오늘 마감",
+      "remainingSeconds": 3600
+    }
+  ],
+  "total": 42,
+  "limit": 20,
+  "offset": 0,
+  "hasNext": true
+}
+```
+
+### GET /api/posts/{id} 응답 추가 필드
+
+상세 응답에 다음 필드를 추가했다.
+
+```text
+isOwner
+thumbnailUrl
+participantsPreview
+participantsTotal
+deadlineStatus
+deadlineLabel
+remainingSeconds
+```
+
+기존 `author`, `participants`, `favoriteCount`, `isFavorite`, `isParticipant`는 유지한다.
+
+### 참여/참여취소 응답 변경
+
+참여 후 프론트가 진행률을 즉시 갱신할 수 있도록 최소 게시글 스냅샷을 반환한다.
+
+```json
+{
+  "isParticipant": true,
+  "post": {
+    "id": "postId",
+    "currentQuantity": 2,
+    "minParticipants": 3,
+    "status": "open"
+  }
+}
+```
+
+참여 취소는 `isParticipant`가 `false`로 내려간다.
+
+### 찜 등록/해제 응답 변경
+
+카드와 상세의 하트 상태 및 관심 수를 즉시 갱신할 수 있도록 최신 카운트를 반환한다.
+
+```json
+{
+  "isFavorite": true,
+  "favoriteCount": 13
+}
+```
+
+찜 해제는 `isFavorite`가 `false`로 내려간다.
+
+### 정렬 기준 변경
+
+`sort=deadline`은 마감 전 게시글을 먼저 보여준 뒤 `deadline ASC`, `createdAt DESC` 순서로 정렬한다.
+
+`sort=popular` 기준을 프론트 요구에 맞춰 다음 순서로 확정했다.
+
+```text
+currentQuantity DESC
+favoriteCount DESC
+createdAt DESC
+```
+
+### 검색 기준 보강
+
+`keyword`/`q` 검색은 기존 `title`, `content`, `pickupLocation`에 더해 카테고리 ID와 주요 한글 라벨도 매칭한다.
+
+### 프론트엔드 영향
+
+`GET /api/posts`는 배열에서 객체로 바뀌므로 프론트엔드에서 `response.items`를 사용해야 한다. 카드 UI는 `thumbnailUrl`, `isFavorite`, `isParticipant`, `isOwner`, `deadlineStatus`, `deadlineLabel`, `remainingSeconds`를 직접 사용할 수 있다.
+
+### 확인 명령
+
+```bash
+curl -s "http://localhost:3000/api/posts?status=open&sort=latest&limit=20&offset=0&userId={userId}"
+curl -s "http://localhost:3000/api/posts/{postId}?userId={userId}"
+```
+
 ## 2026-05-15 - 내 공구 탭 요약 API 추가
 
 브랜치:
