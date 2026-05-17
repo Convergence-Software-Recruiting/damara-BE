@@ -16,6 +16,7 @@ export interface PostAttributes {
   id: string;
   authorId: string; // users.id와 외래키 관계
   title: string;
+  productName: string | null;
   content: string;
   price: number;
   minParticipants: number; // 최소 인원 수
@@ -23,6 +24,13 @@ export interface PostAttributes {
   status: "open" | "closed" | "in_progress" | "completed" | "cancelled";
   deadline: Date;
   pickupLocation: string | null;
+  pickupDate: string | null;
+  pickupStartTime: string | null;
+  pickupEndTime: string | null;
+  pickupGuide: string | null;
+  groupBuyType: string | null;
+  tags: string[] | null;
+  notice: string | null;
   category: string | null; // 카테고리 ID (food, daily, beauty, electronics, school, freemarket)
   createdAt?: Date;
   updatedAt?: Date;
@@ -35,10 +43,18 @@ export interface PostAttributes {
 export type PostCreationAttributes = Optional<
   PostAttributes,
   | "id"
+  | "productName"
   // | "minParticipants"
   | "currentQuantity"
   | "status"
   // | "pickupLocation"
+  | "pickupDate"
+  | "pickupStartTime"
+  | "pickupEndTime"
+  | "pickupGuide"
+  | "groupBuyType"
+  | "tags"
+  | "notice"
   | "createdAt"
   | "updatedAt"
 >;
@@ -55,6 +71,7 @@ export class PostModel
   public id!: string;
   public authorId!: string;
   public title!: string;
+  public productName!: string | null;
   public content!: string;
   public price!: number;
   public minParticipants!: number;
@@ -62,6 +79,13 @@ export class PostModel
   public status!: "open" | "closed" | "in_progress" | "completed" | "cancelled";
   public deadline!: Date;
   public pickupLocation!: string | null;
+  public pickupDate!: string | null;
+  public pickupStartTime!: string | null;
+  public pickupEndTime!: string | null;
+  public pickupGuide!: string | null;
+  public groupBuyType!: string | null;
+  public tags!: string[] | null;
+  public notice!: string | null;
   public category!: string | null;
 
   public readonly createdAt!: Date;
@@ -93,6 +117,13 @@ PostModel.init(
     title: {
       type: DataTypes.STRING(200),
       allowNull: false,
+    },
+
+    productName: {
+      type: DataTypes.STRING(200),
+      allowNull: true,
+      defaultValue: null,
+      field: "product_name",
     },
 
     content: {
@@ -140,6 +171,53 @@ PostModel.init(
       type: DataTypes.STRING(200),
       allowNull: true,
       field: "pickup_location",
+    },
+
+    pickupDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+      defaultValue: null,
+      field: "pickup_date",
+    },
+
+    pickupStartTime: {
+      type: DataTypes.TIME,
+      allowNull: true,
+      defaultValue: null,
+      field: "pickup_start_time",
+    },
+
+    pickupEndTime: {
+      type: DataTypes.TIME,
+      allowNull: true,
+      defaultValue: null,
+      field: "pickup_end_time",
+    },
+
+    pickupGuide: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      defaultValue: null,
+      field: "pickup_guide",
+    },
+
+    groupBuyType: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      defaultValue: null,
+      field: "group_buy_type",
+    },
+
+    tags: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: null,
+    },
+
+    notice: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      defaultValue: null,
     },
 
     category: {

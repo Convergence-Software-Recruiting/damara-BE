@@ -186,6 +186,92 @@ async function ensureParticipantStatusColumn() {
   }
 }
 
+async function ensurePostUiDetailColumns() {
+  const columns = [
+    {
+      name: "product_name",
+      definition: {
+        type: DataTypes.STRING(200),
+        allowNull: true,
+        defaultValue: null,
+      },
+    },
+    {
+      name: "pickup_date",
+      definition: {
+        type: DataTypes.DATEONLY,
+        allowNull: true,
+        defaultValue: null,
+      },
+    },
+    {
+      name: "pickup_start_time",
+      definition: {
+        type: DataTypes.TIME,
+        allowNull: true,
+        defaultValue: null,
+      },
+    },
+    {
+      name: "pickup_end_time",
+      definition: {
+        type: DataTypes.TIME,
+        allowNull: true,
+        defaultValue: null,
+      },
+    },
+    {
+      name: "pickup_guide",
+      definition: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        defaultValue: null,
+      },
+    },
+    {
+      name: "group_buy_type",
+      definition: {
+        type: DataTypes.STRING(50),
+        allowNull: true,
+        defaultValue: null,
+      },
+    },
+    {
+      name: "tags",
+      definition: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        defaultValue: null,
+      },
+    },
+    {
+      name: "notice",
+      definition: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        defaultValue: null,
+      },
+    },
+  ] as const;
+
+  try {
+    const queryInterface = sequelize.getQueryInterface();
+    const table = await queryInterface.describeTable("posts");
+
+    for (const column of columns) {
+      if (!table[column.name]) {
+        await queryInterface.addColumn("posts", column.name, column.definition);
+        logger.info(`✓ posts.${column.name} 컬럼 추가 완료`);
+      }
+    }
+
+    logger.info("✓ posts UI 상세 컬럼 확인 완료");
+  } catch (error) {
+    logger.warn("posts UI 상세 컬럼 확인 중 경고 발생");
+    logger.warn(error, true);
+  }
+}
+
 export async function syncDatabase() {
   if (!ENV.DbForceSync) {
     logger.info("DB_FORCE_SYNC=false → 기존 데이터 유지");
@@ -198,11 +284,13 @@ export async function syncDatabase() {
       logger.warn(error, true);
     }
     await ensureParticipantStatusColumn();
+    await ensurePostUiDetailColumns();
     return;
   }
   try {
     await sequelize.sync({ force: true });
     await ensureParticipantStatusColumn();
+    await ensurePostUiDetailColumns();
     logger.info("✓ 데이터베이스 force sync 완료");
   } catch (error) {
     logger.err("✗ 데이터베이스 동기화 실패");
