@@ -238,6 +238,15 @@ export const PostParticipantRepo = {
   },
 
   /**
+   * 사용자별 전체 참여 공구 수 조회
+   */
+  async countByUserId(userId: string) {
+    return await PostParticipantModel.count({
+      where: { userId },
+    });
+  },
+
+  /**
    * 참여자별 진행 상태 변경
    */
   async updateStatus(

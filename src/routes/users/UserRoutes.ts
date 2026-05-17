@@ -8,6 +8,7 @@ import {
   deleteUser,
   login,
   getUserTrustEvents,
+  getUserSummary,
   getMyPostsSummary,
   getMyPosts,
 } from "../../controllers/user.controller";
@@ -348,6 +349,34 @@ userRouter.get("/:userId/my-posts", getMyPosts);
  */
 // GET /api/users/:userId/my-posts/summary - 내 공구 탭 상단 요약 조회
 userRouter.get("/:userId/my-posts/summary", getMyPostsSummary);
+
+/**
+ * @swagger
+ * /api/users/{id}/summary:
+ *   get:
+ *     summary: 마이페이지 통합 요약 조회
+ *     description: 마이페이지 첫 렌더링에 필요한 사용자 기본 정보, 공구/채팅/알림 카운트, 신뢰 요약을 한 번에 조회합니다.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 사용자 UUID
+ *     responses:
+ *       200:
+ *         description: 마이페이지 요약 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserSummaryResponse'
+ *       404:
+ *         description: 사용자를 찾을 수 없음
+ */
+// GET /api/users/:id/summary - 마이페이지 통합 요약 조회
+userRouter.get("/:id/summary", getUserSummary);
 
 /**
  * @swagger

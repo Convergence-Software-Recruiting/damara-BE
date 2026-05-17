@@ -207,6 +207,25 @@ export async function getUserTrustEvents(
 }
 
 /**
+ * 마이페이지 통합 요약 조회
+ * GET /api/users/:id/summary
+ */
+export async function getUserSummary(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+    const summary = await UserService.getUserSummary(id);
+
+    res.status(HttpStatusCodes.OK).json(summary);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * 내 공구 화면 상단 요약 조회
  * GET /api/users/:userId/my-posts/summary
  */

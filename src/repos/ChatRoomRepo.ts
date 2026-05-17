@@ -131,4 +131,35 @@ export const ChatRoomRepo = {
 
     return chatRooms.map((cr) => cr.get());
   },
+
+  /**
+   * 사용자가 접근할 수 있는 채팅방 ID 목록 조회
+   * - 사용자가 작성했거나 참여한 게시글의 채팅방만 포함
+   */
+  async findIdsByUserId(userId: string) {
+    const { PostParticipantRepo } = await import("./PostParticipantRepo");
+
+    const participants = await PostParticipantRepo.findByUserId(userId);
+    const participantPostIds = participants.map((p) => p.postId);
+
+    const authoredPosts = await PostModel.findAll({
+      where: { authorId: userId },
+      attributes: ["id"],
+    });
+    const authoredPostIds = authoredPosts.map((p) => p.id);
+
+    const postIds = [...new Set([...participantPostIds, ...authoredPostIds])];
+    if (postIds.length === 0) {
+      return [];
+    }
+
+    const chatRooms = await ChatRoomModel.findAll({
+      where: {
+        postId: postIds,
+      },
+      attributes: ["id"],
+    });
+
+    return chatRooms.map((chatRoom) => chatRoom.id);
+  },
 };

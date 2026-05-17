@@ -71,6 +71,25 @@ export const MessageRepo = {
   },
 
   /**
+   * 여러 채팅방에서 특정 사용자가 읽지 않은 메시지 수 조회
+   */
+  async countUnreadMessagesByChatRoomIds(chatRoomIds: string[], userId: string) {
+    if (chatRoomIds.length === 0) {
+      return 0;
+    }
+
+    return await MessageModel.count({
+      where: {
+        chatRoomId: {
+          [Op.in]: chatRoomIds,
+        },
+        senderId: { [Op.ne]: userId },
+        isRead: false,
+      },
+    });
+  },
+
+  /**
    * 메시지 읽음 처리
    */
   async markAsRead(messageId: string, userId: string) {
