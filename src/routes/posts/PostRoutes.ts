@@ -176,6 +176,12 @@ postRouter.get("/student/:studentId", getPostsByStudentId);
  *                     maxLength: 200
  *                     example: "맛있는 치킨 공동구매"
  *                     description: 상품명
+ *                   productName:
+ *                     type: string
+ *                     maxLength: 200
+ *                     nullable: true
+ *                     example: "BBQ 황금올리브치킨 2마리 세트"
+ *                     description: 상세/등록 UI 상품명. 없으면 title을 fallback으로 사용합니다.
  *                   content:
  *                     type: string
  *                     minLength: 1
@@ -201,6 +207,44 @@ postRouter.get("/student/:studentId", getPostsByStudentId);
  *                     maxLength: 200
  *                     example: "명지대학교 정문"
  *                     description: 픽업 장소
+ *                   pickupDate:
+ *                     type: string
+ *                     format: date
+ *                     nullable: true
+ *                     example: "2026-06-17"
+ *                     description: 수령 날짜 (YYYY-MM-DD)
+ *                   pickupStartTime:
+ *                     type: string
+ *                     nullable: true
+ *                     example: "17:00"
+ *                     description: 수령 시작 시간 (HH:mm 또는 HH:mm:ss)
+ *                   pickupEndTime:
+ *                     type: string
+ *                     nullable: true
+ *                     example: "19:00"
+ *                     description: 수령 종료 시간 (HH:mm 또는 HH:mm:ss)
+ *                   pickupGuide:
+ *                     type: string
+ *                     nullable: true
+ *                     example: "정문 앞 파란 우산 근처에서 수령해 주세요."
+ *                     description: 수령 안내
+ *                   groupBuyType:
+ *                     type: string
+ *                     nullable: true
+ *                     example: "campus_pickup"
+ *                     description: 공구 방식/유형
+ *                   tags:
+ *                     type: array
+ *                     nullable: true
+ *                     items:
+ *                       type: string
+ *                     example: ["대용량", "생활용품"]
+ *                     description: 공구 태그 목록
+ *                   notice:
+ *                     type: string
+ *                     nullable: true
+ *                     example: "입금 확인 후 주문 예정입니다."
+ *                     description: 상세 화면 공지사항
  *                   category:
  *                     type: string
  *                     enum: [food, daily, beauty, electronics, school, freemarket]
@@ -218,11 +262,19 @@ postRouter.get("/student/:studentId", getPostsByStudentId);
  *             post:
  *               authorId: "a87522bd-bc79-47b0-a73f-46ea4068a158"
  *               title: "맛있는 치킨 공동구매"
+ *               productName: "BBQ 황금올리브치킨 2마리 세트"
  *               content: "BBQ 황금올리브치킨 2마리 세트를 함께 주문하실 분 구합니다!"
  *               price: 25000
  *               minParticipants: 2
  *               deadline: "2025-11-27T23:59:59.000Z"
  *               pickupLocation: "명지대학교 정문"
+ *               pickupDate: "2026-06-17"
+ *               pickupStartTime: "17:00"
+ *               pickupEndTime: "19:00"
+ *               pickupGuide: "정문 앞 파란 우산 근처에서 수령해 주세요."
+ *               groupBuyType: "campus_pickup"
+ *               tags: ["대용량", "생활용품"]
+ *               notice: "입금 확인 후 주문 예정입니다."
  *               category: "food"
  *               images: ["https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=400"]
  *     responses:
@@ -264,6 +316,9 @@ postRouter.post("/", createPost);
  *                 properties:
  *                   title:
  *                     type: string
+ *                   productName:
+ *                     type: string
+ *                     nullable: true
  *                   content:
  *                     type: string
  *                   price:
@@ -278,6 +333,30 @@ postRouter.post("/", createPost);
  *                     format: date-time
  *                   pickupLocation:
  *                     type: string
+ *                   pickupDate:
+ *                     type: string
+ *                     format: date
+ *                     nullable: true
+ *                   pickupStartTime:
+ *                     type: string
+ *                     nullable: true
+ *                   pickupEndTime:
+ *                     type: string
+ *                     nullable: true
+ *                   pickupGuide:
+ *                     type: string
+ *                     nullable: true
+ *                   groupBuyType:
+ *                     type: string
+ *                     nullable: true
+ *                   tags:
+ *                     type: array
+ *                     nullable: true
+ *                     items:
+ *                       type: string
+ *                   notice:
+ *                     type: string
+ *                     nullable: true
  *                   category:
  *                     type: string
  *                     enum: [food, daily, beauty, electronics, school, freemarket]
@@ -290,6 +369,7 @@ postRouter.post("/", createPost);
  *           example:
  *             post:
  *               title: "수정된 제목"
+ *               productName: "수정된 상품명"
  *               category: "daily"
  *     responses:
  *       200:

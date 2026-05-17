@@ -52,6 +52,10 @@ type PostParticipantProfileSource = Awaited<
 >[number] & {
   user?: PublicUserProfileSource | null;
 };
+type ProductNamedPost = {
+  title: string;
+  productName?: string | null;
+};
 
 const getPostCreatedTime = (post: PostListItem) => {
   if (!post.createdAt) {
@@ -114,6 +118,13 @@ function getDeadlineMeta(deadline: Date | string) {
   };
 }
 
+function withProductNameFallback<T extends ProductNamedPost>(post: T) {
+  return {
+    ...post,
+    productName: post.productName ?? post.title,
+  };
+}
+
 function toPostSnapshot(post: Pick<PostListItem, "id" | "currentQuantity" | "minParticipants" | "status">) {
   return {
     id: post.id,
@@ -135,7 +146,7 @@ async function enrichPostListItem(
   const isOwner = userId ? post.authorId === userId : false;
 
   return {
-    ...post,
+    ...withProductNameFallback(post),
     favoriteCount,
     isFavorite,
     isParticipant,
@@ -190,7 +201,8 @@ export const PostService = {
     }
 
     const post = await PostRepo.create(data, imageUrls);
-    return post?.get();
+    const plainPost = post?.get();
+    return plainPost ? withProductNameFallback(plainPost) : plainPost;
   },
 
   /**
@@ -237,7 +249,7 @@ export const PostService = {
     });
 
     return {
-      ...postWithoutAuthor,
+      ...withProductNameFallback(postWithoutAuthor),
       author: toPublicUserProfile(author),
       participants: participantProfiles,
       participantCount: participantProfiles.length,
@@ -320,7 +332,8 @@ export const PostService = {
    * 작성자 ID로 조회
    */
   async listPostsByAuthor(authorId: string, limit = 20, offset = 0) {
-    return await PostRepo.findByAuthorId(authorId, limit, offset);
+    const posts = await PostRepo.findByAuthorId(authorId, limit, offset);
+    return posts.map((post) => withProductNameFallback(post));
   },
 
   /**
@@ -332,7 +345,8 @@ export const PostService = {
     if (!author) {
       throw new RouteError(HttpStatusCodes.NOT_FOUND, "AUTHOR_NOT_FOUND");
     }
-    return await PostRepo.findByAuthorId(author.id, limit, offset);
+    const posts = await PostRepo.findByAuthorId(author.id, limit, offset);
+    return posts.map((post) => withProductNameFallback(post));
   },
 
   /**
@@ -477,7 +491,7 @@ export const PostService = {
       }
     }
 
-    return newPost;
+    return withProductNameFallback(newPost);
   },
 
   /**
@@ -575,7 +589,7 @@ export const PostService = {
       }
     }
 
-    return newPost;
+    return newPost ? withProductNameFallback(newPost) : newPost;
   },
 
   /**

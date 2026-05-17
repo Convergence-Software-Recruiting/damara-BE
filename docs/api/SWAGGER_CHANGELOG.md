@@ -27,6 +27,102 @@ src/routes/**/*.ts
 https://damara.bluerack.org/api-docs.json
 ```
 
+## 2026-05-16 - Post 등록/상세 UI 필드 확장
+
+브랜치:
+
+```text
+feature/post-detail-fields
+```
+
+변경 전 기준 커밋:
+
+```text
+0b16e89
+```
+
+### 변경 요약
+
+공동구매 등록/상세 화면에서 사용하는 상품명, 수령 일정, 수령 안내, 공구 유형, 태그, 공지 필드를 Post 요청/응답 계약에 추가했다.
+
+기존 `title`, `deadline`, `pickupLocation`, `content`는 유지하며, 새 필드는 모두 nullable/optional로 열어 기존 클라이언트 요청과 기존 데이터와의 호환성을 유지한다.
+
+### 변경된 API
+
+```text
+GET /api/posts
+GET /api/posts/{id}
+POST /api/posts
+PUT /api/posts/{id}
+PATCH /api/posts/{id}/status
+GET /api/posts/student/{studentId}
+GET /api/users/{userId}/favorites
+```
+
+### 요청 바디 변경
+
+`POST /api/posts`, `PUT /api/posts/{id}`의 `post` 객체에 다음 필드가 추가된다.
+
+```text
+productName
+pickupDate
+pickupStartTime
+pickupEndTime
+pickupGuide
+groupBuyType
+tags
+notice
+```
+
+예시:
+
+```json
+{
+  "post": {
+    "authorId": "a87522bd-bc79-47b0-a73f-46ea4068a158",
+    "title": "물티슈 공동구매",
+    "productName": "도톰한 엠보싱 물티슈 100매",
+    "content": "100매 대용량 물티슈를 함께 구매합니다.",
+    "price": 5900,
+    "minParticipants": 3,
+    "deadline": "2026-06-17T23:59:59.000Z",
+    "pickupLocation": "명지대 정문앞",
+    "pickupDate": "2026-06-18",
+    "pickupStartTime": "17:00",
+    "pickupEndTime": "19:00",
+    "pickupGuide": "정문 앞 파란 우산 근처에서 수령해 주세요.",
+    "groupBuyType": "campus_pickup",
+    "tags": ["대용량", "생활용품"],
+    "notice": "입금 확인 후 주문 예정입니다.",
+    "category": "daily"
+  }
+}
+```
+
+### 응답 스키마 변경
+
+`components.schemas.Post`, `components.schemas.PostDetail`에 같은 필드가 추가된다.
+
+`productName`은 기존 게시글처럼 값이 비어 있는 경우 응답에서 `title`을 fallback으로 내려준다.
+
+### 검색 영향
+
+`GET /api/posts?q=` 검색 대상이 다음 필드까지 확장된다.
+
+```text
+productName
+pickupGuide
+notice
+```
+
+### 프론트엔드 영향
+
+등록/수정 화면은 새 필드를 그대로 전송할 수 있다.
+
+상세 화면은 수령 날짜/시간/안내/공지/태그를 별도 API 없이 `GET /api/posts/{id}` 응답에서 표시할 수 있다.
+
+기존 클라이언트가 새 필드를 보내지 않아도 서버는 기존 `title`, `deadline`, `pickupLocation`, `content` 기반으로 계속 동작한다.
+
 ## 2026-05-16 - Post UI 계약 응답 보강
 
 브랜치:
