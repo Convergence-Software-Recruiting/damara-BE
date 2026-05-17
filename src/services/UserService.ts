@@ -14,7 +14,10 @@ import { TrustService } from "./TrustService";
 import { PostRepo } from "../repos/PostRepo";
 import { FavoriteRepo } from "../repos/FavoriteRepo";
 import { PostParticipantRepo } from "../repos/PostParticipantRepo";
+import { NotificationRepo } from "../repos/NotificationRepo";
+import { TrustEventRepo } from "../repos/TrustEventRepo";
 import { PostService } from "./PostService";
+import { ChatService } from "./ChatService";
 import { PostListOptions, PostListStatus } from "../types/post-list";
 import {
   MY_POSTS_TABS,
@@ -25,6 +28,7 @@ import {
   PARTICIPANT_STATUS_LABELS,
   ParticipantStatus,
 } from "../types/participant-status";
+import { TrustEventType } from "../models/TrustEvent";
 
 type MyPostsSummaryOptions = {
   deadlineSoonHours: number;
@@ -211,6 +215,77 @@ function getRegisteredMyPostStatus(post: any, deadlineSoonHours: number) {
   return "inProgress";
 }
 
+function getTrustLabel(trustGrade: number) {
+  if (trustGrade >= 4.3) {
+    return "신뢰도 좋은 거래 파트너예요";
+  }
+
+  if (trustGrade >= 3.8) {
+    return "안정적으로 거래할 수 있어요";
+  }
+
+  if (trustGrade >= 3.2) {
+    return "거래 이력을 쌓는 중이에요";
+  }
+
+  return "거래 전 약속을 한 번 더 확인해 주세요";
+}
+
+function getTrustBadges(trustGrade: number, cancelCount: number, noShowCount: number) {
+  const badges: string[] = [];
+
+  if (trustGrade >= 4.3) {
+    badges.push("꼼꼼해요", "친절해요", "약속시간 잘 지켜요");
+  } else if (trustGrade >= 3.8) {
+    badges.push("응답이 안정적이에요", "거래가 원활해요");
+  } else {
+    badges.push("거래 이력 확인 필요");
+  }
+
+  if (cancelCount === 0 && noShowCount === 0) {
+    badges.push("취소 이력 적음");
+  }
+
+  return [...new Set(badges)].slice(0, 4);
+}
+
+function calculateResponseRate(
+  completedTradeCount: number,
+  cancelCount: number,
+  noShowCount: number
+) {
+  const total = completedTradeCount + cancelCount + noShowCount;
+  if (total === 0) {
+    return 100;
+  }
+
+  return Math.max(0, Math.round((completedTradeCount / total) * 100));
+}
+
+function isMissingTrustEventTableError(error: unknown) {
+  const dbError = error as {
+    parent?: { code?: string };
+    original?: { code?: string };
+  };
+  const code = dbError.parent?.code || dbError.original?.code;
+  return code === "ER_NO_SUCH_TABLE" || code === "42P01";
+}
+
+async function countTrustEventsSafely(
+  userId: string,
+  types: TrustEventType[]
+) {
+  try {
+    return await TrustEventRepo.countByUserIdAndTypes(userId, types);
+  } catch (error) {
+    if (isMissingTrustEventTableError(error)) {
+      return 0;
+    }
+
+    throw error;
+  }
+}
+
 export const UserService = {
   /**
    * 회원가입 기능
@@ -311,6 +386,99 @@ export const UserService = {
     });
 
     return event.nextScore;
+  },
+
+  /**
+   * 마이페이지 첫 화면 통합 요약
+   */
+  async getUserSummary(userId: string) {
+    const user = await UserRepo.findById(userId);
+    if (!user) {
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "USER_NOT_FOUND");
+    }
+
+    const completedEventTypes: TrustEventType[] = [
+      "post_completed_author",
+      "post_completed_participant",
+    ];
+    const cancelEventTypes: TrustEventType[] = [
+      "post_cancelled_by_author",
+      "post_deleted_by_author",
+      "participant_cancelled",
+    ];
+
+    const [
+      createdPostCount,
+      participatedPostCount,
+      favoriteCount,
+      unreadChatCount,
+      unreadNotificationCount,
+      completedAuthoredPostCount,
+      receivedParticipationCount,
+      completedEventCount,
+      cancelCount,
+      noShowCount,
+    ] = await Promise.all([
+      PostRepo.count({ authorId: userId }),
+      PostParticipantRepo.countByUserId(userId),
+      FavoriteRepo.countByUserId(userId),
+      ChatService.getUnreadMessageCountByUserId(userId),
+      NotificationRepo.getUnreadCount(userId),
+      PostRepo.count({ authorId: userId, status: "completed" }),
+      PostParticipantRepo.countByUserIdAndStatus(userId, "received"),
+      countTrustEventsSafely(userId, completedEventTypes),
+      countTrustEventsSafely(userId, cancelEventTypes),
+      countTrustEventsSafely(userId, ["participant_no_show"]),
+    ]);
+
+    const userWithTrustGrade = TrustService.withTrustGrade({
+      id: user.id,
+      nickname: user.nickname,
+      studentId: user.studentId,
+      department: user.department,
+      avatarUrl: user.avatarUrl,
+      trustScore: user.trustScore,
+    });
+    const completedTradeCount = Math.max(
+      completedAuthoredPostCount + receivedParticipationCount,
+      completedEventCount
+    );
+    const responseRate = calculateResponseRate(
+      completedTradeCount,
+      cancelCount,
+      noShowCount
+    );
+
+    return {
+      user: {
+        id: userWithTrustGrade.id,
+        nickname: userWithTrustGrade.nickname,
+        studentId: userWithTrustGrade.studentId,
+        department: userWithTrustGrade.department ?? null,
+        avatarUrl: userWithTrustGrade.avatarUrl ?? null,
+        trustScore: userWithTrustGrade.trustScore,
+        trustGrade: userWithTrustGrade.trustGrade,
+      },
+      counts: {
+        createdPostCount,
+        participatedPostCount,
+        favoriteCount,
+        unreadChatCount,
+        unreadNotificationCount,
+      },
+      trust: {
+        label: getTrustLabel(userWithTrustGrade.trustGrade),
+        badges: getTrustBadges(
+          userWithTrustGrade.trustGrade,
+          cancelCount,
+          noShowCount
+        ),
+        completedTradeCount,
+        responseRate,
+        cancelCount,
+        noShowCount,
+      },
+    };
   },
 
   /**

@@ -117,6 +117,17 @@ export const ChatService = {
   },
 
   /**
+   * 사용자가 접근 가능한 모든 채팅방의 읽지 않은 메시지 총합
+   */
+  async getUnreadMessageCountByUserId(userId: string) {
+    const chatRoomIds = await ChatRoomRepo.findIdsByUserId(userId);
+    return await MessageRepo.countUnreadMessagesByChatRoomIds(
+      chatRoomIds,
+      userId
+    );
+  },
+
+  /**
    * 채팅방 삭제
    */
   async deleteChatRoom(id: string) {

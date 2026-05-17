@@ -129,6 +129,147 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        UserSummaryResponse: {
+          type: "object",
+          required: ["user", "counts", "trust"],
+          properties: {
+            user: {
+              type: "object",
+              required: [
+                "id",
+                "nickname",
+                "studentId",
+                "trustScore",
+                "trustGrade",
+              ],
+              description:
+                "마이페이지 상단 프로필용 사용자 요약. passwordHash와 email은 포함하지 않습니다.",
+              properties: {
+                id: {
+                  type: "string",
+                  format: "uuid",
+                  example: "a87522bd-bc79-47b0-a73f-46ea4068a158",
+                },
+                nickname: {
+                  type: "string",
+                  example: "노승민",
+                },
+                studentId: {
+                  type: "string",
+                  example: "20241234",
+                },
+                department: {
+                  type: "string",
+                  nullable: true,
+                  example: "컴퓨터공학과",
+                },
+                avatarUrl: {
+                  type: "string",
+                  format: "uri",
+                  nullable: true,
+                  example: "https://example.com/avatar.jpg",
+                },
+                trustScore: {
+                  type: "integer",
+                  description: "내부 신뢰점수",
+                  example: 86,
+                },
+                trustGrade: {
+                  type: "number",
+                  format: "float",
+                  description: "사용자 표시용 신뢰학점",
+                  example: 4.3,
+                },
+              },
+            },
+            counts: {
+              type: "object",
+              required: [
+                "createdPostCount",
+                "participatedPostCount",
+                "favoriteCount",
+                "unreadChatCount",
+                "unreadNotificationCount",
+              ],
+              properties: {
+                createdPostCount: {
+                  type: "integer",
+                  description: "사용자가 등록한 공구 수",
+                  example: 5,
+                },
+                participatedPostCount: {
+                  type: "integer",
+                  description: "사용자가 참여한 공구 수",
+                  example: 2,
+                },
+                favoriteCount: {
+                  type: "integer",
+                  description: "사용자가 찜한 공구 수",
+                  example: 8,
+                },
+                unreadChatCount: {
+                  type: "integer",
+                  description: "사용자가 접근 가능한 채팅방의 읽지 않은 메시지 총합",
+                  example: 3,
+                },
+                unreadNotificationCount: {
+                  type: "integer",
+                  description: "읽지 않은 알림 수",
+                  example: 4,
+                },
+              },
+            },
+            trust: {
+              type: "object",
+              required: [
+                "label",
+                "badges",
+                "completedTradeCount",
+                "responseRate",
+                "cancelCount",
+                "noShowCount",
+              ],
+              properties: {
+                label: {
+                  type: "string",
+                  description: "신뢰 카드 표시 문구",
+                  example: "신뢰도 좋은 거래 파트너예요",
+                },
+                badges: {
+                  type: "array",
+                  description: "신뢰 카드 표시용 배지",
+                  items: {
+                    type: "string",
+                  },
+                  example: ["꼼꼼해요", "친절해요", "약속시간 잘 지켜요"],
+                },
+                completedTradeCount: {
+                  type: "integer",
+                  description: "완료된 거래 수",
+                  example: 12,
+                },
+                responseRate: {
+                  type: "integer",
+                  description:
+                    "현재 데이터 기준 완료 거래 비율. 완료/취소/노쇼 이력으로 계산합니다.",
+                  minimum: 0,
+                  maximum: 100,
+                  example: 92,
+                },
+                cancelCount: {
+                  type: "integer",
+                  description: "취소 관련 신뢰 이벤트 수",
+                  example: 1,
+                },
+                noShowCount: {
+                  type: "integer",
+                  description: "노쇼 확정 이벤트 수",
+                  example: 0,
+                },
+              },
+            },
+          },
+        },
         TrustEvent: {
           type: "object",
           required: [

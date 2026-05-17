@@ -27,6 +27,82 @@ src/routes/**/*.ts
 https://damara.bluerack.org/api-docs.json
 ```
 
+## 2026-05-17 - 마이페이지 통합 요약 API 추가
+
+브랜치:
+
+```text
+feature/user-summary-api
+```
+
+변경 전 기준 커밋:
+
+```text
+617845b
+```
+
+### 변경 요약
+
+마이페이지 첫 렌더링에 필요한 사용자 프로필, 공구/채팅/알림 카운트, 신뢰 요약을 한 번에 조회할 수 있도록 신규 API를 추가했다.
+
+기존에는 프론트엔드가 `GET /api/users/{id}`, `GET /api/users/{userId}/my-posts/summary`, 채팅방 목록, 알림 unread API 등을 조합해야 했다.
+
+### 신규 API
+
+```text
+GET /api/users/{id}/summary
+```
+
+### 응답 스키마
+
+신규 `UserSummaryResponse` 스키마를 추가했다.
+
+```json
+{
+  "user": {
+    "id": "a87522bd-bc79-47b0-a73f-46ea4068a158",
+    "nickname": "노승민",
+    "studentId": "20241234",
+    "department": "컴퓨터공학과",
+    "avatarUrl": "https://example.com/avatar.jpg",
+    "trustScore": 86,
+    "trustGrade": 4.3
+  },
+  "counts": {
+    "createdPostCount": 5,
+    "participatedPostCount": 2,
+    "favoriteCount": 8,
+    "unreadChatCount": 3,
+    "unreadNotificationCount": 4
+  },
+  "trust": {
+    "label": "신뢰도 좋은 거래 파트너예요",
+    "badges": ["꼼꼼해요", "친절해요", "약속시간 잘 지켜요"],
+    "completedTradeCount": 12,
+    "responseRate": 92,
+    "cancelCount": 1,
+    "noShowCount": 0
+  }
+}
+```
+
+### 프론트엔드 영향
+
+마이페이지 상단 프로필, 공구 카운트, unread badge, 신뢰도 카드는 `GET /api/users/{id}/summary` 하나로 구성할 수 있다.
+
+`user` 객체에는 `passwordHash`와 `email`을 포함하지 않는다. 사용자 화면에서는 `trustGrade`를 우선 표시하고, `trustScore`는 내부 정책 점수 확인이 필요한 경우에만 사용한다.
+
+`responseRate`는 현재 별도 응답 시간 데이터가 없으므로 완료/취소/노쇼 이력 기반 완료 거래 비율로 계산한다.
+
+### 검증 방법
+
+```bash
+npm run build
+npm run openapi:generate
+npm run openapi:lint
+curl -s "http://localhost:3000/api/users/{id}/summary"
+```
+
 ## 2026-05-17 - 내 공구 탭별 리스트 API 추가
 
 브랜치:

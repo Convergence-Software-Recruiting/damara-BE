@@ -1,6 +1,7 @@
 // src/repos/TrustEventRepo.ts
 
-import TrustEventModel from "../models/TrustEvent";
+import TrustEventModel, { TrustEventType } from "../models/TrustEvent";
+import { Op } from "sequelize";
 
 export const TrustEventRepo = {
   async findByUserId(userId: string, limit = 20, offset = 0) {
@@ -17,6 +18,17 @@ export const TrustEventRepo = {
   async countByUserId(userId: string) {
     return await TrustEventModel.count({
       where: { userId },
+    });
+  },
+
+  async countByUserIdAndTypes(userId: string, types: TrustEventType[]) {
+    return await TrustEventModel.count({
+      where: {
+        userId,
+        type: {
+          [Op.in]: types,
+        },
+      },
     });
   },
 };
