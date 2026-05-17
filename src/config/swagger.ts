@@ -293,6 +293,13 @@ const options: swaggerJsdoc.Options = {
               description: "상품명",
               example: "맛있는 치킨 공동구매",
             },
+            productName: {
+              type: "string",
+              nullable: true,
+              description:
+                "상세/등록 UI의 상품명 필드. 값이 없으면 응답에서 title을 fallback으로 사용합니다.",
+              example: "BBQ 황금올리브치킨 2마리 세트",
+            },
             content: {
               type: "string",
               description: "상품 설명",
@@ -331,6 +338,52 @@ const options: swaggerJsdoc.Options = {
               nullable: true,
               description: "픽업 장소",
               example: "명지대학교 정문",
+            },
+            pickupDate: {
+              type: "string",
+              format: "date",
+              nullable: true,
+              description: "수령 날짜 (YYYY-MM-DD)",
+              example: "2026-06-17",
+            },
+            pickupStartTime: {
+              type: "string",
+              nullable: true,
+              description: "수령 시작 시간 (HH:mm 또는 HH:mm:ss)",
+              example: "17:00",
+            },
+            pickupEndTime: {
+              type: "string",
+              nullable: true,
+              description: "수령 종료 시간 (HH:mm 또는 HH:mm:ss)",
+              example: "19:00",
+            },
+            pickupGuide: {
+              type: "string",
+              nullable: true,
+              description: "수령 안내 문구",
+              example: "정문 앞 파란 우산 근처에서 수령해 주세요.",
+            },
+            groupBuyType: {
+              type: "string",
+              nullable: true,
+              description: "공구 방식/유형. 프론트 선택값을 문자열로 저장합니다.",
+              example: "campus_pickup",
+            },
+            tags: {
+              type: "array",
+              nullable: true,
+              description: "공구 태그 목록",
+              items: {
+                type: "string",
+              },
+              example: ["대용량", "생활용품"],
+            },
+            notice: {
+              type: "string",
+              nullable: true,
+              description: "상세 화면 공지사항",
+              example: "입금 확인 후 주문 예정입니다.",
             },
             category: {
               type: "string",
@@ -816,6 +869,13 @@ const options: swaggerJsdoc.Options = {
               description: "상품명",
               example: "물티슈 공동구매",
             },
+            productName: {
+              type: "string",
+              nullable: true,
+              description:
+                "상세/등록 UI의 상품명 필드. 값이 없으면 응답에서 title을 fallback으로 사용합니다.",
+              example: "도톰한 엠보싱 물티슈 100매",
+            },
             content: {
               type: "string",
               description: "상품 설명",
@@ -854,6 +914,52 @@ const options: swaggerJsdoc.Options = {
               nullable: true,
               description: "픽업 장소",
               example: "명지대 정문앞",
+            },
+            pickupDate: {
+              type: "string",
+              format: "date",
+              nullable: true,
+              description: "수령 날짜 (YYYY-MM-DD)",
+              example: "2026-04-17",
+            },
+            pickupStartTime: {
+              type: "string",
+              nullable: true,
+              description: "수령 시작 시간 (HH:mm 또는 HH:mm:ss)",
+              example: "17:00",
+            },
+            pickupEndTime: {
+              type: "string",
+              nullable: true,
+              description: "수령 종료 시간 (HH:mm 또는 HH:mm:ss)",
+              example: "19:00",
+            },
+            pickupGuide: {
+              type: "string",
+              nullable: true,
+              description: "수령 안내 문구",
+              example: "정문 앞에서 신청자 이름 확인 후 전달합니다.",
+            },
+            groupBuyType: {
+              type: "string",
+              nullable: true,
+              description: "공구 방식/유형. 프론트 선택값을 문자열로 저장합니다.",
+              example: "campus_pickup",
+            },
+            tags: {
+              type: "array",
+              nullable: true,
+              description: "공구 태그 목록",
+              items: {
+                type: "string",
+              },
+              example: ["대용량", "생활용품"],
+            },
+            notice: {
+              type: "string",
+              nullable: true,
+              description: "상세 화면 공지사항",
+              example: "입금 확인 후 주문 예정입니다.",
             },
             category: {
               type: "string",
