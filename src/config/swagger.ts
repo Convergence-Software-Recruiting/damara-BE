@@ -737,6 +737,135 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        MyPostsListItem: {
+          allOf: [
+            {
+              $ref: "#/components/schemas/Post",
+            },
+            {
+              type: "object",
+              required: ["myPostTab", "myPostRole", "myPostStatus"],
+              properties: {
+                myPostTab: {
+                  type: "string",
+                  enum: ["registered", "participated", "favorites"],
+                  description: "내 공구 탭 구분",
+                  example: "participated",
+                },
+                myPostRole: {
+                  type: "string",
+                  enum: ["owner", "participant", "favorite"],
+                  description: "현재 사용자와 카드의 관계",
+                  example: "participant",
+                },
+                myPostStatus: {
+                  type: "string",
+                  description:
+                    "탭별 카드 상태. registered는 inProgress/deadlineSoon/completed/cancelled, participated는 participantStatus, favorites는 favorite/deadlineSoon/recent 또는 요청 상태값입니다.",
+                  example: "payment_pending",
+                },
+                participantId: {
+                  type: "string",
+                  format: "uuid",
+                  nullable: true,
+                  description: "참여 탭에서만 내려가는 참여 row UUID",
+                },
+                participantStatus: {
+                  allOf: [
+                    {
+                      $ref: "#/components/schemas/ParticipantStatus",
+                    },
+                  ],
+                  nullable: true,
+                  description: "참여 탭에서만 내려가는 참여자별 진행 상태",
+                },
+                participantStatusLabel: {
+                  type: "string",
+                  nullable: true,
+                  description: "참여 상태 한글 라벨",
+                  example: "입금대기",
+                },
+                participatedAt: {
+                  type: "string",
+                  format: "date-time",
+                  nullable: true,
+                  description: "참여한 시각",
+                },
+                favoriteId: {
+                  type: "string",
+                  format: "uuid",
+                  nullable: true,
+                  description: "관심 탭에서만 내려가는 관심 row UUID",
+                },
+                favoritedAt: {
+                  type: "string",
+                  format: "date-time",
+                  nullable: true,
+                  description: "관심 등록 시각",
+                },
+              },
+            },
+          ],
+        },
+        MyPostsListResponse: {
+          type: "object",
+          required: ["tab", "items", "total", "limit", "offset", "hasNext", "filters"],
+          properties: {
+            tab: {
+              type: "string",
+              enum: ["registered", "participated", "favorites"],
+              example: "registered",
+            },
+            items: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/MyPostsListItem",
+              },
+            },
+            total: {
+              type: "integer",
+              description: "필터 조건에 맞는 전체 카드 수",
+              example: 12,
+            },
+            limit: {
+              type: "integer",
+              example: 20,
+            },
+            offset: {
+              type: "integer",
+              example: 0,
+            },
+            hasNext: {
+              type: "boolean",
+              example: true,
+            },
+            filters: {
+              type: "object",
+              properties: {
+                status: {
+                  type: "string",
+                  nullable: true,
+                  example: "inProgress",
+                },
+                keyword: {
+                  type: "string",
+                  nullable: true,
+                  example: "물티슈",
+                },
+                category: {
+                  type: "string",
+                  nullable: true,
+                  example: "daily",
+                },
+                sort: {
+                  type: "string",
+                  enum: ["latest", "deadline", "popular"],
+                  example: "latest",
+                },
+              },
+            },
+          },
+        },
         MyPostsSummary: {
           type: "object",
           required: ["registered", "participated", "favorites", "meta"],
