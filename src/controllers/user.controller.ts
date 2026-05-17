@@ -21,15 +21,39 @@ import {
   loginSchema,
   LoginReq,
 } from "../routes/common/validation/user-schemas";
+import { MY_POSTS_TABS, MyPostsTab } from "../types/my-posts";
+import { PostListSort } from "../types/post-list";
 
-function parsePositiveInteger(value: unknown, fallback: number) {
+const MY_POSTS_SORTS: PostListSort[] = ["latest", "deadline", "popular"];
+
+function getSingleValue(value: unknown): string | undefined {
   const rawValue = Array.isArray(value) ? value[0] : value;
   if (rawValue === undefined || rawValue === null) {
+    return undefined;
+  }
+
+  const valueString = String(rawValue).trim();
+  return valueString === "" ? undefined : valueString;
+}
+
+function parsePositiveInteger(value: unknown, fallback: number) {
+  const rawValue = getSingleValue(value);
+  if (!rawValue) {
     return fallback;
   }
 
-  const parsed = Number.parseInt(String(rawValue), 10);
+  const parsed = Number.parseInt(rawValue, 10);
   return Number.isNaN(parsed) || parsed <= 0 ? fallback : parsed;
+}
+
+function parseNonNegativeInteger(value: unknown, fallback: number) {
+  const rawValue = getSingleValue(value);
+  if (!rawValue) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(rawValue, 10);
+  return Number.isNaN(parsed) || parsed < 0 ? fallback : parsed;
 }
 
 /**
@@ -205,6 +229,49 @@ export async function getMyPostsSummary(
     });
 
     res.status(HttpStatusCodes.OK).json(summary);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 내 공구 화면 탭별 목록 조회
+ * GET /api/users/:userId/my-posts
+ */
+export async function getMyPosts(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { userId } = req.params;
+    const tabValue = getSingleValue(req.query.tab) || "registered";
+    const sortValue = getSingleValue(req.query.sort) || "latest";
+
+    if (!MY_POSTS_TABS.includes(tabValue as MyPostsTab)) {
+      return res.status(HttpStatusCodes.BAD_REQUEST).json({
+        error: "INVALID_TAB",
+        message: "tab은 registered, participated, favorites 중 하나여야 합니다.",
+      });
+    }
+
+    if (!MY_POSTS_SORTS.includes(sortValue as PostListSort)) {
+      return res.status(HttpStatusCodes.BAD_REQUEST).json({
+        error: "INVALID_SORT",
+        message: "sort는 latest, deadline, popular 중 하나여야 합니다.",
+      });
+    }
+
+    const result = await UserService.listMyPosts(userId, {
+      tab: tabValue as MyPostsTab,
+      limit: parsePositiveInteger(req.query.limit, 20),
+      offset: parseNonNegativeInteger(req.query.offset, 0),
+      keyword:
+        getSingleValue(req.query.keyword) || getSingleValue(req.query.q) || null,
+      category: getSingleValue(req.query.category) || null,
+      status: getSingleValue(req.query.status) || null,
+      sort: sortValue as PostListSort,
+      deadlineSoonHours: parsePositiveInteger(req.query.deadlineSoonHours, 24),
+      recentDays: parsePositiveInteger(req.query.recentDays, 7),
+    });
+
+    res.status(HttpStatusCodes.OK).json(result);
   } catch (error) {
     next(error);
   }

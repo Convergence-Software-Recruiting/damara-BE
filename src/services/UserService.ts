@@ -14,11 +14,202 @@ import { TrustService } from "./TrustService";
 import { PostRepo } from "../repos/PostRepo";
 import { FavoriteRepo } from "../repos/FavoriteRepo";
 import { PostParticipantRepo } from "../repos/PostParticipantRepo";
+import { PostService } from "./PostService";
+import { PostListOptions, PostListStatus } from "../types/post-list";
+import {
+  MY_POSTS_TABS,
+  MyPostsListOptions,
+  MyPostsTab,
+} from "../types/my-posts";
+import {
+  PARTICIPANT_STATUS_LABELS,
+  ParticipantStatus,
+} from "../types/participant-status";
 
 type MyPostsSummaryOptions = {
   deadlineSoonHours: number;
   recentDays: number;
 };
+
+const POST_STATUSES: PostListStatus[] = [
+  "open",
+  "closed",
+  "in_progress",
+  "completed",
+  "cancelled",
+];
+
+const isPostStatus = (status?: string | null): status is PostListStatus =>
+  Boolean(status && POST_STATUSES.includes(status as PostListStatus));
+
+const PARTICIPANT_STATUS_ALIASES: Record<string, ParticipantStatus> = {
+  participating: "participating",
+  paymentPending: "payment_pending",
+  payment_pending: "payment_pending",
+  pickupReady: "pickup_ready",
+  pickup_ready: "pickup_ready",
+  received: "received",
+};
+
+function normalizeParticipantStatus(status?: string | null) {
+  if (!status) {
+    return null;
+  }
+
+  return PARTICIPANT_STATUS_ALIASES[status] ?? null;
+}
+
+function getNowPlusHours(hours: number) {
+  const now = new Date();
+  return {
+    now,
+    deadlineSoonUntil: new Date(now.getTime() + hours * 60 * 60 * 1000),
+  };
+}
+
+function getRecentSince(days: number) {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+}
+
+function resolvePostFilters(
+  options: MyPostsListOptions,
+  tab: MyPostsTab
+): PostListOptions & {
+  participantStatus?: ParticipantStatus | null;
+  recentSince?: Date | null;
+} {
+  const { status } = options;
+  const postOptions: PostListOptions & {
+    participantStatus?: ParticipantStatus | null;
+    recentSince?: Date | null;
+  } = {
+    limit: options.limit,
+    offset: options.offset,
+    keyword: options.keyword,
+    category: options.category,
+    sort: options.sort,
+    userId: null,
+  };
+
+  if (!status) {
+    return postOptions;
+  }
+
+  if (tab === "registered") {
+    if (status === "inProgress") {
+      postOptions.statuses = ["open", "closed", "in_progress"];
+      return postOptions;
+    }
+
+    if (status === "deadlineSoon") {
+      const { now, deadlineSoonUntil } = getNowPlusHours(
+        options.deadlineSoonHours
+      );
+      postOptions.status = "open";
+      postOptions.deadlineFrom = now;
+      postOptions.deadlineTo = deadlineSoonUntil;
+      return postOptions;
+    }
+
+    if (status === "completed") {
+      postOptions.status = "completed";
+      return postOptions;
+    }
+
+    if (isPostStatus(status)) {
+      postOptions.status = status;
+    }
+
+    return postOptions;
+  }
+
+  if (tab === "participated") {
+    const participantStatus = normalizeParticipantStatus(status);
+    if (participantStatus) {
+      postOptions.participantStatus = participantStatus;
+      return postOptions;
+    }
+
+    if (isPostStatus(status)) {
+      postOptions.status = status;
+    }
+
+    return postOptions;
+  }
+
+  if (status === "deadlineSoon") {
+    const { now, deadlineSoonUntil } = getNowPlusHours(options.deadlineSoonHours);
+    postOptions.status = "open";
+    postOptions.deadlineFrom = now;
+    postOptions.deadlineTo = deadlineSoonUntil;
+    return postOptions;
+  }
+
+  if (status === "recent") {
+    postOptions.recentSince = getRecentSince(options.recentDays);
+    return postOptions;
+  }
+
+  if (isPostStatus(status)) {
+    postOptions.status = status;
+  }
+
+  return postOptions;
+}
+
+function comparePopularCards(a: any, b: any) {
+  const participantDiff =
+    Number(b.currentQuantity || 0) - Number(a.currentQuantity || 0);
+  if (participantDiff !== 0) {
+    return participantDiff;
+  }
+
+  const favoriteDiff = Number(b.favoriteCount || 0) - Number(a.favoriteCount || 0);
+  if (favoriteDiff !== 0) {
+    return favoriteDiff;
+  }
+
+  return (
+    new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
+  );
+}
+
+function paginatePopularItems<T>(
+  items: T[],
+  options: Pick<MyPostsListOptions, "sort" | "offset" | "limit">
+) {
+  if (options.sort !== "popular") {
+    return items;
+  }
+
+  return [...items]
+    .sort(comparePopularCards)
+    .slice(options.offset, options.offset + options.limit);
+}
+
+function getRegisteredMyPostStatus(post: any, deadlineSoonHours: number) {
+  if (post.status === "completed") {
+    return "completed";
+  }
+
+  if (post.status === "cancelled") {
+    return "cancelled";
+  }
+
+  const deadlineTime = new Date(post.deadline).getTime();
+  const deadlineSoonUntil = Date.now() + deadlineSoonHours * 60 * 60 * 1000;
+
+  if (
+    post.status === "open" &&
+    !Number.isNaN(deadlineTime) &&
+    deadlineTime >= Date.now() &&
+    deadlineTime <= deadlineSoonUntil
+  ) {
+    return "deadlineSoon";
+  }
+
+  return "inProgress";
+}
 
 export const UserService = {
   /**
@@ -191,6 +382,139 @@ export const UserService = {
       meta: {
         deadlineSoonHours: options.deadlineSoonHours,
         recentDays: options.recentDays,
+      },
+    };
+  },
+
+  /**
+   * 내 공구 탭별 카드 목록 조회
+   */
+  async listMyPosts(userId: string, options: MyPostsListOptions) {
+    const user = await UserRepo.findById(userId);
+    if (!user) {
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "USER_NOT_FOUND");
+    }
+
+    if (!MY_POSTS_TABS.includes(options.tab)) {
+      throw new RouteError(HttpStatusCodes.BAD_REQUEST, "INVALID_TAB");
+    }
+
+    const postFilters = resolvePostFilters(options, options.tab);
+
+    if (options.tab === "registered") {
+      const listOptions = {
+        ...postFilters,
+        authorId: userId,
+        userId,
+      };
+      const [posts, total] = await Promise.all([
+        PostRepo.list(listOptions),
+        PostRepo.count(listOptions),
+      ]);
+      const enrichedPosts = await Promise.all(
+        posts.map((post) => PostService.enrichPostCard(post as any, userId))
+      );
+      const items = paginatePopularItems(
+        enrichedPosts.map((post) => ({
+          ...post,
+          myPostTab: "registered",
+          myPostRole: "owner",
+          myPostStatus: getRegisteredMyPostStatus(
+            post,
+            options.deadlineSoonHours
+          ),
+        })),
+        options
+      );
+
+      return {
+        tab: options.tab,
+        items,
+        total,
+        limit: options.limit,
+        offset: options.offset,
+        hasNext: options.offset + items.length < total,
+        filters: {
+          status: options.status ?? null,
+          keyword: options.keyword ?? null,
+          category: options.category ?? null,
+          sort: options.sort ?? "latest",
+        },
+      };
+    }
+
+    if (options.tab === "participated") {
+      const [participants, total] = await Promise.all([
+        PostParticipantRepo.findMyPostsByUserId(userId, postFilters),
+        PostParticipantRepo.countMyPostsByUserId(userId, postFilters),
+      ]);
+      const enrichedPosts = await Promise.all(
+        participants.map(async (participant: any) => {
+          const post = await PostService.enrichPostCard(participant.post, userId);
+          return {
+            ...post,
+            myPostTab: "participated",
+            myPostRole: "participant",
+            myPostStatus: participant.participantStatus,
+            participantId: participant.id,
+            participantStatus: participant.participantStatus,
+            participantStatusLabel:
+              PARTICIPANT_STATUS_LABELS[
+                participant.participantStatus as ParticipantStatus
+              ],
+            participatedAt: participant.createdAt,
+          };
+        })
+      );
+      const items = paginatePopularItems(enrichedPosts, options);
+
+      return {
+        tab: options.tab,
+        items,
+        total,
+        limit: options.limit,
+        offset: options.offset,
+        hasNext: options.offset + items.length < total,
+        filters: {
+          status: options.status ?? null,
+          keyword: options.keyword ?? null,
+          category: options.category ?? null,
+          sort: options.sort ?? "latest",
+        },
+      };
+    }
+
+    const [favorites, total] = await Promise.all([
+      FavoriteRepo.findMyPostsByUserId(userId, postFilters),
+      FavoriteRepo.countMyPostsByUserId(userId, postFilters),
+    ]);
+    const enrichedPosts = await Promise.all(
+      favorites.map(async (favorite: any) => {
+        const post = await PostService.enrichPostCard(favorite.post, userId);
+        return {
+          ...post,
+          myPostTab: "favorites",
+          myPostRole: "favorite",
+          myPostStatus: options.status ?? "favorite",
+          favoriteId: favorite.id,
+          favoritedAt: favorite.createdAt,
+        };
+      })
+    );
+    const items = paginatePopularItems(enrichedPosts, options);
+
+    return {
+      tab: options.tab,
+      items,
+      total,
+      limit: options.limit,
+      offset: options.offset,
+      hasNext: options.offset + items.length < total,
+      filters: {
+        status: options.status ?? null,
+        keyword: options.keyword ?? null,
+        category: options.category ?? null,
+        sort: options.sort ?? "latest",
       },
     };
   },

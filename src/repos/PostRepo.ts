@@ -32,9 +32,21 @@ function findCategoryValuesByKeyword(keyword: string) {
     .map(([category]) => category);
 }
 
-function buildPostListWhere(options: PostListOptions = {}) {
-  const { category, status, keyword } = options;
+export function buildPostListWhere(options: PostListOptions = {}) {
+  const {
+    authorId,
+    category,
+    status,
+    statuses,
+    deadlineFrom,
+    deadlineTo,
+    keyword,
+  } = options;
   const whereClause: any = {};
+
+  if (authorId && String(authorId).trim() !== "") {
+    whereClause.authorId = String(authorId).trim();
+  }
 
   if (
     category &&
@@ -47,6 +59,24 @@ function buildPostListWhere(options: PostListOptions = {}) {
 
   if (status) {
     whereClause.status = status;
+  }
+
+  if (statuses && statuses.length > 0) {
+    whereClause.status = {
+      [Op.in]: statuses,
+    };
+  }
+
+  if (deadlineFrom || deadlineTo) {
+    whereClause.deadline = {};
+
+    if (deadlineFrom) {
+      whereClause.deadline[Op.gte] = deadlineFrom;
+    }
+
+    if (deadlineTo) {
+      whereClause.deadline[Op.lte] = deadlineTo;
+    }
   }
 
   const normalizedKeyword =

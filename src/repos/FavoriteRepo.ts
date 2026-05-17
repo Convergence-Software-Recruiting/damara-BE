@@ -2,10 +2,15 @@
 
 import FavoriteModel, { FavoriteCreationAttributes } from "../models/Favorite";
 import PostModel from "../models/Post";
+import PostImageModel from "../models/PostImage";
 import UserModel from "../models/User";
 import { RouteError } from "../common/util/route-errors";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
 import { Op } from "sequelize";
+import {
+  buildPostListWhere,
+} from "./PostRepo";
+import { PostListOptions } from "../types/post-list";
 
 export const FavoriteRepo = {
   /**
@@ -88,6 +93,92 @@ export const FavoriteRepo = {
     });
 
     return favorites.map((f) => f.get());
+  },
+
+  /**
+   * 내 공구 관심 탭 목록 조회
+   */
+  async findMyPostsByUserId(
+    userId: string,
+    options: PostListOptions & { recentSince?: Date | null } = {}
+  ) {
+    const {
+      limit = 20,
+      offset = 0,
+      sort = "latest",
+      recentSince,
+    } = options;
+    const favoriteWhere: Record<string, unknown> = { userId };
+
+    if (recentSince) {
+      favoriteWhere.createdAt = {
+        [Op.gte]: recentSince,
+      };
+    }
+
+    const order =
+      sort === "deadline"
+        ? [[{ model: PostModel, as: "post" }, "deadline", "ASC"]]
+        : [["createdAt", "DESC"]];
+
+    const queryOptions: any = {
+      where: favoriteWhere,
+      include: [
+        {
+          model: PostModel,
+          as: "post",
+          required: true,
+          where: buildPostListWhere(options),
+          include: [
+            {
+              model: PostImageModel,
+              as: "images",
+              attributes: ["id", "imageUrl", "sortOrder"],
+              order: [["sortOrder", "ASC"]],
+            },
+          ],
+        },
+      ],
+      order: order as any,
+    };
+
+    if (sort !== "popular") {
+      queryOptions.limit = limit;
+      queryOptions.offset = offset;
+    }
+
+    const favorites = await FavoriteModel.findAll(queryOptions);
+
+    return favorites.map((favorite) => favorite.get({ plain: true }));
+  },
+
+  /**
+   * 내 공구 관심 탭 목록 개수 조회
+   */
+  async countMyPostsByUserId(
+    userId: string,
+    options: PostListOptions & { recentSince?: Date | null } = {}
+  ) {
+    const { recentSince } = options;
+    const favoriteWhere: Record<string, unknown> = { userId };
+
+    if (recentSince) {
+      favoriteWhere.createdAt = {
+        [Op.gte]: recentSince,
+      };
+    }
+
+    return await FavoriteModel.count({
+      where: favoriteWhere,
+      include: [
+        {
+          model: PostModel,
+          as: "post",
+          required: true,
+          where: buildPostListWhere(options),
+        },
+      ],
+    });
   },
 
   /**
