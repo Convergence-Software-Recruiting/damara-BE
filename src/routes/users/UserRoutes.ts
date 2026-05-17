@@ -9,6 +9,7 @@ import {
   login,
   getUserTrustEvents,
   getMyPostsSummary,
+  getMyPosts,
 } from "../../controllers/user.controller";
 import { getFavorites } from "../../controllers/favorite.controller";
 
@@ -218,6 +219,95 @@ userRouter.post("/login", login);
  */
 // GET /api/users/:userId/favorites - 내가 관심 등록한 게시글 목록 조회 (더 구체적인 라우트를 먼저 배치)
 userRouter.get("/:userId/favorites", getFavorites);
+
+/**
+ * @swagger
+ * /api/users/{userId}/my-posts:
+ *   get:
+ *     summary: 내 공구 탭별 카드 목록 조회
+ *     description: 등록한 공구, 참여한 공구, 관심 공구 탭의 카드 목록을 검색/상태 필터/페이지네이션과 함께 조회합니다.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 사용자 UUID
+ *       - in: query
+ *         name: tab
+ *         schema:
+ *           type: string
+ *           enum: [registered, participated, favorites]
+ *           default: registered
+ *         description: 조회할 내 공구 탭
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *         description: "탭별 상태 필터. registered=inProgress/deadlineSoon/completed 또는 게시글 상태, participated=participating/payment_pending/paymentPending/pickup_ready/pickupReady/received 또는 게시글 상태, favorites=deadlineSoon/recent 또는 게시글 상태"
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *         description: 검색어. keyword와 동일하게 동작합니다.
+ *       - in: query
+ *         name: keyword
+ *         schema:
+ *           type: string
+ *         description: 검색어
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *           enum: [food, daily, beauty, electronics, school, freemarket]
+ *         description: 카테고리 필터
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           enum: [latest, deadline, popular]
+ *           default: latest
+ *         description: 정렬 방식
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: 조회 개수
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: 시작 위치
+ *       - in: query
+ *         name: deadlineSoonHours
+ *         schema:
+ *           type: integer
+ *           default: 24
+ *         description: deadlineSoon 필터 기준 시간
+ *       - in: query
+ *         name: recentDays
+ *         schema:
+ *           type: integer
+ *           default: 7
+ *         description: favorites recent 필터 기준 일수
+ *     responses:
+ *       200:
+ *         description: 내 공구 탭별 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MyPostsListResponse'
+ *       400:
+ *         description: 잘못된 tab 또는 sort
+ *       404:
+ *         description: 사용자를 찾을 수 없음
+ */
+// GET /api/users/:userId/my-posts - 내 공구 탭별 카드 목록 조회
+userRouter.get("/:userId/my-posts", getMyPosts);
 
 /**
  * @swagger

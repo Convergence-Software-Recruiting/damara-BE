@@ -27,6 +27,142 @@ src/routes/**/*.ts
 https://damara.bluerack.org/api-docs.json
 ```
 
+## 2026-05-17 - 내 공구 탭별 리스트 API 추가
+
+브랜치:
+
+```text
+feature/my-posts-list-api
+```
+
+변경 전 기준 커밋:
+
+```text
+b1e7b96
+```
+
+### 변경 요약
+
+내 공구 화면의 등록한 공구, 참여한 공구, 관심 공구 탭 카드 목록을 하나의 API에서 조회할 수 있도록 신규 API를 추가했다.
+
+기존 `GET /api/users/{userId}/my-posts/summary`는 탭 상단 카운트만 제공했다. 이번 변경은 탭 본문 카드 리스트를 페이지네이션, 검색어, 상태 필터와 함께 제공한다.
+
+### 신규 API
+
+```text
+GET /api/users/{userId}/my-posts
+```
+
+### Query Parameters
+
+```text
+tab: registered | participated | favorites
+status: 탭별 상태 필터
+q 또는 keyword: 검색어
+category: food | daily | beauty | electronics | school | freemarket
+sort: latest | deadline | popular
+limit: 조회 개수
+offset: 시작 위치
+deadlineSoonHours: deadlineSoon 필터 기준 시간
+recentDays: favorites recent 필터 기준 일수
+```
+
+`status`는 탭별로 다르게 해석된다.
+
+```text
+registered:
+inProgress
+deadlineSoon
+completed
+open
+closed
+in_progress
+cancelled
+
+participated:
+participating
+payment_pending
+paymentPending
+pickup_ready
+pickupReady
+received
+open
+closed
+in_progress
+completed
+cancelled
+
+favorites:
+deadlineSoon
+recent
+open
+closed
+in_progress
+completed
+cancelled
+```
+
+### 응답
+
+응답 형태:
+
+```json
+{
+  "tab": "participated",
+  "items": [
+    {
+      "id": "post-id",
+      "title": "물티슈 공동구매",
+      "thumbnailUrl": "https://example.com/wipes.jpg",
+      "favoriteCount": 3,
+      "isFavorite": true,
+      "isParticipant": true,
+      "isOwner": false,
+      "deadlineStatus": "open",
+      "deadlineLabel": "모집중",
+      "remainingSeconds": 3600,
+      "myPostTab": "participated",
+      "myPostRole": "participant",
+      "myPostStatus": "payment_pending",
+      "participantStatus": "payment_pending",
+      "participantStatusLabel": "입금대기",
+      "participatedAt": "2026-05-17T00:00:00.000Z"
+    }
+  ],
+  "total": 1,
+  "limit": 20,
+  "offset": 0,
+  "hasNext": false,
+  "filters": {
+    "status": "payment_pending",
+    "keyword": null,
+    "category": null,
+    "sort": "latest"
+  }
+}
+```
+
+### Swagger 스키마 변경
+
+추가된 스키마:
+
+```text
+components.schemas.MyPostsListItem
+components.schemas.MyPostsListResponse
+```
+
+### 프론트엔드 영향
+
+내 공구 페이지의 탭 본문은 다음 API 하나로 조회할 수 있다.
+
+```bash
+curl -s "http://localhost:3000/api/users/{userId}/my-posts?tab=registered&status=inProgress&limit=20&offset=0"
+curl -s "http://localhost:3000/api/users/{userId}/my-posts?tab=participated&status=payment_pending&limit=20&offset=0"
+curl -s "http://localhost:3000/api/users/{userId}/my-posts?tab=favorites&status=recent&limit=20&offset=0"
+```
+
+카드는 기존 Post 카드 필드와 함께 `myPostTab`, `myPostRole`, `myPostStatus`를 기준으로 탭별 액션 버튼과 배지를 결정할 수 있다.
+
 ## 2026-05-16 - Post 등록/상세 UI 필드 확장
 
 브랜치:

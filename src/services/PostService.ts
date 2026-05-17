@@ -206,6 +206,13 @@ export const PostService = {
   },
 
   /**
+   * 여러 화면에서 공통으로 쓰는 카드 UI 필드 보강
+   */
+  async enrichPostCard(post: PostListItem, userId?: string) {
+    return await enrichPostListItem(post, userId);
+  },
+
+  /**
    * ID로 상품 조회
    * - favoriteCount와 isFavorite 포함
    */

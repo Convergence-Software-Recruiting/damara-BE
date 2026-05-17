@@ -4,10 +4,13 @@ import PostParticipantModel, {
   PostParticipantCreationAttributes,
 } from "../models/PostParticipant";
 import PostModel from "../models/Post";
+import PostImageModel from "../models/PostImage";
 import UserModel from "../models/User";
 import { RouteError } from "../common/util/route-errors";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
 import { ParticipantStatus } from "../types/participant-status";
+import { buildPostListWhere } from "./PostRepo";
+import { PostListOptions } from "../types/post-list";
 
 export const PostParticipantRepo = {
   /**
@@ -136,6 +139,90 @@ export const PostParticipantRepo = {
     });
 
     return participants.map((p) => p.get());
+  },
+
+  /**
+   * 내 공구 참여 탭 목록 조회
+   */
+  async findMyPostsByUserId(
+    userId: string,
+    options: PostListOptions & { participantStatus?: ParticipantStatus | null } = {}
+  ) {
+    const {
+      limit = 20,
+      offset = 0,
+      sort = "latest",
+      participantStatus,
+    } = options;
+    const participantWhere: Record<string, unknown> = { userId };
+
+    if (participantStatus) {
+      participantWhere.participantStatus = participantStatus;
+    }
+
+    const order =
+      sort === "deadline"
+        ? [[{ model: PostModel, as: "post" }, "deadline", "ASC"]]
+        : [["createdAt", "DESC"]];
+
+    const queryOptions: any = {
+      where: participantWhere,
+      include: [
+        {
+          model: PostModel,
+          as: "post",
+          required: true,
+          where: buildPostListWhere(options),
+          include: [
+            {
+              model: PostImageModel,
+              as: "images",
+              attributes: ["id", "imageUrl", "sortOrder"],
+              order: [["sortOrder", "ASC"]],
+            },
+          ],
+        },
+      ],
+      order: order as any,
+    };
+
+    if (sort !== "popular") {
+      queryOptions.limit = limit;
+      queryOptions.offset = offset;
+    }
+
+    const participants = await PostParticipantModel.findAll(queryOptions);
+
+    return participants.map((participant) =>
+      participant.get({ plain: true })
+    );
+  },
+
+  /**
+   * 내 공구 참여 탭 목록 개수 조회
+   */
+  async countMyPostsByUserId(
+    userId: string,
+    options: PostListOptions & { participantStatus?: ParticipantStatus | null } = {}
+  ) {
+    const { participantStatus } = options;
+    const participantWhere: Record<string, unknown> = { userId };
+
+    if (participantStatus) {
+      participantWhere.participantStatus = participantStatus;
+    }
+
+    return await PostParticipantModel.count({
+      where: participantWhere,
+      include: [
+        {
+          model: PostModel,
+          as: "post",
+          required: true,
+          where: buildPostListWhere(options),
+        },
+      ],
+    });
   },
 
   /**
