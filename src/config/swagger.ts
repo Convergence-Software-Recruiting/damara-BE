@@ -242,6 +242,28 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        PostImage: {
+          type: "object",
+          required: ["id", "imageUrl", "sortOrder"],
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              description: "이미지 UUID",
+              example: "b6d2592a-667d-474c-8bf5-12005528876e",
+            },
+            imageUrl: {
+              type: "string",
+              description: "이미지 URL",
+              example: "https://example.com/image.jpg",
+            },
+            sortOrder: {
+              type: "integer",
+              description: "이미지 정렬 순서",
+              example: 0,
+            },
+          },
+        },
         Post: {
           type: "object",
           required: [
@@ -320,11 +342,15 @@ const options: swaggerJsdoc.Options = {
             images: {
               type: "array",
               items: {
-                type: "string",
-                description: "이미지 URL",
+                $ref: "#/components/schemas/PostImage",
               },
-              description: "이미지 URL 배열",
-              example: ["https://example.com/image.jpg"],
+              description: "이미지 URL 객체 배열",
+            },
+            thumbnailUrl: {
+              type: "string",
+              nullable: true,
+              description: "대표 썸네일 URL. 첫 번째 이미지가 없으면 null입니다.",
+              example: "https://example.com/image.jpg",
             },
             favoriteCount: {
               type: "integer",
@@ -336,6 +362,32 @@ const options: swaggerJsdoc.Options = {
               description: "현재 사용자의 관심 등록 여부 (로그인한 사용자 기준)",
               example: true,
             },
+            isParticipant: {
+              type: "boolean",
+              description: "현재 사용자의 참여 여부",
+              example: false,
+            },
+            isOwner: {
+              type: "boolean",
+              description: "현재 사용자가 작성자인지 여부",
+              example: false,
+            },
+            deadlineStatus: {
+              type: "string",
+              enum: ["open", "closingSoon", "closed"],
+              description: "서버 시간 기준 마감 상태",
+              example: "closingSoon",
+            },
+            deadlineLabel: {
+              type: "string",
+              description: "프론트 표시용 마감 라벨",
+              example: "오늘 마감",
+            },
+            remainingSeconds: {
+              type: "integer",
+              description: "마감까지 남은 초. 이미 지난 경우 0입니다.",
+              example: 3600,
+            },
             createdAt: {
               type: "string",
               format: "date-time",
@@ -345,6 +397,76 @@ const options: swaggerJsdoc.Options = {
               type: "string",
               format: "date-time",
               description: "수정일시",
+            },
+          },
+        },
+        PostListResponse: {
+          type: "object",
+          required: ["items", "total", "limit", "offset", "hasNext"],
+          properties: {
+            items: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/Post",
+              },
+            },
+            total: {
+              type: "integer",
+              description: "필터 조건에 맞는 전체 게시글 수",
+              example: 42,
+            },
+            limit: {
+              type: "integer",
+              example: 20,
+            },
+            offset: {
+              type: "integer",
+              example: 0,
+            },
+            hasNext: {
+              type: "boolean",
+              description: "다음 페이지 존재 여부",
+              example: true,
+            },
+          },
+        },
+        PostParticipationResult: {
+          type: "object",
+          required: ["isParticipant", "post"],
+          properties: {
+            isParticipant: {
+              type: "boolean",
+              description: "요청 후 현재 사용자의 참여 여부",
+              example: true,
+            },
+            post: {
+              type: "object",
+              required: ["id", "currentQuantity", "minParticipants", "status"],
+              properties: {
+                id: {
+                  type: "string",
+                  format: "uuid",
+                },
+                currentQuantity: {
+                  type: "integer",
+                  example: 2,
+                },
+                minParticipants: {
+                  type: "integer",
+                  example: 3,
+                },
+                status: {
+                  type: "string",
+                  enum: [
+                    "open",
+                    "closed",
+                    "in_progress",
+                    "completed",
+                    "cancelled",
+                  ],
+                  example: "open",
+                },
+              },
             },
           },
         },
@@ -750,11 +872,15 @@ const options: swaggerJsdoc.Options = {
             images: {
               type: "array",
               items: {
-                type: "string",
-                description: "이미지 URL",
+                $ref: "#/components/schemas/PostImage",
               },
-              description: "이미지 URL 배열",
-              example: ["https://example.com/wipes.jpg"],
+              description: "이미지 URL 객체 배열",
+            },
+            thumbnailUrl: {
+              type: "string",
+              nullable: true,
+              description: "대표 썸네일 URL",
+              example: "https://example.com/wipes.jpg",
             },
             favoriteCount: {
               type: "integer",
@@ -776,9 +902,46 @@ const options: swaggerJsdoc.Options = {
                 $ref: "#/components/schemas/PostParticipantProfile",
               },
             },
+            participantsPreview: {
+              type: "array",
+              description: "상세 화면 상단 미리보기용 참여자 목록",
+              items: {
+                type: "object",
+                required: ["userId", "nickname", "avatarUrl", "trustGrade", "joinedAt"],
+                properties: {
+                  userId: {
+                    type: "string",
+                    format: "uuid",
+                  },
+                  nickname: {
+                    type: "string",
+                    example: "참여자 1",
+                  },
+                  avatarUrl: {
+                    type: "string",
+                    format: "uri",
+                    nullable: true,
+                  },
+                  trustGrade: {
+                    type: "number",
+                    nullable: true,
+                    example: 4.1,
+                  },
+                  joinedAt: {
+                    type: "string",
+                    format: "date-time",
+                  },
+                },
+              },
+            },
             participantCount: {
               type: "integer",
               description: "참여자 프로필 목록 기준 참여자 수",
+              example: 2,
+            },
+            participantsTotal: {
+              type: "integer",
+              description: "전체 참여자 수",
               example: 2,
             },
             isParticipant: {
@@ -786,6 +949,28 @@ const options: swaggerJsdoc.Options = {
               description:
                 "현재 사용자가 이 공동구매에 참여 중인지 여부. x-user-id 또는 userId가 없으면 false입니다.",
               example: false,
+            },
+            isOwner: {
+              type: "boolean",
+              description:
+                "현재 사용자가 이 공동구매 작성자인지 여부. x-user-id 또는 userId가 없으면 false입니다.",
+              example: false,
+            },
+            deadlineStatus: {
+              type: "string",
+              enum: ["open", "closingSoon", "closed"],
+              description: "서버 시간 기준 마감 상태",
+              example: "closingSoon",
+            },
+            deadlineLabel: {
+              type: "string",
+              description: "프론트 표시용 마감 라벨",
+              example: "오늘 마감",
+            },
+            remainingSeconds: {
+              type: "integer",
+              description: "마감까지 남은 초. 이미 지난 경우 0입니다.",
+              example: 3600,
             },
             createdAt: {
               type: "string",

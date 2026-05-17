@@ -17,6 +17,24 @@ type PostListItem = Awaited<ReturnType<typeof PostRepo.list>>[number];
 type EnrichedPostListItem = PostListItem & {
   favoriteCount: number;
   isFavorite: boolean;
+  isParticipant: boolean;
+  isOwner: boolean;
+  thumbnailUrl: string | null;
+  deadlineStatus: "open" | "closingSoon" | "closed";
+  deadlineLabel: string;
+  remainingSeconds: number;
+};
+type PostListResponse = {
+  items: EnrichedPostListItem[];
+  total: number;
+  limit: number;
+  offset: number;
+  hasNext: boolean;
+};
+type PostImageSource = {
+  id?: string;
+  imageUrl?: string;
+  sortOrder?: number;
 };
 type PublicUserProfileSource = {
   id: string;
@@ -44,19 +62,86 @@ const getPostCreatedTime = (post: PostListItem) => {
   return Number.isNaN(createdTime) ? 0 : createdTime;
 };
 
+function getSortedImages(post: { images?: PostImageSource[] | null }) {
+  const images = Array.isArray(post.images) ? post.images : [];
+  return [...images].sort(
+    (a, b) => Number(a.sortOrder ?? 0) - Number(b.sortOrder ?? 0)
+  );
+}
+
+function getThumbnailUrl(post: { images?: PostImageSource[] | null }) {
+  return getSortedImages(post)[0]?.imageUrl ?? null;
+}
+
+function getDeadlineMeta(deadline: Date | string) {
+  const now = new Date();
+  const deadlineTime = new Date(deadline).getTime();
+
+  if (Number.isNaN(deadlineTime)) {
+    return {
+      deadlineStatus: "open" as const,
+      deadlineLabel: "모집중",
+      remainingSeconds: 0,
+    };
+  }
+
+  const remainingSeconds = Math.max(
+    0,
+    Math.floor((deadlineTime - now.getTime()) / 1000)
+  );
+
+  if (remainingSeconds <= 0) {
+    return {
+      deadlineStatus: "closed" as const,
+      deadlineLabel: "마감",
+      remainingSeconds,
+    };
+  }
+
+  const closingSoonSeconds = 24 * 60 * 60;
+  if (remainingSeconds <= closingSoonSeconds) {
+    return {
+      deadlineStatus: "closingSoon" as const,
+      deadlineLabel: "오늘 마감",
+      remainingSeconds,
+    };
+  }
+
+  return {
+    deadlineStatus: "open" as const,
+    deadlineLabel: "모집중",
+    remainingSeconds,
+  };
+}
+
+function toPostSnapshot(post: Pick<PostListItem, "id" | "currentQuantity" | "minParticipants" | "status">) {
+  return {
+    id: post.id,
+    currentQuantity: post.currentQuantity,
+    minParticipants: post.minParticipants,
+    status: post.status,
+  };
+}
+
 async function enrichPostListItem(
   post: PostListItem,
   userId?: string
 ): Promise<EnrichedPostListItem> {
-  const favoriteCount = await FavoriteService.getFavoriteCount(post.id);
-  const isFavorite = userId
-    ? await FavoriteService.isFavorite(post.id, userId)
-    : false;
+  const [favoriteCount, isFavorite, isParticipant] = await Promise.all([
+    FavoriteService.getFavoriteCount(post.id),
+    userId ? FavoriteService.isFavorite(post.id, userId) : false,
+    userId ? PostParticipantRepo.isParticipant(post.id, userId) : false,
+  ]);
+  const isOwner = userId ? post.authorId === userId : false;
 
   return {
     ...post,
     favoriteCount,
     isFavorite,
+    isParticipant,
+    isOwner,
+    thumbnailUrl: getThumbnailUrl(post as { images?: PostImageSource[] }),
+    ...getDeadlineMeta(post.deadline),
   };
 }
 
@@ -64,15 +149,15 @@ function comparePopularPosts(
   a: EnrichedPostListItem,
   b: EnrichedPostListItem
 ) {
-  const favoriteDiff = b.favoriteCount - a.favoriteCount;
-  if (favoriteDiff !== 0) {
-    return favoriteDiff;
-  }
-
   const participantDiff =
     Number(b.currentQuantity || 0) - Number(a.currentQuantity || 0);
   if (participantDiff !== 0) {
     return participantDiff;
+  }
+
+  const favoriteDiff = b.favoriteCount - a.favoriteCount;
+  if (favoriteDiff !== 0) {
+    return favoriteDiff;
   }
 
   return getPostCreatedTime(b) - getPostCreatedTime(a);
@@ -118,19 +203,13 @@ export const PostService = {
       throw new RouteError(HttpStatusCodes.NOT_FOUND, "POST_NOT_FOUND");
     }
 
-    // 관심 수 조회
-    const favoriteCount = await FavoriteService.getFavoriteCount(id);
-
-    // 관심 여부 확인 (userId가 제공된 경우)
-    let isFavorite = false;
-    if (userId) {
-      isFavorite = await FavoriteService.isFavorite(id, userId);
-    }
-
-    const participants =
-      (await PostParticipantRepo.findProfilesByPostId(
+    const [favoriteCount, isFavorite, participants] = await Promise.all([
+      FavoriteService.getFavoriteCount(id),
+      userId ? FavoriteService.isFavorite(id, userId) : false,
+      PostParticipantRepo.findProfilesByPostId(
         id
-      )) as PostParticipantProfileSource[];
+      ) as Promise<PostParticipantProfileSource[]>,
+    ]);
     const participantProfiles = participants.map((participant) => ({
       id: participant.id,
       userId: participant.userId,
@@ -141,16 +220,37 @@ export const PostService = {
     const isParticipant = userId
       ? participants.some((participant) => participant.userId === userId)
       : false;
+    const isOwner = userId ? post.authorId === userId : false;
     const { author, ...postWithoutAuthor } = post;
+    const participantsPreview = participants.slice(0, 5).map((participant) => {
+      const user = participant.user;
+
+      return {
+        userId: participant.userId,
+        nickname: user?.nickname ?? "",
+        avatarUrl: user?.avatarUrl ?? null,
+        trustGrade: user
+          ? TrustService.calculateTrustGrade(Number(user.trustScore || 0))
+          : null,
+        joinedAt: participant.createdAt,
+      };
+    });
 
     return {
       ...postWithoutAuthor,
       author: toPublicUserProfile(author),
       participants: participantProfiles,
       participantCount: participantProfiles.length,
+      participantsPreview,
+      participantsTotal: participantProfiles.length,
       favoriteCount,
       isFavorite,
       isParticipant,
+      isOwner,
+      thumbnailUrl: getThumbnailUrl(
+        postWithoutAuthor as { images?: PostImageSource[] }
+      ),
+      ...getDeadlineMeta(post.deadline),
     };
   },
 
@@ -174,22 +274,46 @@ export const PostService = {
         ? String(options.userId).trim()
         : undefined;
 
-    const posts = await PostRepo.list({
-      ...options,
-      limit,
-      offset: normalizedOffset,
-    });
+    const [posts, total] = await Promise.all([
+      PostRepo.list({
+        ...options,
+        limit,
+        offset: normalizedOffset,
+      }),
+      PostRepo.count(options),
+    ]);
     const enrichedPosts = await Promise.all(
       posts.map((post) => enrichPostListItem(post, userId))
     );
 
+    let items = enrichedPosts;
     if (options.sort === "popular") {
-      return enrichedPosts
+      items = enrichedPosts
         .sort(comparePopularPosts)
         .slice(normalizedOffset, normalizedOffset + limit);
     }
 
-    return enrichedPosts;
+    const response: PostListResponse = {
+      items,
+      total,
+      limit,
+      offset: normalizedOffset,
+      hasNext: normalizedOffset + items.length < total,
+    };
+
+    return response;
+  },
+
+  /**
+   * 참여/참여취소 후 프론트 진행률 갱신용 최소 게시글 스냅샷
+   */
+  async getParticipationPostSnapshot(id: string) {
+    const post = await PostRepo.findById(id);
+    if (!post) {
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "POST_NOT_FOUND");
+    }
+
+    return toPostSnapshot(post);
   },
 
   /**

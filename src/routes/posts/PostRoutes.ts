@@ -39,7 +39,7 @@ logger.info("PostRoutes: 라우터 초기화됨");
  *         schema:
  *           type: string
  *           format: uuid
- *         description: 현재 사용자 UUID. 전달하면 각 게시글의 isFavorite를 사용자 기준으로 계산합니다.
+ *         description: 현재 사용자 UUID. 전달하면 각 게시글의 isFavorite, isParticipant, isOwner를 사용자 기준으로 계산합니다.
  *       - in: query
  *         name: limit
  *         schema:
@@ -65,7 +65,7 @@ logger.info("PostRoutes: 라우터 초기화됨");
  *           type: string
  *           enum: [latest, deadline, popular]
  *           default: latest
- *         description: "정렬 방식 (latest=최신순, deadline=마감임박순, popular=인기순)"
+ *         description: "정렬 방식 (latest=최신순, deadline=마감임박순, popular=인기순. popular는 currentQuantity DESC, favoriteCount DESC, createdAt DESC 기준)"
  *         example: popular
  *       - in: query
  *         name: status
@@ -94,13 +94,11 @@ logger.info("PostRoutes: 라우터 초기화됨");
  *         description: 현재 사용자 UUID. x-user-id 헤더를 쓰기 어려운 클라이언트용 대체 파라미터입니다.
  *     responses:
  *       200:
- *         description: 상품 목록 조회 성공. 각 항목에는 favoriteCount와 isFavorite가 포함됩니다.
+ *         description: 상품 목록 조회 성공. items 각 항목에는 카드 UI에 필요한 관심/참여/작성자/마감 상태가 포함됩니다.
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Post'
+ *               $ref: '#/components/schemas/PostListResponse'
  */
 // GET /api/posts - 전체 조회 (페이징 가능)
 postRouter.get("/", getAllPosts);
@@ -597,6 +595,12 @@ postRouter.get("/:id/participate/:userId", checkParticipation);
  *                 createdAt:
  *                   type: string
  *                   format: date-time
+ *                 isFavorite:
+ *                   type: boolean
+ *                   example: true
+ *                 favoriteCount:
+ *                   type: integer
+ *                   example: 13
  *       400:
  *         description: 이미 관심 등록됨
  */
@@ -670,6 +674,12 @@ postRouter.get("/:postId/favorite/:userId", checkFavorite);
  *                 message:
  *                   type: string
  *                   example: "관심 해제되었습니다."
+ *                 isFavorite:
+ *                   type: boolean
+ *                   example: false
+ *                 favoriteCount:
+ *                   type: integer
+ *                   example: 12
  */
 // DELETE /api/posts/:postId/favorite/:userId - 관심 해제
 postRouter.delete("/:postId/favorite/:userId", removeFavorite);
@@ -704,6 +714,10 @@ postRouter.delete("/:postId/favorite/:userId", removeFavorite);
  *     responses:
  *       201:
  *         description: 참여 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PostParticipationResult'
  *       400:
  *         description: 이미 참여했거나 작성자는 참여할 수 없음
  *       404:
@@ -734,6 +748,10 @@ postRouter.post("/:id/participate", joinPost);
  *     responses:
  *       200:
  *         description: 참여 취소 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PostParticipationResult'
  *       404:
  *         description: 참여 정보를 찾을 수 없음
  */
@@ -762,16 +780,16 @@ postRouter.delete("/:id", deletePost);
  *         schema:
  *           type: string
  *           format: uuid
- *         description: 사용자 ID (isFavorite 확인용, 선택사항)
+ *         description: 사용자 ID (isFavorite, isParticipant, isOwner 확인용, 선택사항)
  *       - in: query
  *         name: userId
  *         schema:
  *           type: string
  *           format: uuid
- *         description: 사용자 ID (isFavorite 확인용, 선택사항)
+ *         description: 사용자 ID (isFavorite, isParticipant, isOwner 확인용, 선택사항)
  *     responses:
  *       200:
- *         description: 상품 상세 정보 (author, participants, favoriteCount, isFavorite, isParticipant 포함)
+ *         description: 상품 상세 정보 (author, participants, participantsPreview, favoriteCount, isFavorite, isParticipant, isOwner 포함)
  *         content:
  *           application/json:
  *             schema:

@@ -30,12 +30,15 @@ export const PostParticipantRepo = {
 
       // 작성자는 참여할 수 없음
       if (post.authorId === data.userId) {
-        throw new RouteError(HttpStatusCodes.BAD_REQUEST, "AUTHOR_CANNOT_JOIN");
+        throw new RouteError(
+          HttpStatusCodes.BAD_REQUEST,
+          "OWNER_CANNOT_PARTICIPATE"
+        );
       }
 
       // 이미 마감되었거나 취소된 게시글은 참여 불가
       if (post.status !== "open") {
-        throw new RouteError(HttpStatusCodes.BAD_REQUEST, "POST_NOT_OPEN");
+        throw new RouteError(HttpStatusCodes.BAD_REQUEST, "POST_CLOSED");
       }
 
       const participant = await PostParticipantModel.create(data);
