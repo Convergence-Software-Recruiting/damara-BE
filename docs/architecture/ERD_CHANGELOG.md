@@ -16,6 +16,102 @@ DB 구조가 바뀌면 다음 내용을 기록한다.
 6. API 응답 영향
 7. 배포 시 마이그레이션 주의점
 
+## 2026-05-16 - Post 등록/상세 UI 컬럼 추가
+
+브랜치:
+
+```text
+feature/post-detail-fields
+```
+
+변경 전 기준 커밋:
+
+```text
+0b16e89
+```
+
+### 변경 요약
+
+공동구매 등록/상세 화면에서 필요한 상품명, 수령 일정, 안내, 공구 유형, 태그, 공지 정보를 저장하기 위해 `posts` 테이블에 nullable 컬럼을 추가한다.
+
+기존 게시글 데이터는 유지하고, 새 필드는 값이 없을 수 있도록 설계했다.
+
+### 변경된 테이블
+
+```text
+posts
+```
+
+### 신규 컬럼
+
+```text
+product_name
+pickup_date
+pickup_start_time
+pickup_end_time
+pickup_guide
+group_buy_type
+tags
+notice
+```
+
+정의:
+
+```text
+product_name: VARCHAR(200), nullable
+pickup_date: DATE, nullable
+pickup_start_time: TIME, nullable
+pickup_end_time: TIME, nullable
+pickup_guide: TEXT, nullable
+group_buy_type: VARCHAR(50), nullable
+tags: JSON, nullable
+notice: TEXT, nullable
+```
+
+### 관계 변경
+
+관계 변경은 없다.
+
+### API 영향
+
+다음 API의 요청/응답에 신규 필드가 추가된다.
+
+```text
+POST /api/posts
+PUT /api/posts/{id}
+GET /api/posts
+GET /api/posts/{id}
+GET /api/posts/student/{studentId}
+PATCH /api/posts/{id}/status
+GET /api/users/{userId}/favorites
+```
+
+Swagger 변경 사항은 다음 문서에서 관리한다.
+
+```text
+docs/api/SWAGGER_CHANGELOG.md
+```
+
+### 배포 주의점
+
+현재 서버는 `sequelize.sync({ alter: true })`를 사용하지만, 기존 `users` 인덱스 경고 때문에 alter가 중간에 실패할 수 있다.
+
+이를 보완하기 위해 서버 시작 시 `posts` 테이블의 신규 컬럼을 별도로 확인하고 없으면 추가한다.
+
+운영 반영용 SQL:
+
+```sql
+ALTER TABLE posts
+  ADD COLUMN product_name VARCHAR(200) NULL,
+  ADD COLUMN pickup_date DATE NULL,
+  ADD COLUMN pickup_start_time TIME NULL,
+  ADD COLUMN pickup_end_time TIME NULL,
+  ADD COLUMN pickup_guide TEXT NULL,
+  ADD COLUMN group_buy_type VARCHAR(50) NULL,
+  ADD COLUMN tags JSON NULL,
+  ADD COLUMN notice TEXT NULL;
+```
+
 ## 2026-05-14 - 참여자별 진행 상태 컬럼 추가
 
 브랜치:
