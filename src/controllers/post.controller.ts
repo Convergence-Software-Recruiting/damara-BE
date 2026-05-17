@@ -51,6 +51,60 @@ function parseNonNegativeInteger(value: unknown, fallback: number) {
   return Number.isNaN(parsed) || parsed < 0 ? fallback : parsed;
 }
 
+const nullableStringPostFields = [
+  "productName",
+  "pickupDate",
+  "pickupStartTime",
+  "pickupEndTime",
+  "pickupGuide",
+  "groupBuyType",
+  "notice",
+] as const;
+
+type NullableStringPostField = (typeof nullableStringPostFields)[number];
+
+function normalizeNullableString(value: string | null | undefined) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  const trimmed = String(value).trim();
+  return trimmed === "" ? null : trimmed;
+}
+
+function normalizeTags(tags: string[] | null | undefined) {
+  if (!Array.isArray(tags)) {
+    return null;
+  }
+
+  const normalizedTags = tags
+    .map((tag) => String(tag).trim())
+    .filter((tag) => tag !== "");
+
+  return normalizedTags.length > 0 ? normalizedTags : null;
+}
+
+function normalizePostDetailFields<T extends Partial<PostCreationAttributes>>(
+  data: T
+) {
+  const mutableData = data as T &
+    Record<NullableStringPostField, string | null | undefined> & {
+      tags?: string[] | null;
+    };
+
+  for (const field of nullableStringPostFields) {
+    if (Object.prototype.hasOwnProperty.call(mutableData, field)) {
+      mutableData[field] = normalizeNullableString(mutableData[field]);
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(mutableData, "tags")) {
+    mutableData.tags = normalizeTags(mutableData.tags);
+  }
+
+  return mutableData;
+}
+
 /**
  * 공동구매 상품 전체 목록 / 홈 피드 목록
  * GET /api/posts?limit&offset&category&sort&status&keyword&userId
@@ -200,14 +254,14 @@ export async function createPost(
       `createPost - 카테고리 처리: 원본=${category}, 정규화됨=${normalizedCategory}`
     );
 
-    const createdPost = await PostService.createPost(
-      {
-        ...postData,
-        deadline: new Date(deadline),
-        category: normalizedCategory,
-      },
-      images
-    );
+    const createData = normalizePostDetailFields({
+      ...postData,
+      deadline: new Date(deadline),
+      category: normalizedCategory,
+    });
+    createData.productName = createData.productName ?? post.title;
+
+    const createdPost = await PostService.createPost(createData, images);
 
     logger.info(
       `createPost - 생성된 게시글 카테고리: ${createdPost?.category}`
@@ -238,9 +292,9 @@ export async function updatePost(
 
     // deadline을 분리하여 Date 객체로 변환
     const { deadline, ...patchWithoutDeadline } = post;
-    const updateData: Partial<PostCreationAttributes> = {
+    const updateData: Partial<PostCreationAttributes> = normalizePostDetailFields({
       ...patchWithoutDeadline,
-    };
+    });
     if (deadline) {
       updateData.deadline = new Date(deadline);
     }

@@ -57,8 +57,11 @@ function buildPostListWhere(options: PostListOptions = {}) {
   if (normalizedKeyword) {
     const keywordFilters: any[] = [
       { title: { [Op.like]: `%${normalizedKeyword}%` } },
+      { productName: { [Op.like]: `%${normalizedKeyword}%` } },
       { content: { [Op.like]: `%${normalizedKeyword}%` } },
       { pickupLocation: { [Op.like]: `%${normalizedKeyword}%` } },
+      { pickupGuide: { [Op.like]: `%${normalizedKeyword}%` } },
+      { notice: { [Op.like]: `%${normalizedKeyword}%` } },
       { category: { [Op.like]: `%${normalizedKeyword}%` } },
     ];
     const categoryValues = findCategoryValuesByKeyword(normalizedKeyword);
