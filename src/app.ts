@@ -22,6 +22,7 @@ import ENV from "./common/constants/ENV";
 import authRouter from "./routes/auth/AuthRoutes";
 import "./config/passport";
 import { PARTICIPANT_STATUSES } from "./types/participant-status";
+import { NOTICE_TYPES } from "./types/notice";
 
 // 모든 모델을 import하여 Sequelize가 테이블을 인식하도록 함
 import "./models/User";
@@ -32,6 +33,7 @@ import "./models/Message";
 import "./models/PostParticipant";
 import "./models/TrustEvent";
 import "./models/UserSettings";
+import "./models/Notice";
 
 const app = express();
 app.set("trust proxy", true);
@@ -357,6 +359,71 @@ async function ensureUserSettingsTable() {
   }
 }
 
+async function ensureNoticesTable() {
+  try {
+    const queryInterface = sequelize.getQueryInterface();
+    const tables = await queryInterface.showAllTables();
+    const hasNotices = tables.some((table) => {
+      const tableName =
+        typeof table === "string"
+          ? table
+          : (table as { tableName?: string }).tableName;
+      return tableName === "notices";
+    });
+
+    if (hasNotices) {
+      logger.info("✓ notices 테이블 확인 완료");
+      return;
+    }
+
+    await queryInterface.createTable("notices", {
+      id: {
+        type: DataTypes.UUID,
+        primaryKey: true,
+        defaultValue: DataTypes.UUIDV4,
+      },
+      title: {
+        type: DataTypes.STRING(200),
+        allowNull: false,
+      },
+      summary: {
+        type: DataTypes.STRING(500),
+        allowNull: true,
+        defaultValue: null,
+      },
+      content: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      type: {
+        type: DataTypes.ENUM(...NOTICE_TYPES),
+        allowNull: false,
+        defaultValue: "service",
+      },
+      is_pinned: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      created_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+      },
+      updated_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+      },
+    });
+
+    await queryInterface.addIndex("notices", ["type", "created_at"]);
+    await queryInterface.addIndex("notices", ["is_pinned", "created_at"]);
+    logger.info("✓ notices 테이블 생성 완료");
+  } catch (error) {
+    logger.warn("notices 테이블 확인 중 경고 발생");
+    logger.warn(error, true);
+  }
+}
+
 export async function syncDatabase() {
   if (!ENV.DbForceSync) {
     logger.info("DB_FORCE_SYNC=false → 기존 데이터 유지");
@@ -371,6 +438,7 @@ export async function syncDatabase() {
     await ensureParticipantStatusColumn();
     await ensurePostUiDetailColumns();
     await ensureUserSettingsTable();
+    await ensureNoticesTable();
     return;
   }
   try {
@@ -378,6 +446,7 @@ export async function syncDatabase() {
     await ensureParticipantStatusColumn();
     await ensurePostUiDetailColumns();
     await ensureUserSettingsTable();
+    await ensureNoticesTable();
     logger.info("✓ 데이터베이스 force sync 완료");
   } catch (error) {
     logger.err("✗ 데이터베이스 동기화 실패");
