@@ -16,6 +16,98 @@ DB 구조가 바뀌면 다음 내용을 기록한다.
 6. API 응답 영향
 7. 배포 시 마이그레이션 주의점
 
+## 2026-05-19 - 사용자 설정 테이블 추가
+
+브랜치:
+
+```text
+feature/user-settings-api
+```
+
+변경 전 기준 커밋:
+
+```text
+b194ece
+```
+
+### 변경 요약
+
+마이페이지 설정 화면의 알림 및 방해금지 시간 설정을 사용자별로 저장하기 위해 `user_settings` 테이블을 추가한다.
+
+사용자당 설정 row는 하나만 가진다. 설정이 없는 사용자가 `GET /api/users/{id}/settings`를 호출하면 기본값으로 row를 생성한다.
+
+### 신규 테이블
+
+```text
+user_settings
+```
+
+### 신규 컬럼
+
+```text
+id: UUID, primary key
+user_id: UUID, not null, unique, users.id 참조
+push_enabled: BOOLEAN, not null, default true
+chat_notification_enabled: BOOLEAN, not null, default true
+post_notification_enabled: BOOLEAN, not null, default true
+marketing_notification_enabled: BOOLEAN, not null, default false
+quiet_hours_enabled: BOOLEAN, not null, default false
+quiet_hours_start: VARCHAR(5), not null, default "23:00"
+quiet_hours_end: VARCHAR(5), not null, default "08:00"
+created_at: DATETIME, not null
+updated_at: DATETIME, not null
+```
+
+### 관계 변경
+
+```text
+users 1 : 0..1 user_settings
+```
+
+`user_settings.user_id`는 `users.id`를 참조하며, 사용자 삭제 시 CASCADE로 삭제된다.
+
+### API 영향
+
+신규 API가 추가된다.
+
+```text
+GET /api/users/{id}/settings
+PUT /api/users/{id}/settings
+```
+
+Swagger 변경 사항은 다음 문서에서 관리한다.
+
+```text
+docs/api/SWAGGER_CHANGELOG.md
+```
+
+### 배포 주의점
+
+현재 서버는 `sequelize.sync({ alter: true })`를 사용하지만, 기존 `users` 인덱스 경고 때문에 alter가 중간에 실패할 수 있다.
+
+이를 보완하기 위해 서버 시작 시 `user_settings` 테이블을 별도로 확인하고 없으면 생성한다.
+
+운영 반영용 SQL:
+
+```sql
+CREATE TABLE user_settings (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  user_id CHAR(36) NOT NULL UNIQUE,
+  push_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  chat_notification_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  post_notification_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  marketing_notification_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  quiet_hours_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  quiet_hours_start VARCHAR(5) NOT NULL DEFAULT '23:00',
+  quiet_hours_end VARCHAR(5) NOT NULL DEFAULT '08:00',
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  CONSTRAINT user_settings_user_id_fk
+    FOREIGN KEY (user_id) REFERENCES users(id)
+    ON DELETE CASCADE
+);
+```
+
 ## 2026-05-16 - Post 등록/상세 UI 컬럼 추가
 
 브랜치:

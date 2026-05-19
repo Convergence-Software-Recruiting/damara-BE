@@ -27,6 +27,85 @@ src/routes/**/*.ts
 https://damara.bluerack.org/api-docs.json
 ```
 
+## 2026-05-19 - 사용자 설정 API 추가
+
+브랜치:
+
+```text
+feature/user-settings-api
+```
+
+변경 전 기준 커밋:
+
+```text
+b194ece
+```
+
+### 변경 요약
+
+마이페이지 설정 화면에서 사용하던 프론트 임시 상태를 실제 서버 데이터로 저장할 수 있도록 사용자별 설정 API를 추가했다.
+
+### 신규 API
+
+```text
+GET /api/users/{id}/settings
+PUT /api/users/{id}/settings
+```
+
+`GET`은 사용자 설정이 아직 없으면 기본 설정을 생성해 반환한다.
+
+### 요청 스키마
+
+`PUT /api/users/{id}/settings`는 `settings` 객체를 받는다. 모든 필드는 optional이며 전달된 값만 저장한다.
+
+```json
+{
+  "settings": {
+    "pushEnabled": true,
+    "chatNotificationEnabled": true,
+    "postNotificationEnabled": true,
+    "marketingNotificationEnabled": false,
+    "quietHoursEnabled": true,
+    "quietHoursStart": "23:00",
+    "quietHoursEnd": "08:00"
+  }
+}
+```
+
+`quietHoursStart`, `quietHoursEnd`는 `HH:mm` 형식만 허용한다.
+
+### 응답 스키마
+
+신규 `UserSettings` 스키마를 추가했다.
+
+```json
+{
+  "pushEnabled": true,
+  "chatNotificationEnabled": true,
+  "postNotificationEnabled": true,
+  "marketingNotificationEnabled": false,
+  "quietHoursEnabled": false,
+  "quietHoursStart": "23:00",
+  "quietHoursEnd": "08:00"
+}
+```
+
+### 프론트엔드 영향
+
+마이페이지 설정 화면의 토글과 방해금지 시간 입력은 `GET /api/users/{id}/settings`로 초기화하고, 변경 시 `PUT /api/users/{id}/settings`로 저장할 수 있다.
+
+### 검증 방법
+
+```bash
+npm run build
+npm run openapi:generate
+npm run openapi:lint
+curl -s "http://localhost:3000/api/users/{id}/settings"
+curl -s -X PUT "http://localhost:3000/api/users/{id}/settings" \
+  -H "Content-Type: application/json" \
+  -d '{"settings":{"quietHoursEnabled":true,"quietHoursStart":"23:00","quietHoursEnd":"08:00"}}'
+```
+
 ## 2026-05-17 - 마이페이지 통합 요약 API 추가
 
 브랜치:
