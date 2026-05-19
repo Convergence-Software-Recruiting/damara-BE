@@ -19,4 +19,7 @@ export default {
   Notifications: {
     Base: "/notifications",
   },
+  Notices: {
+    Base: "/notices",
+  },
 } as const;
