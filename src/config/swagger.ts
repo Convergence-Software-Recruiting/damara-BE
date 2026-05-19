@@ -3,6 +3,7 @@ import swaggerUi from "swagger-ui-express";
 import { Express, Request, Response, NextFunction } from "express";
 import ENV from "../common/constants/ENV";
 import { PARTICIPANT_STATUSES } from "../types/participant-status";
+import { NOTICE_TYPES } from "../types/notice";
 
 // 환경 변수에서 API 베이스 URL 가져오기 (배포 환경에서 설정)
 const getServerUrl = () => {
@@ -51,6 +52,10 @@ const options: swaggerJsdoc.Options = {
       {
         name: "Notifications",
         description: "알림 API",
+      },
+      {
+        name: "Notices",
+        description: "공지사항 API",
       },
     ],
     components: {
@@ -318,6 +323,96 @@ const options: swaggerJsdoc.Options = {
               pattern: "^([01]\\d|2[0-3]):[0-5]\\d$",
               description: "방해금지 종료 시간 (HH:mm)",
               example: "08:00",
+            },
+          },
+        },
+        Notice: {
+          type: "object",
+          required: [
+            "id",
+            "title",
+            "content",
+            "type",
+            "isPinned",
+            "createdAt",
+            "updatedAt",
+          ],
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              description: "공지사항 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            title: {
+              type: "string",
+              description: "공지사항 제목",
+              example: "서비스 점검 안내",
+            },
+            summary: {
+              type: "string",
+              nullable: true,
+              description: "목록 카드용 요약 문구",
+              example: "5월 20일 새벽 서비스 점검이 진행됩니다.",
+            },
+            content: {
+              type: "string",
+              description: "공지사항 본문",
+              example:
+                "안정적인 서비스 제공을 위해 5월 20일 02:00부터 03:00까지 점검을 진행합니다.",
+            },
+            type: {
+              type: "string",
+              enum: [...NOTICE_TYPES],
+              description: "공지 유형",
+              example: "maintenance",
+            },
+            isPinned: {
+              type: "boolean",
+              description: "상단 고정 여부",
+              example: true,
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              description: "생성일시",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              description: "수정일시",
+            },
+          },
+        },
+        NoticeListResponse: {
+          type: "object",
+          required: ["notices", "total", "limit", "offset", "hasNext"],
+          properties: {
+            notices: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/Notice",
+              },
+            },
+            total: {
+              type: "integer",
+              description: "필터 조건에 맞는 전체 공지 수",
+              example: 12,
+            },
+            limit: {
+              type: "integer",
+              description: "조회 개수",
+              example: 20,
+            },
+            offset: {
+              type: "integer",
+              description: "조회 시작 위치",
+              example: 0,
+            },
+            hasNext: {
+              type: "boolean",
+              description: "다음 페이지 존재 여부",
+              example: false,
             },
           },
         },

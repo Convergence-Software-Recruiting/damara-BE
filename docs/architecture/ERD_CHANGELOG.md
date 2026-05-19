@@ -16,6 +16,95 @@ DB 구조가 바뀌면 다음 내용을 기록한다.
 6. API 응답 영향
 7. 배포 시 마이그레이션 주의점
 
+## 2026-05-19 - 공지사항 테이블 추가
+
+브랜치:
+
+```text
+feature/notices-api
+```
+
+변경 전 기준 커밋:
+
+```text
+6949395
+```
+
+### 변경 요약
+
+서비스 공지, 이벤트, 점검, 정책 안내를 서버 DB에서 관리하기 위해 `notices` 테이블을 추가한다.
+
+공지 목록은 고정 여부와 생성일 기준으로 정렬되며, 유형별 필터를 지원한다.
+
+### 신규 테이블
+
+```text
+notices
+```
+
+### 신규 컬럼
+
+```text
+id: UUID, primary key
+title: VARCHAR(200), not null
+summary: VARCHAR(500), nullable
+content: TEXT, not null
+type: ENUM(service, event, maintenance, policy), not null, default service
+is_pinned: BOOLEAN, not null, default false
+created_at: DATETIME, not null
+updated_at: DATETIME, not null
+```
+
+### 인덱스
+
+```text
+notices(type, created_at)
+notices(is_pinned, created_at)
+```
+
+### 관계 변경
+
+관계 변경은 없다.
+
+### API 영향
+
+신규 API가 추가된다.
+
+```text
+GET /api/notices
+GET /api/notices/{id}
+```
+
+Swagger 변경 사항은 다음 문서에서 관리한다.
+
+```text
+docs/api/SWAGGER_CHANGELOG.md
+```
+
+### 배포 주의점
+
+현재 서버는 `sequelize.sync({ alter: true })`를 사용하지만, 기존 `users` 인덱스 경고 때문에 alter가 중간에 실패할 수 있다.
+
+이를 보완하기 위해 서버 시작 시 `notices` 테이블을 별도로 확인하고 없으면 생성한다.
+
+운영 반영용 SQL:
+
+```sql
+CREATE TABLE notices (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  title VARCHAR(200) NOT NULL,
+  summary VARCHAR(500) NULL DEFAULT NULL,
+  content TEXT NOT NULL,
+  type ENUM('service', 'event', 'maintenance', 'policy') NOT NULL DEFAULT 'service',
+  is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL
+);
+
+CREATE INDEX notices_type_created_at ON notices (type, created_at);
+CREATE INDEX notices_is_pinned_created_at ON notices (is_pinned, created_at);
+```
+
 ## 2026-05-19 - 사용자 설정 테이블 추가
 
 브랜치:
