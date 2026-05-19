@@ -270,6 +270,57 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        UserSettings: {
+          type: "object",
+          required: [
+            "pushEnabled",
+            "chatNotificationEnabled",
+            "postNotificationEnabled",
+            "marketingNotificationEnabled",
+            "quietHoursEnabled",
+            "quietHoursStart",
+            "quietHoursEnd",
+          ],
+          properties: {
+            pushEnabled: {
+              type: "boolean",
+              description: "전체 푸시 알림 허용 여부",
+              example: true,
+            },
+            chatNotificationEnabled: {
+              type: "boolean",
+              description: "채팅 알림 허용 여부",
+              example: true,
+            },
+            postNotificationEnabled: {
+              type: "boolean",
+              description: "공구 상태/참여 관련 알림 허용 여부",
+              example: true,
+            },
+            marketingNotificationEnabled: {
+              type: "boolean",
+              description: "마케팅/이벤트 알림 허용 여부",
+              example: false,
+            },
+            quietHoursEnabled: {
+              type: "boolean",
+              description: "방해금지 시간 사용 여부",
+              example: false,
+            },
+            quietHoursStart: {
+              type: "string",
+              pattern: "^([01]\\d|2[0-3]):[0-5]\\d$",
+              description: "방해금지 시작 시간 (HH:mm)",
+              example: "23:00",
+            },
+            quietHoursEnd: {
+              type: "string",
+              pattern: "^([01]\\d|2[0-3]):[0-5]\\d$",
+              description: "방해금지 종료 시간 (HH:mm)",
+              example: "08:00",
+            },
+          },
+        },
         TrustEvent: {
           type: "object",
           required: [
