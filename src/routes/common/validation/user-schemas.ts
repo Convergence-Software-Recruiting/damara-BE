@@ -42,3 +42,23 @@ export const loginSchema = z.object({
 });
 
 export type LoginReq = z.infer<typeof loginSchema>;
+
+const timeSchema = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "HH:mm 형식이어야 합니다.");
+
+export const updateUserSettingsSchema = z.object({
+  settings: z
+    .object({
+      pushEnabled: z.boolean().optional(),
+      chatNotificationEnabled: z.boolean().optional(),
+      postNotificationEnabled: z.boolean().optional(),
+      marketingNotificationEnabled: z.boolean().optional(),
+      quietHoursEnabled: z.boolean().optional(),
+      quietHoursStart: timeSchema.optional(),
+      quietHoursEnd: timeSchema.optional(),
+    })
+    .strict(),
+});
+
+export type UpdateUserSettingsReq = z.infer<typeof updateUserSettingsSchema>;

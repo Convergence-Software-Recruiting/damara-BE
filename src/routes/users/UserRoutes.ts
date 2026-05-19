@@ -9,6 +9,8 @@ import {
   login,
   getUserTrustEvents,
   getUserSummary,
+  getUserSettings,
+  updateUserSettings,
   getMyPostsSummary,
   getMyPosts,
 } from "../../controllers/user.controller";
@@ -377,6 +379,78 @@ userRouter.get("/:userId/my-posts/summary", getMyPostsSummary);
  */
 // GET /api/users/:id/summary - 마이페이지 통합 요약 조회
 userRouter.get("/:id/summary", getUserSummary);
+
+/**
+ * @swagger
+ * /api/users/{id}/settings:
+ *   get:
+ *     summary: 사용자 설정 조회
+ *     description: 마이페이지 설정 화면의 알림 및 방해금지 시간 설정을 조회합니다. 설정이 없으면 기본값을 생성해 반환합니다.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 사용자 UUID
+ *     responses:
+ *       200:
+ *         description: 사용자 설정 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserSettings'
+ *       404:
+ *         description: 사용자를 찾을 수 없음
+ *   put:
+ *     summary: 사용자 설정 수정
+ *     description: 마이페이지 설정 화면의 알림 및 방해금지 시간 설정을 부분 업데이트합니다.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 사용자 UUID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - settings
+ *             properties:
+ *               settings:
+ *                 $ref: '#/components/schemas/UserSettings'
+ *           example:
+ *             settings:
+ *               pushEnabled: true
+ *               chatNotificationEnabled: true
+ *               postNotificationEnabled: true
+ *               marketingNotificationEnabled: false
+ *               quietHoursEnabled: true
+ *               quietHoursStart: "23:00"
+ *               quietHoursEnd: "08:00"
+ *     responses:
+ *       200:
+ *         description: 사용자 설정 수정 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserSettings'
+ *       400:
+ *         description: 유효성 검증 실패
+ *       404:
+ *         description: 사용자를 찾을 수 없음
+ */
+// GET/PUT /api/users/:id/settings - 사용자 설정 조회/수정
+userRouter.get("/:id/settings", getUserSettings);
+userRouter.put("/:id/settings", updateUserSettings);
 
 /**
  * @swagger

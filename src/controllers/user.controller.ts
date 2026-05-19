@@ -10,6 +10,7 @@
  */
 import { Request, Response, NextFunction } from "express";
 import { UserService } from "../services/UserService";
+import { UserSettingsService } from "../services/UserSettingsService";
 import { TrustService } from "../services/TrustService";
 import { parseReq } from "../routes/common/validation/parseReq";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
@@ -20,6 +21,8 @@ import {
   UpdateUserReq,
   loginSchema,
   LoginReq,
+  updateUserSettingsSchema,
+  UpdateUserSettingsReq,
 } from "../routes/common/validation/user-schemas";
 import { MY_POSTS_TABS, MyPostsTab } from "../types/my-posts";
 import { PostListSort } from "../types/post-list";
@@ -220,6 +223,49 @@ export async function getUserSummary(
     const summary = await UserService.getUserSummary(id);
 
     res.status(HttpStatusCodes.OK).json(summary);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 사용자 설정 조회
+ * GET /api/users/:id/settings
+ */
+export async function getUserSettings(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+    const settings = await UserSettingsService.getSettings(id);
+
+    res.status(HttpStatusCodes.OK).json(settings);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 사용자 설정 수정
+ * PUT /api/users/:id/settings
+ */
+export async function updateUserSettings(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+    const validatedData =
+      parseReq<UpdateUserSettingsReq>(updateUserSettingsSchema)(req.body);
+    const settings = await UserSettingsService.updateSettings(
+      id,
+      validatedData.settings
+    );
+
+    res.status(HttpStatusCodes.OK).json(settings);
   } catch (error) {
     next(error);
   }
