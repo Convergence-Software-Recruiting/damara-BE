@@ -27,6 +27,85 @@ src/routes/**/*.ts
 https://damara.bluerack.org/api-docs.json
 ```
 
+## 2026-05-19 - 공지사항 API 추가
+
+브랜치:
+
+```text
+feature/notices-api
+```
+
+변경 전 기준 커밋:
+
+```text
+6949395
+```
+
+### 변경 요약
+
+마이페이지/서비스 화면에서 공지사항, 이벤트, 점검, 정책 안내를 서버에서 조회할 수 있도록 공지사항 읽기 API를 추가했다.
+
+### 신규 API
+
+```text
+GET /api/notices
+GET /api/notices/{id}
+```
+
+`GET /api/notices`는 고정 공지를 먼저 노출하고, 같은 조건 안에서는 최신순으로 정렬한다.
+
+### 요청 스키마
+
+`GET /api/notices`는 쿼리 파라미터를 받는다.
+
+```text
+limit: number, default 20, min 1, max 100
+offset: number, default 0
+type: service | event | maintenance | policy
+```
+
+### 응답 스키마
+
+신규 `Notice`, `NoticeListResponse` 스키마를 추가했다.
+
+```json
+{
+  "notices": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "title": "서비스 점검 안내",
+      "summary": "5월 20일 새벽 서비스 점검이 진행됩니다.",
+      "content": "안정적인 서비스 제공을 위해 점검을 진행합니다.",
+      "type": "maintenance",
+      "isPinned": true,
+      "createdAt": "2026-05-19T00:00:00.000Z",
+      "updatedAt": "2026-05-19T00:00:00.000Z"
+    }
+  ],
+  "total": 1,
+  "limit": 20,
+  "offset": 0,
+  "hasNext": false
+}
+```
+
+### 프론트엔드 영향
+
+공지사항 목록 화면은 `GET /api/notices`를 사용한다. 공지 유형 탭이 필요하면 `type` 쿼리를 사용한다.
+
+공지 상세 화면은 목록의 `id`로 `GET /api/notices/{id}`를 호출한다.
+
+### 검증 방법
+
+```bash
+npm run build
+npm run openapi:generate
+npm run openapi:lint
+curl -s "http://localhost:3000/api/notices"
+curl -s "http://localhost:3000/api/notices?type=service"
+curl -s "http://localhost:3000/api/notices/{id}"
+```
+
 ## 2026-05-19 - 사용자 설정 API 추가
 
 브랜치:
