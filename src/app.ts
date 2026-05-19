@@ -31,6 +31,7 @@ import "./models/ChatRoom";
 import "./models/Message";
 import "./models/PostParticipant";
 import "./models/TrustEvent";
+import "./models/UserSettings";
 
 const app = express();
 app.set("trust proxy", true);
@@ -272,6 +273,90 @@ async function ensurePostUiDetailColumns() {
   }
 }
 
+async function ensureUserSettingsTable() {
+  try {
+    const queryInterface = sequelize.getQueryInterface();
+    const tables = await queryInterface.showAllTables();
+    const hasUserSettings = tables.some((table) => {
+      const tableName =
+        typeof table === "string"
+          ? table
+          : (table as { tableName?: string }).tableName;
+      return tableName === "user_settings";
+    });
+
+    if (hasUserSettings) {
+      logger.info("✓ user_settings 테이블 확인 완료");
+      return;
+    }
+
+    await queryInterface.createTable("user_settings", {
+      id: {
+        type: DataTypes.UUID,
+        primaryKey: true,
+        defaultValue: DataTypes.UUIDV4,
+      },
+      user_id: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        unique: true,
+        references: {
+          model: "users",
+          key: "id",
+        },
+        onDelete: "CASCADE",
+      },
+      push_enabled: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
+      chat_notification_enabled: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
+      post_notification_enabled: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
+      marketing_notification_enabled: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      quiet_hours_enabled: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      quiet_hours_start: {
+        type: DataTypes.STRING(5),
+        allowNull: false,
+        defaultValue: "23:00",
+      },
+      quiet_hours_end: {
+        type: DataTypes.STRING(5),
+        allowNull: false,
+        defaultValue: "08:00",
+      },
+      created_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+      },
+      updated_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+      },
+    });
+    logger.info("✓ user_settings 테이블 생성 완료");
+  } catch (error) {
+    logger.warn("user_settings 테이블 확인 중 경고 발생");
+    logger.warn(error, true);
+  }
+}
+
 export async function syncDatabase() {
   if (!ENV.DbForceSync) {
     logger.info("DB_FORCE_SYNC=false → 기존 데이터 유지");
@@ -285,12 +370,14 @@ export async function syncDatabase() {
     }
     await ensureParticipantStatusColumn();
     await ensurePostUiDetailColumns();
+    await ensureUserSettingsTable();
     return;
   }
   try {
     await sequelize.sync({ force: true });
     await ensureParticipantStatusColumn();
     await ensurePostUiDetailColumns();
+    await ensureUserSettingsTable();
     logger.info("✓ 데이터베이스 force sync 완료");
   } catch (error) {
     logger.err("✗ 데이터베이스 동기화 실패");
