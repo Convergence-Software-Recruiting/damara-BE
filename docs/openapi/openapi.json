@@ -1884,12 +1884,14 @@
             "type": "string",
             "enum": [
               "new_participant",
-              "participant_cancel",
-              "deadline_soon",
-              "post_completed",
-              "post_cancelled",
-              "favorite_deadline",
-              "favorite_completed"
+              "post_deadline_soon",
+              "post_closed",
+              "post_status_changed",
+              "new_chat_message",
+              "favorite_post_deadline_soon",
+              "trade_completed",
+              "trade_cancelled",
+              "system_notice"
             ],
             "description": "알림 타입",
             "example": "new_participant"
@@ -1910,6 +1912,19 @@
             "nullable": true,
             "description": "게시글 UUID",
             "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "chatRoomId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "채팅방 UUID",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "actionUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "알림 클릭 시 이동할 프론트엔드 경로",
+            "example": "/post/123e4567-e89b-12d3-a456-426614174000"
           },
           "isRead": {
             "type": "boolean",
@@ -2782,6 +2797,18 @@
                     "total": {
                       "type": "integer",
                       "description": "전체 알림 개수"
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "description": "조회 개수"
+                    },
+                    "offset": {
+                      "type": "integer",
+                      "description": "시작 위치"
+                    },
+                    "hasNext": {
+                      "type": "boolean",
+                      "description": "다음 페이지 존재 여부"
                     }
                   }
                 }

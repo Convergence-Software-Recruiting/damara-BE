@@ -64,6 +64,15 @@ const notificationRouter = Router();
  *                 total:
  *                   type: integer
  *                   description: 전체 알림 개수
+ *                 limit:
+ *                   type: integer
+ *                   description: 조회 개수
+ *                 offset:
+ *                   type: integer
+ *                   description: 시작 위치
+ *                 hasNext:
+ *                   type: boolean
+ *                   description: 다음 페이지 존재 여부
  */
 // GET /api/notifications - 알림 목록 조회
 notificationRouter.get("/", getNotifications);
@@ -222,4 +231,3 @@ notificationRouter.patch("/:id/read", markNotificationAsRead);
 notificationRouter.delete("/:id", deleteNotification);
 
 export default notificationRouter;
-
