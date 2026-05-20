@@ -517,15 +517,25 @@ postRouter.get("/user/:userId/participated", getParticipatedPosts);
  *         schema:
  *           type: string
  *           format: uuid
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: 조회 개수
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: 시작 위치
  *     responses:
  *       200:
  *         description: 참여자 목록 조회 성공
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/PostParticipant'
+ *               $ref: '#/components/schemas/PostParticipantsResponse'
  */
 // GET /api/posts/:id/participants - 참여자 목록 (더 구체적인 라우트를 먼저 배치)
 postRouter.get("/:id/participants", getParticipants);
