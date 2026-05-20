@@ -1071,7 +1071,14 @@ const options: swaggerJsdoc.Options = {
         },
         PostParticipant: {
           type: "object",
-          required: ["id", "postId", "userId", "participantStatus"],
+          required: [
+            "id",
+            "postId",
+            "userId",
+            "joinedAt",
+            "status",
+            "participantStatus",
+          ],
           properties: {
             id: {
               type: "string",
@@ -1091,8 +1098,56 @@ const options: swaggerJsdoc.Options = {
               description: "참여자 사용자 UUID",
               example: "a87522bd-bc79-47b0-a73f-46ea4068a158",
             },
+            nickname: {
+              type: "string",
+              nullable: true,
+              description: "참여자 닉네임",
+              example: "참여자 1",
+            },
+            studentId: {
+              type: "string",
+              nullable: true,
+              description: "참여자 학번",
+              example: "20241234",
+            },
+            department: {
+              type: "string",
+              nullable: true,
+              description: "참여자 학과/부서",
+              example: "컴퓨터공학과",
+            },
+            avatarUrl: {
+              type: "string",
+              format: "uri",
+              nullable: true,
+              description: "참여자 프로필 이미지 URL",
+              example: "https://example.com/avatar.jpg",
+            },
+            trustGrade: {
+              type: "number",
+              format: "float",
+              nullable: true,
+              description: "사용자에게 표시하는 신뢰학점",
+              example: 4.3,
+            },
+            joinedAt: {
+              type: "string",
+              format: "date-time",
+              description: "공동구매 참여 시각",
+            },
+            status: {
+              type: "string",
+              enum: ["joined"],
+              description: "프론트엔드 참여자 목록 표시용 상태",
+              example: "joined",
+            },
             participantStatus: {
               $ref: "#/components/schemas/ParticipantStatus",
+            },
+            participantStatusLabel: {
+              type: "string",
+              description: "참여자 상태 한글 라벨",
+              example: "참여중",
             },
             user: {
               type: "object",
@@ -1110,10 +1165,21 @@ const options: swaggerJsdoc.Options = {
                   type: "string",
                   example: "20241234",
                 },
+                department: {
+                  type: "string",
+                  nullable: true,
+                  example: "컴퓨터공학과",
+                },
                 avatarUrl: {
                   type: "string",
                   format: "uri",
                   nullable: true,
+                },
+                trustGrade: {
+                  type: "number",
+                  format: "float",
+                  nullable: true,
+                  example: 4.3,
                 },
               },
             },
@@ -1126,6 +1192,39 @@ const options: swaggerJsdoc.Options = {
               type: "string",
               format: "date-time",
               description: "참여 수정일시",
+            },
+          },
+        },
+        PostParticipantsResponse: {
+          type: "object",
+          required: ["participants", "total", "limit", "offset", "hasNext"],
+          properties: {
+            participants: {
+              type: "array",
+              description: "참여자 공개 프로필 목록",
+              items: {
+                $ref: "#/components/schemas/PostParticipant",
+              },
+            },
+            total: {
+              type: "integer",
+              description: "전체 참여자 수",
+              example: 3,
+            },
+            limit: {
+              type: "integer",
+              description: "조회 개수",
+              example: 20,
+            },
+            offset: {
+              type: "integer",
+              description: "시작 위치",
+              example: 0,
+            },
+            hasNext: {
+              type: "boolean",
+              description: "다음 페이지 존재 여부",
+              example: false,
             },
           },
         },
