@@ -231,6 +231,42 @@ function getTrustLabel(trustGrade: number) {
   return "거래 전 약속을 한 번 더 확인해 주세요";
 }
 
+function getTrustGradeLabel(trustGrade: number) {
+  if (trustGrade >= 4.3) {
+    return "매너 학생";
+  }
+
+  if (trustGrade >= 3.8) {
+    return "안정 거래자";
+  }
+
+  if (trustGrade >= 3.2) {
+    return "성장 거래자";
+  }
+
+  return "주의 필요";
+}
+
+function estimateRankPercent(trustScore: number) {
+  return Math.max(1, Math.min(100, 101 - Math.round(trustScore)));
+}
+
+function estimateAvgResponseMinutes(trustGrade: number) {
+  if (trustGrade >= 4.3) {
+    return 10;
+  }
+
+  if (trustGrade >= 3.8) {
+    return 30;
+  }
+
+  if (trustGrade >= 3.2) {
+    return 60;
+  }
+
+  return 120;
+}
+
 function getTrustBadges(trustGrade: number, cancelCount: number, noShowCount: number) {
   const badges: string[] = [];
 
@@ -386,6 +422,64 @@ export const UserService = {
     });
 
     return event.nextScore;
+  },
+
+  /**
+   * 신뢰/매너 점수 요약
+   */
+  async getTrustSummary(userId: string) {
+    const user = await UserRepo.findById(userId);
+    if (!user) {
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "USER_NOT_FOUND");
+    }
+
+    const completedEventTypes: TrustEventType[] = [
+      "post_completed_author",
+      "post_completed_participant",
+    ];
+    const cancelEventTypes: TrustEventType[] = [
+      "post_cancelled_by_author",
+      "post_deleted_by_author",
+      "participant_cancelled",
+    ];
+
+    const [
+      completedAuthoredPostCount,
+      receivedParticipationCount,
+      completedEventCount,
+      cancelCount,
+      noShowCount,
+    ] = await Promise.all([
+      PostRepo.count({ authorId: userId, status: "completed" }),
+      PostParticipantRepo.countByUserIdAndStatus(userId, "received"),
+      countTrustEventsSafely(userId, completedEventTypes),
+      countTrustEventsSafely(userId, cancelEventTypes),
+      countTrustEventsSafely(userId, ["participant_no_show"]),
+    ]);
+
+    const trustGrade = TrustService.calculateTrustGrade(user.trustScore);
+    const completedTradeCount = Math.max(
+      completedAuthoredPostCount + receivedParticipationCount,
+      completedEventCount
+    );
+    const responseRate = calculateResponseRate(
+      completedTradeCount,
+      cancelCount,
+      noShowCount
+    );
+
+    return {
+      trustScore: user.trustScore,
+      trustGrade,
+      gradeLabel: getTrustGradeLabel(trustGrade),
+      rankPercent: estimateRankPercent(user.trustScore),
+      completedTradeCount,
+      responseRate,
+      avgResponseMinutes: estimateAvgResponseMinutes(trustGrade),
+      cancelCount,
+      noShowCount,
+      badges: getTrustBadges(trustGrade, cancelCount, noShowCount),
+    };
   },
 
   /**
