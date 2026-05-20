@@ -73,20 +73,37 @@ export const PostParticipantRepo = {
   /**
    * 게시글의 참여자 목록 조회
    */
-  async findByPostId(postId: string) {
-    const participants = await PostParticipantModel.findAll({
+  async findByPostId(
+    postId: string,
+    options: { limit?: number; offset?: number } = {}
+  ) {
+    const queryOptions: any = {
       where: { postId },
       include: [
         {
           model: UserModel,
           as: "user",
-          attributes: ["id", "nickname", "studentId", "avatarUrl"],
+          attributes: [
+            "id",
+            "nickname",
+            "studentId",
+            "department",
+            "avatarUrl",
+            "trustScore",
+          ],
         },
       ],
       order: [["createdAt", "ASC"]],
-    });
+    };
 
-    return participants.map((p) => p.get());
+    if (options.limit !== undefined) {
+      queryOptions.limit = options.limit;
+      queryOptions.offset = options.offset ?? 0;
+    }
+
+    const participants = await PostParticipantModel.findAll(queryOptions);
+
+    return participants.map((p) => p.get({ plain: true }));
   },
 
   /**

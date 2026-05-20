@@ -11,7 +11,10 @@ import { FavoriteService } from "./FavoriteService";
 import { NotificationService } from "./NotificationService";
 import { TrustService } from "./TrustService";
 import { PostListOptions } from "../types/post-list";
-import { ParticipantStatus } from "../types/participant-status";
+import {
+  ParticipantStatus,
+  PARTICIPANT_STATUS_LABELS,
+} from "../types/participant-status";
 
 type PostListItem = Awaited<ReturnType<typeof PostRepo.list>>[number];
 type EnrichedPostListItem = PostListItem & {
@@ -49,6 +52,11 @@ type PostDetailSource = Awaited<ReturnType<typeof PostRepo.findDetailById>> & {
 };
 type PostParticipantProfileSource = Awaited<
   ReturnType<typeof PostParticipantRepo.findProfilesByPostId>
+>[number] & {
+  user?: PublicUserProfileSource | null;
+};
+type PostParticipantListSource = Awaited<
+  ReturnType<typeof PostParticipantRepo.findByPostId>
 >[number] & {
   user?: PublicUserProfileSource | null;
 };
@@ -184,6 +192,40 @@ function toPublicUserProfile(user?: PublicUserProfileSource | null) {
   return {
     ...profile,
     trustGrade: TrustService.calculateTrustGrade(Number(trustScore || 0)),
+  };
+}
+
+function toParticipantListItem(participant: PostParticipantListSource) {
+  const user = participant.user ?? null;
+  const trustGrade =
+    user?.trustScore !== undefined && user?.trustScore !== null
+      ? TrustService.calculateTrustGrade(Number(user.trustScore))
+      : null;
+
+  return {
+    id: participant.id,
+    postId: participant.postId,
+    userId: participant.userId,
+    nickname: user?.nickname ?? null,
+    studentId: user?.studentId ?? null,
+    department: user?.department ?? null,
+    avatarUrl: user?.avatarUrl ?? null,
+    trustGrade,
+    joinedAt: participant.createdAt,
+    status: "joined",
+    participantStatus: participant.participantStatus,
+    participantStatusLabel:
+      PARTICIPANT_STATUS_LABELS[participant.participantStatus],
+    user: user
+      ? {
+          id: user.id,
+          nickname: user.nickname,
+          studentId: user.studentId,
+          department: user.department,
+          avatarUrl: user.avatarUrl,
+          trustGrade,
+        }
+      : null,
   };
 }
 
@@ -696,8 +738,22 @@ export const PostParticipantService = {
   /**
    * 게시글의 참여자 목록 조회
    */
-  async getParticipants(postId: string) {
-    return await PostParticipantRepo.findByPostId(postId);
+  async getParticipants(postId: string, limit = 20, offset = 0) {
+    const [participants, total] = await Promise.all([
+      PostParticipantRepo.findByPostId(postId, { limit, offset }) as Promise<
+        PostParticipantListSource[]
+      >,
+      PostParticipantRepo.countByPostId(postId),
+    ]);
+    const items = participants.map(toParticipantListItem);
+
+    return {
+      participants: items,
+      total,
+      limit,
+      offset,
+      hasNext: offset + items.length < total,
+    };
   },
 
   /**

@@ -444,7 +444,13 @@ export async function getParticipants(
 ) {
   try {
     const { id } = req.params;
-    const participants = await PostParticipantService.getParticipants(id);
+    const limit = parseNonNegativeInteger(req.query.limit, 20);
+    const offset = parseNonNegativeInteger(req.query.offset, 0);
+    const participants = await PostParticipantService.getParticipants(
+      id,
+      limit,
+      offset
+    );
 
     res.status(HttpStatusCodes.OK).json(participants);
   } catch (error) {
