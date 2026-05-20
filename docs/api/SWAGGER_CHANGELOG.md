@@ -27,6 +27,72 @@ src/routes/**/*.ts
 https://damara.bluerack.org/api-docs.json
 ```
 
+## 2026-05-20 - 신뢰 요약 API 추가
+
+브랜치:
+
+```text
+feature/trust-summary-api
+```
+
+변경 전 기준 커밋:
+
+```text
+fb3354b
+```
+
+### 변경 요약
+
+마이페이지 프로필 카드, 안전거래 프로필, 공구 상세 판매자/참여자 카드에서 현재 신뢰 정보를 별도 호출로 조회할 수 있도록 신뢰 요약 API를 추가했다.
+
+### 신규 API
+
+```text
+GET /api/users/{id}/trust-summary
+```
+
+### 응답 스키마
+
+신규 `TrustSummaryResponse` 스키마를 추가했다.
+
+```json
+{
+  "trustScore": 86,
+  "trustGrade": 4.3,
+  "gradeLabel": "매너 학생",
+  "rankPercent": 15,
+  "completedTradeCount": 12,
+  "responseRate": 92,
+  "avgResponseMinutes": 10,
+  "cancelCount": 1,
+  "noShowCount": 0,
+  "badges": ["꼼꼼해요", "친절해요", "약속시간 잘 지켜요"]
+}
+```
+
+### 계산 기준
+
+`completedTradeCount`는 완료된 작성 공구 수, 수령완료 참여 수, 신뢰 이벤트 완료 수 중 현재 데이터에서 가장 보수적으로 사용할 수 있는 값을 기준으로 계산한다.
+
+`responseRate`는 완료/취소/노쇼 이력 기반 완료 거래 비율이다.
+
+`rankPercent`, `avgResponseMinutes`는 별도 랭킹/응답시간 테이블이 생기기 전까지 내부 신뢰점수와 신뢰학점 기반 추정값으로 제공한다.
+
+### 프론트엔드 영향
+
+신뢰 점수 단독 카드가 필요한 화면은 `GET /api/users/{id}/trust-summary`를 호출하면 된다.
+
+마이페이지 첫 렌더링만 필요한 경우 기존 `GET /api/users/{id}/summary`를 계속 사용할 수 있다.
+
+### 검증 방법
+
+```bash
+npm run build
+npm run openapi:generate
+npm run openapi:lint
+curl -s "http://localhost:3000/api/users/{id}/trust-summary"
+```
+
 ## 2026-05-20 - FAQ API 추가
 
 브랜치:
