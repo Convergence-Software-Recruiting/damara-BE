@@ -4,6 +4,7 @@ import { Express, Request, Response, NextFunction } from "express";
 import ENV from "../common/constants/ENV";
 import { PARTICIPANT_STATUSES } from "../types/participant-status";
 import { NOTICE_TYPES } from "../types/notice";
+import { FAQ_CATEGORIES } from "../types/faq";
 
 // 환경 변수에서 API 베이스 URL 가져오기 (배포 환경에서 설정)
 const getServerUrl = () => {
@@ -56,6 +57,10 @@ const options: swaggerJsdoc.Options = {
       {
         name: "Notices",
         description: "공지사항 API",
+      },
+      {
+        name: "Faqs",
+        description: "FAQ API",
       },
     ],
     components: {
@@ -398,6 +403,95 @@ const options: swaggerJsdoc.Options = {
               type: "integer",
               description: "필터 조건에 맞는 전체 공지 수",
               example: 12,
+            },
+            limit: {
+              type: "integer",
+              description: "조회 개수",
+              example: 20,
+            },
+            offset: {
+              type: "integer",
+              description: "조회 시작 위치",
+              example: 0,
+            },
+            hasNext: {
+              type: "boolean",
+              description: "다음 페이지 존재 여부",
+              example: false,
+            },
+          },
+        },
+        Faq: {
+          type: "object",
+          required: [
+            "id",
+            "category",
+            "question",
+            "answer",
+            "order",
+            "isActive",
+            "createdAt",
+            "updatedAt",
+          ],
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              description: "FAQ UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            category: {
+              type: "string",
+              enum: [...FAQ_CATEGORIES],
+              description: "FAQ 카테고리",
+              example: "trade",
+            },
+            question: {
+              type: "string",
+              description: "질문",
+              example: "공구 참여는 어떻게 하나요?",
+            },
+            answer: {
+              type: "string",
+              description: "답변",
+              example: "공구 상세 화면에서 참여하기를 누르면 됩니다.",
+            },
+            order: {
+              type: "integer",
+              description: "카테고리 내 정렬 순서",
+              example: 1,
+            },
+            isActive: {
+              type: "boolean",
+              description: "사용자 화면 노출 여부",
+              example: true,
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              description: "생성일시",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              description: "수정일시",
+            },
+          },
+        },
+        FaqListResponse: {
+          type: "object",
+          required: ["faqs", "total", "limit", "offset", "hasNext"],
+          properties: {
+            faqs: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/Faq",
+              },
+            },
+            total: {
+              type: "integer",
+              description: "필터 조건에 맞는 전체 FAQ 수",
+              example: 8,
             },
             limit: {
               type: "integer",

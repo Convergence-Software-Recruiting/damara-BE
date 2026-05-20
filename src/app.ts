@@ -23,6 +23,7 @@ import authRouter from "./routes/auth/AuthRoutes";
 import "./config/passport";
 import { PARTICIPANT_STATUSES } from "./types/participant-status";
 import { NOTICE_TYPES } from "./types/notice";
+import { FAQ_CATEGORIES } from "./types/faq";
 
 // 모든 모델을 import하여 Sequelize가 테이블을 인식하도록 함
 import "./models/User";
@@ -34,6 +35,7 @@ import "./models/PostParticipant";
 import "./models/TrustEvent";
 import "./models/UserSettings";
 import "./models/Notice";
+import "./models/Faq";
 
 const app = express();
 app.set("trust proxy", true);
@@ -424,6 +426,75 @@ async function ensureNoticesTable() {
   }
 }
 
+async function ensureFaqsTable() {
+  try {
+    const queryInterface = sequelize.getQueryInterface();
+    const tables = await queryInterface.showAllTables();
+    const hasFaqs = tables.some((table) => {
+      const tableName =
+        typeof table === "string"
+          ? table
+          : (table as { tableName?: string }).tableName;
+      return tableName === "faqs";
+    });
+
+    if (hasFaqs) {
+      logger.info("✓ faqs 테이블 확인 완료");
+      return;
+    }
+
+    await queryInterface.createTable("faqs", {
+      id: {
+        type: DataTypes.UUID,
+        primaryKey: true,
+        defaultValue: DataTypes.UUIDV4,
+      },
+      category: {
+        type: DataTypes.ENUM(...FAQ_CATEGORIES),
+        allowNull: false,
+        defaultValue: "etc",
+      },
+      question: {
+        type: DataTypes.STRING(300),
+        allowNull: false,
+      },
+      answer: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      sort_order: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      is_active: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
+      created_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+      },
+      updated_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+      },
+    });
+
+    await queryInterface.addIndex("faqs", [
+      "category",
+      "is_active",
+      "sort_order",
+    ]);
+    await queryInterface.addIndex("faqs", ["is_active", "sort_order"]);
+    logger.info("✓ faqs 테이블 생성 완료");
+  } catch (error) {
+    logger.warn("faqs 테이블 확인 중 경고 발생");
+    logger.warn(error, true);
+  }
+}
+
 export async function syncDatabase() {
   if (!ENV.DbForceSync) {
     logger.info("DB_FORCE_SYNC=false → 기존 데이터 유지");
@@ -439,6 +510,7 @@ export async function syncDatabase() {
     await ensurePostUiDetailColumns();
     await ensureUserSettingsTable();
     await ensureNoticesTable();
+    await ensureFaqsTable();
     return;
   }
   try {
@@ -447,6 +519,7 @@ export async function syncDatabase() {
     await ensurePostUiDetailColumns();
     await ensureUserSettingsTable();
     await ensureNoticesTable();
+    await ensureFaqsTable();
     logger.info("✓ 데이터베이스 force sync 완료");
   } catch (error) {
     logger.err("✗ 데이터베이스 동기화 실패");

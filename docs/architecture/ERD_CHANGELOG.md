@@ -16,6 +16,96 @@ DB 구조가 바뀌면 다음 내용을 기록한다.
 6. API 응답 영향
 7. 배포 시 마이그레이션 주의점
 
+## 2026-05-20 - FAQ 테이블 추가
+
+브랜치:
+
+```text
+feature/faqs-api
+```
+
+변경 전 기준 커밋:
+
+```text
+2eb657e
+```
+
+### 변경 요약
+
+마이페이지 FAQ 화면의 질문/답변 데이터를 서버 DB에서 관리하기 위해 `faqs` 테이블을 추가한다.
+
+FAQ 목록은 활성 FAQ만 사용자 화면에 노출하며, 카테고리와 정렬 순서를 기준으로 조회한다.
+
+### 신규 테이블
+
+```text
+faqs
+```
+
+### 신규 컬럼
+
+```text
+id: UUID, primary key
+category: ENUM(trade, account, payment, pickup, etc), not null, default etc
+question: VARCHAR(300), not null
+answer: TEXT, not null
+sort_order: INTEGER, not null, default 0
+is_active: BOOLEAN, not null, default true
+created_at: DATETIME, not null
+updated_at: DATETIME, not null
+```
+
+### 인덱스
+
+```text
+faqs(category, is_active, sort_order)
+faqs(is_active, sort_order)
+```
+
+### 관계 변경
+
+관계 변경은 없다.
+
+### API 영향
+
+신규 API가 추가된다.
+
+```text
+GET /api/faqs
+```
+
+Swagger 변경 사항은 다음 문서에서 관리한다.
+
+```text
+docs/api/SWAGGER_CHANGELOG.md
+```
+
+### 배포 주의점
+
+현재 서버는 `sequelize.sync({ alter: true })`를 사용하지만, 기존 `users` 인덱스 경고 때문에 alter가 중간에 실패할 수 있다.
+
+이를 보완하기 위해 서버 시작 시 `faqs` 테이블을 별도로 확인하고 없으면 생성한다.
+
+운영 반영용 SQL:
+
+```sql
+CREATE TABLE faqs (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  category ENUM('trade', 'account', 'payment', 'pickup', 'etc') NOT NULL DEFAULT 'etc',
+  question VARCHAR(300) NOT NULL,
+  answer TEXT NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL
+);
+
+CREATE INDEX faqs_category_is_active_sort_order
+  ON faqs (category, is_active, sort_order);
+CREATE INDEX faqs_is_active_sort_order
+  ON faqs (is_active, sort_order);
+```
+
 ## 2026-05-19 - 공지사항 테이블 추가
 
 브랜치:

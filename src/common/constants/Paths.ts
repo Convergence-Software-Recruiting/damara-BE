@@ -22,4 +22,7 @@ export default {
   Notices: {
     Base: "/notices",
   },
+  Faqs: {
+    Base: "/faqs",
+  },
 } as const;

@@ -27,6 +27,84 @@ src/routes/**/*.ts
 https://damara.bluerack.org/api-docs.json
 ```
 
+## 2026-05-20 - FAQ API 추가
+
+브랜치:
+
+```text
+feature/faqs-api
+```
+
+변경 전 기준 커밋:
+
+```text
+2eb657e
+```
+
+### 변경 요약
+
+마이페이지 FAQ 화면에서 프론트 임시 데이터를 제거하고 서버 데이터로 질문/답변 목록을 조회할 수 있도록 FAQ 목록 API를 추가했다.
+
+### 신규 API
+
+```text
+GET /api/faqs
+```
+
+활성화된 FAQ만 반환하며, `order ASC`, `createdAt DESC` 순서로 정렬한다.
+
+### 요청 스키마
+
+`GET /api/faqs`는 쿼리 파라미터를 받는다.
+
+```text
+limit: number, default 20, min 1, max 100
+offset: number, default 0
+category: trade | account | payment | pickup | etc
+```
+
+### 응답 스키마
+
+신규 `Faq`, `FaqListResponse` 스키마를 추가했다.
+
+```json
+{
+  "faqs": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "category": "trade",
+      "question": "공구 참여는 어떻게 하나요?",
+      "answer": "공구 상세 화면에서 참여하기를 누르면 됩니다.",
+      "order": 1,
+      "isActive": true,
+      "createdAt": "2026-05-20T00:00:00.000Z",
+      "updatedAt": "2026-05-20T00:00:00.000Z"
+    }
+  ],
+  "total": 1,
+  "limit": 20,
+  "offset": 0,
+  "hasNext": false
+}
+```
+
+### 프론트엔드 영향
+
+FAQ 화면은 `GET /api/faqs`를 사용한다. 카테고리 탭이 필요하면 `category` 쿼리를 사용한다.
+
+잘못된 카테고리는 `INVALID_FAQ_CATEGORY` 400 응답을 반환한다.
+
+### 검증 방법
+
+```bash
+npm run build
+npm run openapi:generate
+npm run openapi:lint
+curl -s "http://localhost:3000/api/faqs"
+curl -s "http://localhost:3000/api/faqs?category=trade"
+curl -s "http://localhost:3000/api/faqs?category=invalid"
+```
+
 ## 2026-05-19 - 공지사항 API 추가
 
 브랜치:
