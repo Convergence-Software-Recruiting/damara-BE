@@ -27,6 +27,103 @@ src/routes/**/*.ts
 https://damara.bluerack.org/api-docs.json
 ```
 
+## 2026-05-20 - 채팅 UI 응답 계약 보강
+
+브랜치:
+
+```text
+feature/chat-ui-contract
+```
+
+변경 전 기준 커밋:
+
+```text
+282ca81
+```
+
+### 변경 요약
+
+프론트엔드 채팅 탭과 채팅 상세 오버레이가 목데이터 없이 렌더링할 수 있도록 채팅방 목록과 메시지 목록 응답 계약을 보강했다.
+
+채팅 목록은 게시글 카드에 필요한 상태, 수령 장소, 마감일, 썸네일, 마지막 메시지 정보를 함께 반환한다.
+
+채팅 메시지 목록은 배열 단독 응답 대신 페이지네이션 메타가 포함된 객체 응답으로 변경한다.
+
+### 영향 API
+
+```text
+GET /api/chat/rooms/user/{userId}
+GET /api/chat/rooms/{chatRoomId}/messages
+POST /api/chat/messages
+```
+
+### 채팅방 목록 응답 변경
+
+`GET /api/chat/rooms/user/{userId}`의 각 `chatRooms[]` 항목에 다음 필드를 보강했다.
+
+```json
+{
+  "post": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "title": "물티슈 공동구매",
+    "status": "open",
+    "pickupLocation": "명지대 정문앞",
+    "deadline": "2026-05-20T18:00:00.000Z",
+    "thumbnailUrl": "https://example.com/image.png",
+    "authorId": "123e4567-e89b-12d3-a456-426614174000"
+  },
+  "lastMessage": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "content": "오늘 오후 5시까지 수령 가능해요.",
+    "senderId": "123e4567-e89b-12d3-a456-426614174000",
+    "messageType": "text",
+    "createdAt": "2026-05-20T00:00:00.000Z"
+  },
+  "hasNext": false
+}
+```
+
+### 메시지 목록 응답 변경
+
+`GET /api/chat/rooms/{chatRoomId}/messages` 응답을 다음 형태로 변경했다.
+
+```json
+{
+  "messages": [],
+  "total": 0,
+  "limit": 50,
+  "offset": 0,
+  "hasNext": false
+}
+```
+
+### 메시지 타입 변경
+
+메시지 타입에 `system`을 추가했다.
+
+```text
+text
+image
+file
+system
+```
+
+### 프론트엔드 영향
+
+채팅 메시지 목록 화면은 이제 응답 배열 대신 `response.messages`를 사용해야 한다.
+
+채팅방 목록은 `post.thumbnailUrl`, `post.status`, `post.pickupLocation`, `post.deadline`, `lastMessage.messageType`을 바로 사용할 수 있다.
+
+### 검증 방법
+
+```bash
+npm run build
+npm run openapi:generate
+npm run openapi:lint
+curl -s "http://localhost:3000/api/chat/rooms/user/{USER_ID}?limit=20&offset=0"
+curl -s "http://localhost:3000/api/chat/rooms/{CHAT_ROOM_ID}/messages?limit=50&offset=0"
+```
+
 ## 2026-05-20 - 신뢰 요약 API 추가
 
 브랜치:
