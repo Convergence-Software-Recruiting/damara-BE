@@ -6,6 +6,7 @@ import logger from "jet-logger";
 import { ChatService } from "../services/ChatService";
 import { MessageCreationAttributes } from "../models/Message";
 import { MessageRepo } from "../repos/MessageRepo";
+import { MessageType } from "../types/chat";
 
 /**
  * Socket.io 서버 설정
@@ -77,7 +78,7 @@ export function setupSocketIO(httpServer: HttpServer): SocketServer {
       chatRoomId: string;
       senderId: string;
       content: string;
-      messageType?: "text" | "image" | "file";
+      messageType?: MessageType;
     }) => {
       try {
         const { chatRoomId, senderId, content, messageType = "text" } = data;
@@ -229,4 +230,3 @@ export function getIO(): SocketServer | null {
 export function setIO(io: SocketServer): void {
   ioInstance = io;
 }
-
