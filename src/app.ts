@@ -24,6 +24,7 @@ import "./config/passport";
 import { PARTICIPANT_STATUSES } from "./types/participant-status";
 import { NOTICE_TYPES } from "./types/notice";
 import { FAQ_CATEGORIES } from "./types/faq";
+import { STORED_NOTIFICATION_TYPES } from "./types/notification";
 
 // 모든 모델을 import하여 Sequelize가 테이블을 인식하도록 함
 import "./models/User";
@@ -36,6 +37,7 @@ import "./models/TrustEvent";
 import "./models/UserSettings";
 import "./models/Notice";
 import "./models/Faq";
+import "./models/Notification";
 
 const app = express();
 app.set("trust proxy", true);
@@ -495,6 +497,46 @@ async function ensureFaqsTable() {
   }
 }
 
+async function ensureNotificationActionColumns() {
+  try {
+    const queryInterface = sequelize.getQueryInterface();
+    const table = await queryInterface.describeTable("notifications");
+
+    if (!table.chat_room_id) {
+      await queryInterface.addColumn("notifications", "chat_room_id", {
+        type: DataTypes.UUID,
+        allowNull: true,
+        defaultValue: null,
+        references: {
+          model: "chat_rooms",
+          key: "id",
+        },
+        onDelete: "CASCADE",
+      });
+      logger.info("✓ notifications.chat_room_id 컬럼 추가 완료");
+    }
+
+    if (!table.action_url) {
+      await queryInterface.addColumn("notifications", "action_url", {
+        type: DataTypes.STRING(500),
+        allowNull: true,
+        defaultValue: null,
+      });
+      logger.info("✓ notifications.action_url 컬럼 추가 완료");
+    }
+
+    await queryInterface.changeColumn("notifications", "type", {
+      type: DataTypes.ENUM(...STORED_NOTIFICATION_TYPES),
+      allowNull: false,
+    });
+
+    logger.info("✓ notifications action target 컬럼 확인 완료");
+  } catch (error) {
+    logger.warn("notifications action target 컬럼 확인 중 경고 발생");
+    logger.warn(error, true);
+  }
+}
+
 export async function syncDatabase() {
   if (!ENV.DbForceSync) {
     logger.info("DB_FORCE_SYNC=false → 기존 데이터 유지");
@@ -511,6 +553,7 @@ export async function syncDatabase() {
     await ensureUserSettingsTable();
     await ensureNoticesTable();
     await ensureFaqsTable();
+    await ensureNotificationActionColumns();
     return;
   }
   try {
@@ -520,6 +563,7 @@ export async function syncDatabase() {
     await ensureUserSettingsTable();
     await ensureNoticesTable();
     await ensureFaqsTable();
+    await ensureNotificationActionColumns();
     logger.info("✓ 데이터베이스 force sync 완료");
   } catch (error) {
     logger.err("✗ 데이터베이스 동기화 실패");
