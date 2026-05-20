@@ -557,17 +557,17 @@ src/
 const socket = io("http://localhost:3000");
 
 socket.on("connect", () => {
-  socket.emit("join_chat_room", {
+  socket.emit("chat:join", {
     chatRoomId: "chat-room-uuid",
     userId: "user-uuid",
   });
 });
 
-socket.on("receive_message", (message) => {
+socket.on("chat:message", (message) => {
   console.log("메시지 수신:", message);
 });
 
-socket.emit("send_message", {
+socket.emit("chat:send", {
   chatRoomId: "chat-room-uuid",
   senderId: "user-uuid",
   content: "안녕하세요!",

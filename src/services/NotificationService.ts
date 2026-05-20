@@ -5,6 +5,7 @@ import { NotificationCreationAttributes } from "../models/Notification";
 import PostModel from "../models/Post";
 import UserModel from "../models/User";
 import { NotificationType } from "../types/notification";
+import { emitNotificationToUser } from "../config/socketRegistry";
 
 function buildActionUrl(
   data: Pick<
@@ -41,7 +42,9 @@ export const NotificationService = {
    * 알림 생성
    */
   async createNotification(data: NotificationCreationAttributes) {
-    return await NotificationRepo.create(withActionUrl(data));
+    const notification = await NotificationRepo.create(withActionUrl(data));
+    emitNotificationToUser(notification.userId, notification);
+    return notification;
   },
 
   /**

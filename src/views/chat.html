@@ -248,14 +248,14 @@
 
         // 기존 채팅방이 있으면 나가기
         if (currentChatRoomId && currentChatRoomId !== chatRoomId) {
-          socket.emit("leave_chat_room", {
+          socket.emit("chat:leave", {
             chatRoomId: currentChatRoomId,
             userId: currentUserId,
           });
         }
 
         // 채팅방 입장
-        socket.emit("join_chat_room", {
+        socket.emit("chat:join", {
           chatRoomId: chatRoomId,
           userId: userId,
         });
@@ -295,7 +295,7 @@
       // 채팅방 나가기
       leaveRoomBtn.addEventListener("click", () => {
         if (socket && currentChatRoomId && currentUserId) {
-          socket.emit("leave_chat_room", {
+          socket.emit("chat:leave", {
             chatRoomId: currentChatRoomId,
             userId: currentUserId,
           });
@@ -355,7 +355,7 @@
         displayMessage(tempMessage, true);
 
         // 서버로 메시지 전송
-        socket.emit("send_message", {
+        socket.emit("chat:send", {
           chatRoomId: currentChatRoomId,
           senderId: currentUserId,
           content: content,
@@ -552,7 +552,7 @@
         });
 
         // 메시지 수신 (중복 방지 로직 포함)
-        socket.on("receive_message", (message) => {
+        socket.on("chat:message", (message) => {
           console.log("메시지 수신:", message);
           // 현재 채팅방의 메시지만 표시
           if (message.chatRoomId === currentChatRoomId) {
@@ -579,7 +579,7 @@
         });
 
         // 사용자 입장 알림
-        socket.on("user_joined", (data) => {
+        socket.on("chat:joined", (data) => {
           console.log("사용자 입장:", data);
           // 현재 채팅방의 알림만 표시
           if (data.chatRoomId === currentChatRoomId) {
@@ -588,7 +588,7 @@
         });
 
         // 사용자 퇴장 알림
-        socket.on("user_left", (data) => {
+        socket.on("chat:left", (data) => {
           console.log("사용자 퇴장:", data);
           // 현재 채팅방의 알림만 표시
           if (data.chatRoomId === currentChatRoomId) {
@@ -597,12 +597,12 @@
         });
 
         // 메시지 읽음 처리 알림
-        socket.on("message_read", (data) => {
+        socket.on("chat:read", (data) => {
           console.log("메시지 읽음:", data);
         });
 
         // 에러 처리
-        socket.on("error", (error) => {
+        socket.on("socket:error", (error) => {
           console.error("에러:", error);
           showSystemMessage(
             `오류: ${error.message || "알 수 없는 오류가 발생했습니다."}`
@@ -616,7 +616,7 @@
       // 페이지 종료 시 연결 해제
       window.addEventListener("beforeunload", () => {
         if (socket && currentChatRoomId && currentUserId) {
-          socket.emit("leave_chat_room", {
+          socket.emit("chat:leave", {
             chatRoomId: currentChatRoomId,
             userId: currentUserId,
           });
@@ -758,7 +758,7 @@
 
           // 채팅방 연결 정리
           if (socket && currentChatRoomId && currentUserId) {
-            socket.emit("leave_chat_room", {
+            socket.emit("chat:leave", {
               chatRoomId: currentChatRoomId,
               userId: currentUserId,
             });

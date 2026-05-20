@@ -27,12 +27,12 @@ src/routes/**/*.ts
 https://damara.bluerack.org/api-docs.json
 ```
 
-## 2026-05-20 - 참여자 목록 응답 계약 보강
+## 2026-05-20 - Socket.io 이벤트 계약 정리
 
 브랜치:
 
 ```text
-feature/participants-list-contract
+feature/socket-event-contract
 ```
 
 변경 전 기준 커밋:
@@ -43,64 +43,49 @@ feature/participants-list-contract
 
 ### 변경 요약
 
-공구 상세 화면에서 참여자 목록을 별도 가공 없이 표시할 수 있도록 `GET /api/posts/{id}/participants` 응답을 보강했다.
+팜플렛 기준 프론트엔드 WebSocket 이벤트 이름을 네임스페이스형 계약으로 정리했다.
 
-기존에는 참여 row 배열만 반환했지만, 변경 후에는 참여자 공개 프로필, 참여 상태 라벨, 페이지네이션 메타를 포함한 객체를 반환한다.
+기존 이벤트는 호환 alias로 유지하고, 신규 클라이언트는 `chat:*`, `notification:*`, `socket:error` 이벤트를 사용한다.
 
-### 영향 API
-
-```text
-GET /api/posts/{id}/participants
-```
-
-### 요청 변경
-
-선택 쿼리 파라미터를 추가했다.
+### 영향 이벤트
 
 ```text
-limit: 조회 개수, 기본값 20
-offset: 시작 위치, 기본값 0
+chat:join
+chat:send
+chat:read
+chat:leave
+chat:message
+chat:joined
+chat:left
+notification:subscribe
+notification:new
+socket:error
 ```
 
-### 응답 변경
+### 호환 유지 이벤트
 
-응답 최상위 구조가 배열에서 객체로 변경된다.
-
-```json
-{
-  "participants": [
-    {
-      "id": "7f7b9a5c-0e86-4f93-bd11-31e9bde8a7f2",
-      "postId": "123e4567-e89b-12d3-a456-426614174000",
-      "userId": "a87522bd-bc79-47b0-a73f-46ea4068a158",
-      "nickname": "참여자 1",
-      "studentId": "20241234",
-      "department": "컴퓨터공학과",
-      "avatarUrl": "https://example.com/avatar.jpg",
-      "trustGrade": 4.3,
-      "joinedAt": "2026-05-20T00:00:00.000Z",
-      "status": "joined",
-      "participantStatus": "participating",
-      "participantStatusLabel": "참여중"
-    }
-  ],
-  "total": 1,
-  "limit": 20,
-  "offset": 0,
-  "hasNext": false
-}
+```text
+join_chat_room
+send_message
+mark_message_read
+leave_chat_room
+receive_message
+user_joined
+user_left
+message_read
+error
 ```
 
 ### 프론트엔드 영향
 
-참여자 목록 화면은 응답 배열 대신 `participants` 배열을 사용해야 한다.
+신규 화면은 `chat:join`, `chat:send`, `chat:read`, `notification:subscribe`를 emit 기준으로 사용한다.
 
-참여자 카드에는 `nickname`, `avatarUrl`, `trustGrade`, `participantStatusLabel`, `joinedAt`을 바로 표시할 수 있다.
+수신 이벤트는 `chat:message`, `chat:joined`, `chat:left`, `chat:read`, `notification:new`, `socket:error`를 사용한다.
 
-### 확인 명령
+### 확인 문서
 
-```bash
-curl -s "http://localhost:3000/api/posts/{postId}/participants?limit=20&offset=0"
+```text
+docs/api/WEBSOCKET_GUIDE.md
 ```
 
 ## 2026-05-20 - 채팅 UI 응답 계약 보강
