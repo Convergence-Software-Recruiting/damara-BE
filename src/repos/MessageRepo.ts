@@ -13,7 +13,15 @@ export const MessageRepo = {
   async create(data: MessageCreationAttributes) {
     try {
       const message = await MessageModel.create(data);
-      return message.get();
+      const createdMessage = await this.findById(message.id);
+      if (!createdMessage) {
+        throw new RouteError(
+          HttpStatusCodes.INTERNAL_SERVER_ERROR,
+          "MESSAGE_CREATE_FAILED"
+        );
+      }
+
+      return createdMessage;
     } catch (e: unknown) {
       throw e;
     }
@@ -54,6 +62,15 @@ export const MessageRepo = {
     });
 
     return messages.map((m) => m.get());
+  },
+
+  /**
+   * 채팅방 메시지 개수 조회
+   */
+  async countByChatRoomId(chatRoomId: string) {
+    return await MessageModel.count({
+      where: { chatRoomId },
+    });
   },
 
   /**

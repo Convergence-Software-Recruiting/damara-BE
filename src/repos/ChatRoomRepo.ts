@@ -4,6 +4,7 @@ import ChatRoomModel, { ChatRoomCreationAttributes } from "../models/ChatRoom";
 import PostModel from "../models/Post";
 import { RouteError } from "../common/util/route-errors";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
+import { Op } from "sequelize";
 
 export const ChatRoomRepo = {
   /**
@@ -41,7 +42,14 @@ export const ChatRoomRepo = {
         {
           model: PostModel,
           as: "post",
-          attributes: ["id", "title", "authorId"],
+          attributes: [
+            "id",
+            "title",
+            "authorId",
+            "status",
+            "pickupLocation",
+            "deadline",
+          ],
         },
       ],
     });
@@ -58,7 +66,14 @@ export const ChatRoomRepo = {
         {
           model: PostModel,
           as: "post",
-          attributes: ["id", "title", "authorId"],
+          attributes: [
+            "id",
+            "title",
+            "authorId",
+            "status",
+            "pickupLocation",
+            "deadline",
+          ],
         },
       ],
     });
@@ -113,7 +128,14 @@ export const ChatRoomRepo = {
         {
           model: PostModel,
           as: "post",
-          attributes: ["id", "title", "authorId"],
+          attributes: [
+            "id",
+            "title",
+            "authorId",
+            "status",
+            "pickupLocation",
+            "deadline",
+          ],
           include: [
             {
               model: (await import("../models/PostImage")).default,
@@ -133,10 +155,50 @@ export const ChatRoomRepo = {
   },
 
   /**
+   * 사용자가 접근 가능한 채팅방 개수 조회
+   */
+  async countByUserId(userId: string) {
+    const postIds = await this.findAccessiblePostIdsByUserId(userId);
+
+    if (postIds.length === 0) {
+      return 0;
+    }
+
+    return await ChatRoomModel.count({
+      where: {
+        postId: {
+          [Op.in]: postIds,
+        },
+      },
+    });
+  },
+
+  /**
    * 사용자가 접근할 수 있는 채팅방 ID 목록 조회
    * - 사용자가 작성했거나 참여한 게시글의 채팅방만 포함
    */
   async findIdsByUserId(userId: string) {
+    const postIds = await this.findAccessiblePostIdsByUserId(userId);
+    if (postIds.length === 0) {
+      return [];
+    }
+
+    const chatRooms = await ChatRoomModel.findAll({
+      where: {
+        postId: {
+          [Op.in]: postIds,
+        },
+      },
+      attributes: ["id"],
+    });
+
+    return chatRooms.map((chatRoom) => chatRoom.id);
+  },
+
+  /**
+   * 사용자가 접근 가능한 게시글 ID 목록 조회
+   */
+  async findAccessiblePostIdsByUserId(userId: string) {
     const { PostParticipantRepo } = await import("./PostParticipantRepo");
 
     const participants = await PostParticipantRepo.findByUserId(userId);
@@ -149,17 +211,6 @@ export const ChatRoomRepo = {
     const authoredPostIds = authoredPosts.map((p) => p.id);
 
     const postIds = [...new Set([...participantPostIds, ...authoredPostIds])];
-    if (postIds.length === 0) {
-      return [];
-    }
-
-    const chatRooms = await ChatRoomModel.findAll({
-      where: {
-        postId: postIds,
-      },
-      attributes: ["id"],
-    });
-
-    return chatRooms.map((chatRoom) => chatRoom.id);
+    return postIds;
   },
 };
