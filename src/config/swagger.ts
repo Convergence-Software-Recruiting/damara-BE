@@ -5,6 +5,7 @@ import ENV from "../common/constants/ENV";
 import { PARTICIPANT_STATUSES } from "../types/participant-status";
 import { NOTICE_TYPES } from "../types/notice";
 import { FAQ_CATEGORIES } from "../types/faq";
+import { NOTIFICATION_TYPES } from "../types/notification";
 
 // 환경 변수에서 API 베이스 URL 가져오기 (배포 환경에서 설정)
 const getServerUrl = () => {
@@ -1816,15 +1817,7 @@ const options: swaggerJsdoc.Options = {
             },
             type: {
               type: "string",
-              enum: [
-                "new_participant",
-                "participant_cancel",
-                "deadline_soon",
-                "post_completed",
-                "post_cancelled",
-                "favorite_deadline",
-                "favorite_completed",
-              ],
+              enum: [...NOTIFICATION_TYPES],
               description: "알림 타입",
               example: "new_participant",
             },
@@ -1844,6 +1837,19 @@ const options: swaggerJsdoc.Options = {
               nullable: true,
               description: "게시글 UUID",
               example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            chatRoomId: {
+              type: "string",
+              format: "uuid",
+              nullable: true,
+              description: "채팅방 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            actionUrl: {
+              type: "string",
+              nullable: true,
+              description: "알림 클릭 시 이동할 프론트엔드 경로",
+              example: "/post/123e4567-e89b-12d3-a456-426614174000",
             },
             isRead: {
               type: "boolean",

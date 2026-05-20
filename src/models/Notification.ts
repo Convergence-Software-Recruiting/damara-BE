@@ -4,22 +4,15 @@ import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../db";
 import UserModel from "./User";
 import PostModel from "./Post";
+import ChatRoomModel from "./ChatRoom";
+import {
+  STORED_NOTIFICATION_TYPES,
+  StoredNotificationType,
+} from "../types/notification";
 
 // ----------------------------
 // TypeScript 타입 정의
 // ----------------------------
-
-/**
- * 알림 타입
- */
-export type NotificationType =
-  | "new_participant"
-  | "participant_cancel"
-  | "deadline_soon"
-  | "post_completed"
-  | "post_cancelled"
-  | "favorite_deadline"
-  | "favorite_completed";
 
 /**
  * DB 컬럼 기반 attributes
@@ -27,10 +20,12 @@ export type NotificationType =
 export interface NotificationAttributes {
   id: string;
   userId: string; // users.id와 외래키 관계
-  type: NotificationType;
+  type: StoredNotificationType;
   title: string;
   message: string;
   postId: string | null; // posts.id와 외래키 관계 (nullable)
+  chatRoomId: string | null;
+  actionUrl: string | null;
   isRead: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -41,7 +36,13 @@ export interface NotificationAttributes {
  */
 export type NotificationCreationAttributes = Optional<
   NotificationAttributes,
-  "id" | "isRead" | "createdAt" | "updatedAt"
+  | "id"
+  | "postId"
+  | "chatRoomId"
+  | "actionUrl"
+  | "isRead"
+  | "createdAt"
+  | "updatedAt"
 >;
 
 /**
@@ -53,10 +54,12 @@ export class NotificationModel
 {
   public id!: string;
   public userId!: string;
-  public type!: NotificationType;
+  public type!: StoredNotificationType;
   public title!: string;
   public message!: string;
   public postId!: string | null;
+  public chatRoomId!: string | null;
+  public actionUrl!: string | null;
   public isRead!: boolean;
 
   public readonly createdAt!: Date;
@@ -84,15 +87,7 @@ NotificationModel.init(
       onDelete: "CASCADE",
     },
     type: {
-      type: DataTypes.ENUM(
-        "new_participant",
-        "participant_cancel",
-        "deadline_soon",
-        "post_completed",
-        "post_cancelled",
-        "favorite_deadline",
-        "favorite_completed"
-      ),
+      type: DataTypes.ENUM(...STORED_NOTIFICATION_TYPES),
       allowNull: false,
     },
     title: {
@@ -112,6 +107,23 @@ NotificationModel.init(
         key: "id",
       },
       onDelete: "CASCADE",
+    },
+    chatRoomId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      defaultValue: null,
+      field: "chat_room_id",
+      references: {
+        model: ChatRoomModel,
+        key: "id",
+      },
+      onDelete: "CASCADE",
+    },
+    actionUrl: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      defaultValue: null,
+      field: "action_url",
     },
     isRead: {
       type: DataTypes.BOOLEAN,
@@ -149,5 +161,9 @@ NotificationModel.belongsTo(PostModel, {
   as: "post",
 });
 
-export default NotificationModel;
+NotificationModel.belongsTo(ChatRoomModel, {
+  foreignKey: "chatRoomId",
+  as: "chatRoom",
+});
 
+export default NotificationModel;
