@@ -16,6 +16,107 @@ DB 구조가 바뀌면 다음 내용을 기록한다.
 6. API 응답 영향
 7. 배포 시 마이그레이션 주의점
 
+## 2026-05-20 - 알림 action target 컬럼 추가
+
+브랜치:
+
+```text
+feature/notification-action-targets
+```
+
+변경 전 기준 커밋:
+
+```text
+fb3354b
+```
+
+### 변경 요약
+
+알림 클릭 시 이동 대상이 명확히 전달되도록 `notifications` 테이블에 채팅방 참조와 프론트엔드 이동 URL 컬럼을 추가한다.
+
+기존 알림 enum 값은 운영 데이터 호환을 위해 저장 가능 목록에 유지하고, 신규 생성 알림은 프론트엔드 요구서 기준 타입을 사용한다.
+
+### 변경 테이블
+
+```text
+notifications
+```
+
+### 신규 컬럼
+
+```text
+chat_room_id: UUID, nullable, references chat_rooms(id), on delete cascade
+action_url: VARCHAR(500), nullable
+```
+
+### 변경 컬럼
+
+```text
+type: ENUM(
+  new_participant,
+  post_deadline_soon,
+  post_closed,
+  post_status_changed,
+  new_chat_message,
+  favorite_post_deadline_soon,
+  trade_completed,
+  trade_cancelled,
+  system_notice,
+  participant_cancel,
+  deadline_soon,
+  post_completed,
+  post_cancelled,
+  favorite_deadline,
+  favorite_completed
+)
+```
+
+### 관계 변경
+
+`notifications.chat_room_id`에서 `chat_rooms.id`로 향하는 nullable N:1 관계를 추가했다.
+
+### API 영향
+
+`Notification` 응답에 `chatRoomId`, `actionUrl`이 추가된다. Swagger 변경 사항은 다음 문서에서 관리한다.
+
+```text
+docs/api/SWAGGER_CHANGELOG.md
+```
+
+### 배포 주의점
+
+서버 시작 시 `notifications` 테이블을 확인하고 누락된 컬럼을 보강한다. 운영 DB에 수동 반영이 필요하면 다음 SQL을 사용할 수 있다.
+
+```sql
+ALTER TABLE notifications
+  ADD COLUMN chat_room_id CHAR(36) NULL,
+  ADD COLUMN action_url VARCHAR(500) NULL;
+
+ALTER TABLE notifications
+  ADD CONSTRAINT notifications_chat_room_id_foreign_idx
+  FOREIGN KEY (chat_room_id) REFERENCES chat_rooms(id)
+  ON DELETE CASCADE;
+
+ALTER TABLE notifications
+  MODIFY COLUMN type ENUM(
+    'new_participant',
+    'post_deadline_soon',
+    'post_closed',
+    'post_status_changed',
+    'new_chat_message',
+    'favorite_post_deadline_soon',
+    'trade_completed',
+    'trade_cancelled',
+    'system_notice',
+    'participant_cancel',
+    'deadline_soon',
+    'post_completed',
+    'post_cancelled',
+    'favorite_deadline',
+    'favorite_completed'
+  ) NOT NULL;
+```
+
 ## 2026-05-20 - FAQ 테이블 추가
 
 브랜치:

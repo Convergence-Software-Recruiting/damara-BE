@@ -27,6 +27,89 @@ src/routes/**/*.ts
 https://damara.bluerack.org/api-docs.json
 ```
 
+## 2026-05-20 - 알림 action target 응답 보강
+
+브랜치:
+
+```text
+feature/notification-action-targets
+```
+
+변경 전 기준 커밋:
+
+```text
+fb3354b
+```
+
+### 변경 요약
+
+프론트엔드 알림 화면에서 알림을 누르면 게시글 상세 또는 채팅방으로 바로 이동할 수 있도록 알림 응답에 이동 대상 정보를 추가했다.
+
+기존 알림 타입은 운영 데이터 호환을 위해 DB에서 읽을 수 있게 유지하고, API 응답은 프론트엔드 요구서 기준의 신규 알림 타입으로 정규화한다.
+
+채팅 메시지 전송 시 `new_chat_message` 알림을 생성하며, 해당 알림은 채팅방 이동 경로를 `actionUrl`로 제공한다.
+
+### 영향 API
+
+```text
+GET /api/notifications
+PATCH /api/notifications/{id}/read
+```
+
+### 응답 스키마 변경
+
+`Notification` 스키마에 다음 필드를 추가했다.
+
+```json
+{
+  "chatRoomId": "123e4567-e89b-12d3-a456-426614174000",
+  "actionUrl": "/post/123e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+`GET /api/notifications` 목록 응답에 페이지네이션 메타를 추가했다.
+
+```json
+{
+  "limit": 20,
+  "offset": 0,
+  "hasNext": false
+}
+```
+
+### 알림 타입 변경
+
+Swagger에 노출되는 알림 타입을 다음 값으로 정리했다.
+
+```text
+new_participant
+post_deadline_soon
+post_closed
+post_status_changed
+new_chat_message
+favorite_post_deadline_soon
+trade_completed
+trade_cancelled
+system_notice
+```
+
+### 프론트엔드 영향
+
+알림 리스트와 알림 읽음 처리 응답에서 `actionUrl`을 사용하면 화면 이동 규칙을 프론트에서 하드코딩하지 않아도 된다.
+
+기존 운영 데이터의 과거 알림 타입은 응답 시 신규 타입으로 정규화된다.
+
+채팅 알림은 `/chat/{chatRoomId}` 형식의 `actionUrl`을 반환한다.
+
+### 검증 방법
+
+```bash
+npm run build
+npm run openapi:generate
+npm run openapi:lint
+curl -s "http://localhost:3000/api/notifications?userId={USER_ID}"
+```
+
 ## 2026-05-20 - FAQ API 추가
 
 브랜치:
