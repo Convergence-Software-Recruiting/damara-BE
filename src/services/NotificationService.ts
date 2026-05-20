@@ -5,7 +5,11 @@ import { NotificationCreationAttributes } from "../models/Notification";
 import PostModel from "../models/Post";
 import UserModel from "../models/User";
 import { NotificationType } from "../types/notification";
-import { emitNotificationToUser } from "../config/socketRegistry";
+import {
+  emitAllNotificationsReadToUser,
+  emitNotificationReadToUser,
+  emitNotificationToUser,
+} from "../config/socketRegistry";
 
 function buildActionUrl(
   data: Pick<
@@ -79,7 +83,9 @@ export const NotificationService = {
    * 알림 읽음 처리
    */
   async markAsRead(id: string, userId: string) {
-    return await NotificationRepo.markAsRead(id, userId);
+    const notification = await NotificationRepo.markAsRead(id, userId);
+    emitNotificationReadToUser(userId, notification);
+    return notification;
   },
 
   /**
@@ -87,6 +93,7 @@ export const NotificationService = {
    */
   async markAllAsRead(userId: string) {
     const updatedCount = await NotificationRepo.markAllAsRead(userId);
+    emitAllNotificationsReadToUser(userId, { userId, updatedCount });
     return { updatedCount };
   },
 
