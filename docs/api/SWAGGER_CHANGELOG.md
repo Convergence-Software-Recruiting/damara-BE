@@ -27,6 +27,67 @@ src/routes/**/*.ts
 https://damara.bluerack.org/api-docs.json
 ```
 
+## 2026-05-20 - Socket.io 이벤트 계약 정리
+
+브랜치:
+
+```text
+feature/socket-event-contract
+```
+
+변경 전 기준 커밋:
+
+```text
+7e539f6
+```
+
+### 변경 요약
+
+팜플렛 기준 프론트엔드 WebSocket 이벤트 이름을 네임스페이스형 계약으로 정리했다.
+
+기존 이벤트는 호환 alias로 유지하고, 신규 클라이언트는 `chat:*`, `notification:*`, `socket:error` 이벤트를 사용한다.
+
+### 영향 이벤트
+
+```text
+chat:join
+chat:send
+chat:read
+chat:leave
+chat:message
+chat:joined
+chat:left
+notification:subscribe
+notification:new
+socket:error
+```
+
+### 호환 유지 이벤트
+
+```text
+join_chat_room
+send_message
+mark_message_read
+leave_chat_room
+receive_message
+user_joined
+user_left
+message_read
+error
+```
+
+### 프론트엔드 영향
+
+신규 화면은 `chat:join`, `chat:send`, `chat:read`, `notification:subscribe`를 emit 기준으로 사용한다.
+
+수신 이벤트는 `chat:message`, `chat:joined`, `chat:left`, `chat:read`, `notification:new`, `socket:error`를 사용한다.
+
+### 확인 문서
+
+```text
+docs/api/WEBSOCKET_GUIDE.md
+```
+
 ## 2026-05-20 - 채팅 UI 응답 계약 보강
 
 브랜치:

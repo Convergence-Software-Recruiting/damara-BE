@@ -164,14 +164,15 @@ curl -s "http://localhost:3000/api/chat/rooms/{CHAT_ROOM_ID}/messages?limit=50&o
 
 ```text
 후속 API:
-Socket.io 이벤트 이름을 팜플렛 기준 chat:join, chat:send, chat:read, notification:new으로 정리하는 작업.
+Socket.io 이벤트 이름 정리는 feature/socket-event-contract에서 진행했다.
+알림 읽음 처리까지 실시간 반영하려면 notification:read, notification:readAll 이벤트를 추가할 수 있다.
 
 운영/배포 주의점:
 messages.message_type enum 확장 반영 여부를 배포 로그에서 확인한다.
 
 테스트 보강:
-채팅방 목록 응답 필드와 메시지 목록 페이지네이션 테스트.
+채팅방 목록 응답 필드, 메시지 목록 페이지네이션, Socket.io 이벤트 alias 테스트.
 
 문서 보강:
-WebSocket/SSE 이벤트 계약 별도 문서화.
+프론트엔드 실제 Socket.io 클라이언트 코드가 확정되면 payload 예시를 더 구체화한다.
 ```
