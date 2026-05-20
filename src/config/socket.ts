@@ -4,6 +4,7 @@ import { Server as HttpServer } from "http";
 import { Server as SocketServer, Socket } from "socket.io";
 import logger from "jet-logger";
 import { ChatService } from "../services/ChatService";
+import { NotificationService } from "../services/NotificationService";
 import { MessageCreationAttributes } from "../models/Message";
 import { MessageRepo } from "../repos/MessageRepo";
 import { MessageType } from "../types/chat";
@@ -40,6 +41,15 @@ type SendMessagePayload = {
 
 type ReadMessagePayload = {
   messageId: string;
+  userId: string;
+};
+
+type ReadNotificationPayload = {
+  notificationId: string;
+  userId: string;
+};
+
+type ReadAllNotificationsPayload = {
   userId: string;
 };
 
@@ -121,6 +131,47 @@ export function setupSocketIO(httpServer: HttpServer): SocketServer {
       socket.join(getUserRoom(data.userId));
       logger.info(`✓ 사용자 ${data.userId}가 알림 룸에 연결되었습니다.`);
     });
+
+    /**
+     * 알림 읽음 처리
+     */
+    socket.on("notification:read", async (data: ReadNotificationPayload) => {
+      try {
+        if (!data.notificationId || !data.userId) {
+          emitSocketError(socket, "알림 ID와 사용자 ID가 필요합니다.");
+          return;
+        }
+
+        await NotificationService.markAsRead(data.notificationId, data.userId);
+      } catch (error) {
+        logger.err(`✗ 알림 읽음 처리 실패: ${socket.id}`);
+        emitSocketError(socket, "알림 읽음 처리에 실패했습니다.", error);
+      }
+    });
+
+    /**
+     * 모든 알림 읽음 처리
+     */
+    socket.on(
+      "notification:readAll",
+      async (data: ReadAllNotificationsPayload) => {
+        try {
+          if (!data.userId) {
+            emitSocketError(socket, "사용자 ID가 필요합니다.");
+            return;
+          }
+
+          await NotificationService.markAllAsRead(data.userId);
+        } catch (error) {
+          logger.err(`✗ 모든 알림 읽음 처리 실패: ${socket.id}`);
+          emitSocketError(
+            socket,
+            "모든 알림 읽음 처리에 실패했습니다.",
+            error
+          );
+        }
+      }
+    );
 
     /**
      * 메시지 전송

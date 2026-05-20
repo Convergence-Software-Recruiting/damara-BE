@@ -26,6 +26,8 @@ chat:joined
 chat:left
 notification:subscribe
 notification:new
+notification:read
+notification:readAll
 socket:error
 ```
 
@@ -345,6 +347,25 @@ socket.emit('notification:subscribe', {
 });
 ```
 
+#### 6. `notification:read`
+단일 알림 읽음 처리
+
+```typescript
+socket.emit('notification:read', {
+  notificationId: string; // 알림 UUID
+  userId: string;         // 사용자 UUID
+});
+```
+
+#### 7. `notification:readAll`
+모든 알림 읽음 처리
+
+```typescript
+socket.emit('notification:readAll', {
+  userId: string; // 사용자 UUID
+});
+```
+
 ### 서버 → 클라이언트 (on)
 
 #### 1. `chat:message`
@@ -430,7 +451,44 @@ socket.on('notification:new', (notification: {
 });
 ```
 
-#### 6. `socket:error`
+#### 6. `notification:read`
+단일 알림 읽음 처리 결과 수신
+
+REST `PATCH /api/notifications/{id}/read` 또는 Socket `notification:read`로 읽음 처리되면 사용자 알림 룸에 브로드캐스트됩니다.
+
+```typescript
+socket.on('notification:read', (notification: {
+  id: string;
+  userId: string;
+  type: string;
+  title: string;
+  message: string;
+  postId: string | null;
+  chatRoomId: string | null;
+  actionUrl: string | null;
+  isRead: true;
+  createdAt: string;
+  updatedAt: string;
+}) => {
+  // 해당 알림을 읽음 상태로 갱신
+});
+```
+
+#### 7. `notification:readAll`
+모든 알림 읽음 처리 결과 수신
+
+REST `PATCH /api/notifications/read-all` 또는 Socket `notification:readAll`로 처리되면 사용자 알림 룸에 브로드캐스트됩니다.
+
+```typescript
+socket.on('notification:readAll', (data: {
+  userId: string;
+  updatedCount: number;
+}) => {
+  // 모든 알림을 읽음 상태로 갱신
+});
+```
+
+#### 8. `socket:error`
 에러 발생
 
 ```typescript
@@ -442,7 +500,7 @@ socket.on('socket:error', (error: {
 });
 ```
 
-#### 7. `connect`
+#### 9. `connect`
 연결 성공
 
 ```typescript
@@ -451,7 +509,7 @@ socket.on('connect', () => {
 });
 ```
 
-#### 8. `disconnect`
+#### 10. `disconnect`
 연결 해제
 
 ```typescript
