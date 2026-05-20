@@ -13,6 +13,13 @@ import { Op } from "sequelize";
 import logger from "jet-logger";
 import { NotificationService } from "./NotificationService";
 
+function getThumbnailUrl(images: any[] = []) {
+  const sortedImages = [...images].sort(
+    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
+  );
+  return sortedImages[0]?.imageUrl ?? null;
+}
+
 async function notifyNewChatMessage(
   chatRoom: any,
   sender: UserModel,
@@ -113,11 +120,13 @@ export const ChatService = {
 
     const message = await MessageRepo.create(data);
 
-    try {
-      await notifyNewChatMessage(chatRoom, sender, data.content);
-    } catch (error) {
-      logger.warn("new_chat_message 알림 생성 중 경고 발생");
-      logger.warn(error, true);
+    if (data.messageType !== "system") {
+      try {
+        await notifyNewChatMessage(chatRoom, sender, data.content);
+      } catch (error) {
+        logger.warn("new_chat_message 알림 생성 중 경고 발생");
+        logger.warn(error, true);
+      }
     }
 
     return message;
@@ -133,12 +142,18 @@ export const ChatService = {
       throw new RouteError(HttpStatusCodes.NOT_FOUND, "CHAT_ROOM_NOT_FOUND");
     }
 
-    const messages = await MessageRepo.findByChatRoomId(
-      chatRoomId,
+    const [messages, total] = await Promise.all([
+      MessageRepo.findByChatRoomId(chatRoomId, limit, offset),
+      MessageRepo.countByChatRoomId(chatRoomId),
+    ]);
+
+    return {
+      messages,
+      total,
       limit,
-      offset
-    );
-    return messages;
+      offset,
+      hasNext: offset + messages.length < total,
+    };
   },
 
   /**
@@ -207,14 +222,17 @@ export const ChatService = {
       throw new RouteError(HttpStatusCodes.NOT_FOUND, "USER_NOT_FOUND");
     }
 
-    // 사용자가 참여한 게시글의 채팅방 목록 조회
-    const chatRooms = await ChatRoomRepo.findByUserId(userId, limit, offset);
+    const [chatRooms, total] = await Promise.all([
+      ChatRoomRepo.findByUserId(userId, limit, offset),
+      ChatRoomRepo.countByUserId(userId),
+    ]);
 
     // 각 채팅방에 대한 추가 정보 조회
     const enrichedChatRooms = (
       await Promise.all(
         chatRooms.map(async (chatRoom) => {
           const postId = chatRoom.postId;
+          const roomPost = (chatRoom as any).post;
 
           // 참여자 목록 조회 (주최자 + 참여자)
           const participants = await PostParticipantRepo.findByPostId(postId);
@@ -240,6 +258,7 @@ export const ChatService = {
 
           const postData = post.get() as any;
           const postImages = (post as any).images || [];
+          const thumbnailUrl = getThumbnailUrl(postImages);
 
           // 주최자 정보 추가
           const author = await UserModel.findByPk(postData.authorId, {
@@ -287,15 +306,26 @@ export const ChatService = {
             postId: chatRoom.postId,
             post: {
               id: postData.id,
-              title: postData.title,
-              authorId: postData.authorId,
-              images: postImages.map((img: any) => img.imageUrl),
+              title: roomPost?.title ?? postData.title,
+              status: roomPost?.status ?? postData.status,
+              pickupLocation:
+                roomPost?.pickupLocation ?? postData.pickupLocation,
+              deadline: roomPost?.deadline ?? postData.deadline,
+              thumbnailUrl,
+              authorId: roomPost?.authorId ?? postData.authorId,
+              images: postImages.map((img: any) => ({
+                id: img.id,
+                imageUrl: img.imageUrl,
+                sortOrder: img.sortOrder,
+              })),
             },
             participants: participantList,
             lastMessage: lastMessage
               ? {
+                  id: lastMessage.id,
                   content: lastMessage.content,
                   senderId: lastMessage.senderId,
+                  messageType: lastMessage.messageType,
                   createdAt: lastMessage.createdAt,
                 }
               : null,
@@ -307,34 +337,12 @@ export const ChatService = {
       )
     ).filter((room) => room !== null);
 
-    // 전체 개수 조회 (참여한 게시글 + 작성한 게시글)
-    const totalParticipants = await PostParticipantRepo.findByUserId(userId);
-    const participantPostIds = totalParticipants.map((p) => p.postId);
-
-    const PostModel = (await import("../models/Post")).default;
-    const authoredPosts = await PostModel.findAll({
-      where: { authorId: userId },
-      attributes: ["id"],
-    });
-    const authoredPostIds = authoredPosts.map((p) => p.id);
-
-    const allPostIds = [
-      ...new Set([...participantPostIds, ...authoredPostIds]),
-    ];
-    const total =
-      allPostIds.length > 0
-        ? await (
-            await import("../models/ChatRoom")
-          ).default.count({
-            where: { postId: allPostIds },
-          })
-        : 0;
-
     return {
       chatRooms: enrichedChatRooms,
       total,
       limit,
       offset,
+      hasNext: offset + enrichedChatRooms.length < total,
     };
   },
 };

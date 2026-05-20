@@ -1,4 +1,5 @@
 import z from "zod";
+import { MESSAGE_TYPES } from "../../../types/chat";
 
 /**
  * 채팅방 생성 요청 스키마
@@ -19,7 +20,7 @@ export const createMessageSchema = z.object({
     chatRoomId: z.string().uuid(),
     senderId: z.string().uuid(),
     content: z.string().min(1),
-    messageType: z.enum(["text", "image", "file"]).optional().default("text"),
+    messageType: z.enum(MESSAGE_TYPES).optional().default("text"),
   }),
 });
 

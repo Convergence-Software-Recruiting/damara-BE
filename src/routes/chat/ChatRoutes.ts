@@ -106,6 +106,18 @@ chatRouter.post("/rooms", createChatRoom);
  *                             format: uuid
  *                           title:
  *                             type: string
+ *                           status:
+ *                             type: string
+ *                             enum: [open, closed, in_progress, completed, cancelled]
+ *                           pickupLocation:
+ *                             type: string
+ *                             nullable: true
+ *                           deadline:
+ *                             type: string
+ *                             format: date-time
+ *                           thumbnailUrl:
+ *                             type: string
+ *                             nullable: true
  *                           authorId:
  *                             type: string
  *                             format: uuid
@@ -130,11 +142,17 @@ chatRouter.post("/rooms", createChatRoom);
  *                         type: object
  *                         nullable: true
  *                         properties:
+ *                           id:
+ *                             type: string
+ *                             format: uuid
  *                           content:
  *                             type: string
  *                           senderId:
  *                             type: string
  *                             format: uuid
+ *                           messageType:
+ *                             type: string
+ *                             enum: [text, image, file, system]
  *                           createdAt:
  *                             type: string
  *                             format: date-time
@@ -152,6 +170,8 @@ chatRouter.post("/rooms", createChatRoom);
  *                   type: integer
  *                 offset:
  *                   type: integer
+ *                 hasNext:
+ *                   type: boolean
  *       404:
  *         description: 사용자를 찾을 수 없음
  */
@@ -206,6 +226,23 @@ chatRouter.get("/rooms/post/:postId", getOrCreateChatRoomByPostId);
  *     responses:
  *       200:
  *         description: 메시지 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 messages:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Message'
+ *                 total:
+ *                   type: integer
+ *                 limit:
+ *                   type: integer
+ *                 offset:
+ *                   type: integer
+ *                 hasNext:
+ *                   type: boolean
  *       404:
  *         description: 채팅방을 찾을 수 없음
  */
@@ -328,7 +365,7 @@ chatRouter.get("/rooms/:id", getChatRoomById);
  *                     minLength: 1
  *                   messageType:
  *                     type: string
- *                     enum: [text, image, file]
+ *                     enum: [text, image, file, system]
  *                     default: text
  *           example:
  *             message:

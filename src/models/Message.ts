@@ -4,6 +4,7 @@ import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../db";
 import ChatRoomModel from "./ChatRoom";
 import UserModel from "./User";
+import { MESSAGE_TYPES, MessageType } from "../types/chat";
 
 // ----------------------------
 // TypeScript 타입 정의
@@ -18,7 +19,7 @@ export interface MessageAttributes {
   chatRoomId: string; // chat_rooms.id와 외래키 관계
   senderId: string; // users.id와 외래키 관계 (메시지 보낸 사람)
   content: string; // 메시지 내용
-  messageType: "text" | "image" | "file"; // 메시지 타입
+  messageType: MessageType; // 메시지 타입
   isRead: boolean; // 읽음 여부
   createdAt?: Date;
   updatedAt?: Date;
@@ -43,7 +44,7 @@ export class MessageModel
   public chatRoomId!: string;
   public senderId!: string;
   public content!: string;
-  public messageType!: "text" | "image" | "file";
+  public messageType!: MessageType;
   public isRead!: boolean;
 
   public readonly createdAt!: Date;
@@ -85,7 +86,7 @@ MessageModel.init(
       allowNull: false,
     },
     messageType: {
-      type: DataTypes.ENUM("text", "image", "file"),
+      type: DataTypes.ENUM(...MESSAGE_TYPES),
       allowNull: false,
       defaultValue: "text",
       field: "message_type",

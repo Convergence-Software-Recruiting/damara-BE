@@ -6,6 +6,7 @@ import { PARTICIPANT_STATUSES } from "../types/participant-status";
 import { NOTICE_TYPES } from "../types/notice";
 import { FAQ_CATEGORIES } from "../types/faq";
 import { NOTIFICATION_TYPES } from "../types/notification";
+import { MESSAGE_TYPES } from "../types/chat";
 
 // 환경 변수에서 API 베이스 URL 가져오기 (배포 환경에서 설정)
 const getServerUrl = () => {
@@ -1710,6 +1711,28 @@ const options: swaggerJsdoc.Options = {
                 title: {
                   type: "string",
                 },
+                status: {
+                  type: "string",
+                  enum: [
+                    "open",
+                    "closed",
+                    "in_progress",
+                    "completed",
+                    "cancelled",
+                  ],
+                },
+                pickupLocation: {
+                  type: "string",
+                  nullable: true,
+                },
+                deadline: {
+                  type: "string",
+                  format: "date-time",
+                },
+                thumbnailUrl: {
+                  type: "string",
+                  nullable: true,
+                },
                 authorId: {
                   type: "string",
                   format: "uuid",
@@ -1757,7 +1780,7 @@ const options: swaggerJsdoc.Options = {
             },
             messageType: {
               type: "string",
-              enum: ["text", "image", "file"],
+              enum: [...MESSAGE_TYPES],
               description: "메시지 타입",
               example: "text",
             },

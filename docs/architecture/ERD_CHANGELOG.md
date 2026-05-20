@@ -16,6 +16,63 @@ DB 구조가 바뀌면 다음 내용을 기록한다.
 6. API 응답 영향
 7. 배포 시 마이그레이션 주의점
 
+## 2026-05-20 - 채팅 메시지 system 타입 추가
+
+브랜치:
+
+```text
+feature/chat-ui-contract
+```
+
+변경 전 기준 커밋:
+
+```text
+282ca81
+```
+
+### 변경 요약
+
+채팅 상세 화면에서 참여 확정, 상태 안내 같은 시스템 메시지를 일반 텍스트 메시지와 구분할 수 있도록 `messages.message_type` enum에 `system`을 추가한다.
+
+### 변경 테이블
+
+```text
+messages
+```
+
+### 변경 컬럼
+
+```text
+message_type: ENUM(text, image, file, system), not null, default text
+```
+
+### 관계 변경
+
+관계 변경은 없다.
+
+### API 영향
+
+`Message.messageType` 응답과 `POST /api/chat/messages` 요청에서 `system` 타입을 사용할 수 있다.
+
+채팅 메시지 목록 응답은 `{ messages, total, limit, offset, hasNext }` 형태로 변경된다.
+
+Swagger 변경 사항은 다음 문서에서 관리한다.
+
+```text
+docs/api/SWAGGER_CHANGELOG.md
+```
+
+### 배포 주의점
+
+서버 시작 시 `messages.message_type` enum을 확인하고 `system` 값을 포함하도록 보강한다.
+
+운영 반영용 SQL:
+
+```sql
+ALTER TABLE messages
+  MODIFY COLUMN message_type ENUM('text', 'image', 'file', 'system') NOT NULL DEFAULT 'text';
+```
+
 ## 2026-05-20 - 알림 action target 컬럼 추가
 
 브랜치:
