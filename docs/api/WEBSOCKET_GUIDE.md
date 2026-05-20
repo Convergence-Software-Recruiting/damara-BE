@@ -28,6 +28,7 @@ notification:subscribe
 notification:new
 notification:read
 notification:readAll
+notification:delete
 socket:error
 ```
 
@@ -366,6 +367,16 @@ socket.emit('notification:readAll', {
 });
 ```
 
+#### 8. `notification:delete`
+단일 알림 삭제
+
+```typescript
+socket.emit('notification:delete', {
+  notificationId: string; // 알림 UUID
+  userId: string;         // 사용자 UUID
+});
+```
+
 ### 서버 → 클라이언트 (on)
 
 #### 1. `chat:message`
@@ -488,7 +499,21 @@ socket.on('notification:readAll', (data: {
 });
 ```
 
-#### 8. `socket:error`
+#### 8. `notification:delete`
+단일 알림 삭제 결과 수신
+
+REST `DELETE /api/notifications/{id}` 또는 Socket `notification:delete`로 삭제되면 사용자 알림 룸에 브로드캐스트됩니다.
+
+```typescript
+socket.on('notification:delete', (data: {
+  userId: string;
+  notificationId: string;
+}) => {
+  // 해당 알림을 목록에서 제거
+});
+```
+
+#### 9. `socket:error`
 에러 발생
 
 ```typescript
@@ -500,7 +525,7 @@ socket.on('socket:error', (error: {
 });
 ```
 
-#### 9. `connect`
+#### 10. `connect`
 연결 성공
 
 ```typescript
@@ -509,7 +534,7 @@ socket.on('connect', () => {
 });
 ```
 
-#### 10. `disconnect`
+#### 11. `disconnect`
 연결 해제
 
 ```typescript

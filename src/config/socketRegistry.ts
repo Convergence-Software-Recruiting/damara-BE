@@ -50,3 +50,15 @@ export function emitAllNotificationsReadToUser(
 
   io.to(getUserRoom(userId)).emit("notification:readAll", payload);
 }
+
+export function emitNotificationDeletedToUser(
+  userId: string,
+  payload: { userId: string; notificationId: string }
+) {
+  const io = getIO();
+  if (!io) {
+    return;
+  }
+
+  io.to(getUserRoom(userId)).emit("notification:delete", payload);
+}

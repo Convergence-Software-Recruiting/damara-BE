@@ -7,6 +7,7 @@ import UserModel from "../models/User";
 import { NotificationType } from "../types/notification";
 import {
   emitAllNotificationsReadToUser,
+  emitNotificationDeletedToUser,
   emitNotificationReadToUser,
   emitNotificationToUser,
 } from "../config/socketRegistry";
@@ -110,6 +111,7 @@ export const NotificationService = {
    */
   async deleteNotification(id: string, userId: string) {
     await NotificationRepo.delete(id, userId);
+    emitNotificationDeletedToUser(userId, { userId, notificationId: id });
   },
 
   /**

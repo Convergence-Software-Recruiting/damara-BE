@@ -123,13 +123,14 @@ REST PATCH /api/notifications/{id}/read도 같은 notification:read 이벤트를
 
 ```text
 후속 API:
-알림 삭제 실시간 동기화가 필요하면 notification:delete 이벤트를 추가한다.
+알림 삭제 실시간 동기화는 feature/notification-delete-event에서 진행했다.
+알림 보관/복구 기능이 필요하면 archive 이벤트를 별도로 설계한다.
 
 운영/배포 주의점:
 DB 변경은 없다.
 
 테스트 보강:
-Socket 이벤트와 REST 읽음 처리의 emit 동작을 통합 테스트로 추가할 수 있다.
+Socket 이벤트와 REST 읽음/삭제 처리의 emit 동작을 통합 테스트로 추가할 수 있다.
 
 문서 보강:
 프론트엔드 실제 알림 상태 관리 코드가 확정되면 예시를 추가한다.
