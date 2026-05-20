@@ -53,6 +53,11 @@ type ReadAllNotificationsPayload = {
   userId: string;
 };
 
+type DeleteNotificationPayload = {
+  notificationId: string;
+  userId: string;
+};
+
 function emitSocketError(socket: Socket, message: string, error?: unknown) {
   const payload = {
     message,
@@ -172,6 +177,26 @@ export function setupSocketIO(httpServer: HttpServer): SocketServer {
         }
       }
     );
+
+    /**
+     * 알림 삭제
+     */
+    socket.on("notification:delete", async (data: DeleteNotificationPayload) => {
+      try {
+        if (!data.notificationId || !data.userId) {
+          emitSocketError(socket, "알림 ID와 사용자 ID가 필요합니다.");
+          return;
+        }
+
+        await NotificationService.deleteNotification(
+          data.notificationId,
+          data.userId
+        );
+      } catch (error) {
+        logger.err(`✗ 알림 삭제 실패: ${socket.id}`);
+        emitSocketError(socket, "알림 삭제에 실패했습니다.", error);
+      }
+    });
 
     /**
      * 메시지 전송

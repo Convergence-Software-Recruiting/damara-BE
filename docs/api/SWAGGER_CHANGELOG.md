@@ -27,6 +27,53 @@ src/routes/**/*.ts
 https://damara.bluerack.org/api-docs.json
 ```
 
+## 2026-05-21 - 알림 삭제 Socket 이벤트 추가
+
+브랜치:
+
+```text
+feature/notification-delete-event
+```
+
+변경 전 기준 커밋:
+
+```text
+cbd32d2
+```
+
+### 변경 요약
+
+알림 목록에서 삭제된 항목을 여러 화면/탭에 실시간 반영할 수 있도록 Socket.io 이벤트 계약에 `notification:delete`를 추가했다.
+
+REST 삭제 API와 Socket 삭제 이벤트 모두 같은 서비스 로직을 사용하며, 삭제 성공 결과는 사용자 알림 룸 `user:{userId}`로 브로드캐스트된다.
+
+### 영향 이벤트
+
+```text
+notification:delete
+```
+
+### 요청 이벤트
+
+```typescript
+socket.emit("notification:delete", {
+  notificationId: "123e4567-e89b-12d3-a456-426614174000",
+  userId: "a87522bd-bc79-47b0-a73f-46ea4068a158"
+});
+```
+
+### 수신 이벤트
+
+```typescript
+socket.on("notification:delete", ({ userId, notificationId }) => {});
+```
+
+### REST 영향
+
+REST path, request body, response body 변경은 없다.
+
+기존 `DELETE /api/notifications/{id}`도 Socket.io 구독자에게 같은 삭제 이벤트를 발행한다.
+
 ## 2026-05-21 - 알림 읽음 Socket 이벤트 추가
 
 브랜치:
