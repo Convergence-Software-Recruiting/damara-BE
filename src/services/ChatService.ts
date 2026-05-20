@@ -10,6 +10,52 @@ import UserModel from "../models/User";
 import { PostParticipantRepo } from "../repos/PostParticipantRepo";
 import MessageModel from "../models/Message";
 import { Op } from "sequelize";
+import logger from "jet-logger";
+import { NotificationService } from "./NotificationService";
+
+async function notifyNewChatMessage(
+  chatRoom: any,
+  sender: UserModel,
+  content: string
+) {
+  const postId = chatRoom.postId;
+  const post = chatRoom.post;
+  const participants = await PostParticipantRepo.findByPostId(postId);
+  const recipientIds = new Set<string>();
+
+  if (post?.authorId && post.authorId !== sender.id) {
+    recipientIds.add(post.authorId);
+  }
+
+  participants.forEach((participant: any) => {
+    if (participant.userId !== sender.id) {
+      recipientIds.add(participant.userId);
+    }
+  });
+
+  if (recipientIds.size === 0) {
+    return;
+  }
+
+  const preview =
+    content.length > 40 ? `${content.slice(0, 40)}...` : content;
+  const postTitle = post?.title ?? "공동구매";
+
+  await Promise.all(
+    [...recipientIds].map((userId) =>
+      NotificationService.createNotification({
+        userId,
+        type: "new_chat_message",
+        title: "새 채팅 메시지",
+        message: `${sender.nickname}님이 ${postTitle} 채팅방에 메시지를 보냈습니다. ${preview}`,
+        postId,
+        chatRoomId: chatRoom.id,
+        actionUrl: `/chat/${chatRoom.id}`,
+        isRead: false,
+      })
+    )
+  );
+}
 
 export const ChatService = {
   /**
@@ -66,6 +112,14 @@ export const ChatService = {
     }
 
     const message = await MessageRepo.create(data);
+
+    try {
+      await notifyNewChatMessage(chatRoom, sender, data.content);
+    } catch (error) {
+      logger.warn("new_chat_message 알림 생성 중 경고 발생");
+      logger.warn(error, true);
+    }
+
     return message;
   },
 

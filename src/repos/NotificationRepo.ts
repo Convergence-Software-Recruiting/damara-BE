@@ -2,9 +2,43 @@
 
 import NotificationModel, {
   NotificationCreationAttributes,
+  NotificationAttributes,
 } from "../models/Notification";
 import { RouteError } from "../common/util/route-errors";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
+import { normalizeNotificationType } from "../types/notification";
+
+type NotificationPayload = NotificationAttributes & {
+  post?: {
+    id: string;
+    title: string;
+    status: string;
+  };
+};
+
+function buildActionUrl(payload: NotificationPayload) {
+  if (payload.actionUrl) {
+    return payload.actionUrl;
+  }
+
+  if (payload.chatRoomId) {
+    return `/chat/${payload.chatRoomId}`;
+  }
+
+  if (payload.postId) {
+    return `/post/${payload.postId}`;
+  }
+
+  return null;
+}
+
+function normalizeNotification(payload: NotificationPayload) {
+  return {
+    ...payload,
+    type: normalizeNotificationType(payload.type),
+    actionUrl: buildActionUrl(payload),
+  };
+}
 
 export const NotificationRepo = {
   /**
@@ -13,9 +47,10 @@ export const NotificationRepo = {
   async create(data: NotificationCreationAttributes) {
     const notification = await NotificationModel.create({
       ...data,
+      actionUrl: data.actionUrl ?? buildActionUrl(data as NotificationPayload),
       isRead: data.isRead ?? false,
     });
-    return notification.get();
+    return normalizeNotification(notification.get() as NotificationPayload);
   },
 
   /**
@@ -46,7 +81,9 @@ export const NotificationRepo = {
       ],
     });
 
-    return notifications.map((n) => n.get());
+    return notifications.map((n) =>
+      normalizeNotification(n.get() as NotificationPayload)
+    );
   },
 
   /**
@@ -54,7 +91,9 @@ export const NotificationRepo = {
    */
   async findById(id: string) {
     const notification = await NotificationModel.findByPk(id);
-    return notification ? notification.get() : null;
+    return notification
+      ? normalizeNotification(notification.get() as NotificationPayload)
+      : null;
   },
 
   /**
@@ -70,7 +109,7 @@ export const NotificationRepo = {
     }
 
     await notification.update({ isRead: true });
-    return notification.get();
+    return normalizeNotification(notification.get() as NotificationPayload);
   },
 
   /**
@@ -124,4 +163,3 @@ export const NotificationRepo = {
     });
   },
 };
-

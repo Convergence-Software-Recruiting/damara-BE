@@ -1,19 +1,47 @@
 // src/services/NotificationService.ts
 
 import { NotificationRepo } from "../repos/NotificationRepo";
-import {
-  NotificationCreationAttributes,
-  NotificationType,
-} from "../models/Notification";
+import { NotificationCreationAttributes } from "../models/Notification";
 import PostModel from "../models/Post";
 import UserModel from "../models/User";
+import { NotificationType } from "../types/notification";
+
+function buildActionUrl(
+  data: Pick<
+    NotificationCreationAttributes,
+    "postId" | "chatRoomId" | "actionUrl"
+  >
+) {
+  if (data.actionUrl) {
+    return data.actionUrl;
+  }
+
+  if (data.chatRoomId) {
+    return `/chat/${data.chatRoomId}`;
+  }
+
+  if (data.postId) {
+    return `/post/${data.postId}`;
+  }
+
+  return null;
+}
+
+function withActionUrl(
+  data: NotificationCreationAttributes
+): NotificationCreationAttributes {
+  return {
+    ...data,
+    actionUrl: buildActionUrl(data),
+  };
+}
 
 export const NotificationService = {
   /**
    * 알림 생성
    */
   async createNotification(data: NotificationCreationAttributes) {
-    return await NotificationRepo.create(data);
+    return await NotificationRepo.create(withActionUrl(data));
   },
 
   /**
@@ -38,6 +66,9 @@ export const NotificationService = {
       notifications,
       unreadCount,
       total,
+      limit,
+      offset,
+      hasNext: offset + notifications.length < total,
     };
   },
 
@@ -98,6 +129,7 @@ export const NotificationService = {
       title: "새로운 참여자",
       message: `${post.title}에 새로운 참여자가 있습니다.`,
       postId: postId,
+      actionUrl: `/post/${postId}`,
       isRead: false,
     });
   },
@@ -125,10 +157,11 @@ export const NotificationService = {
 
     await NotificationRepo.create({
       userId: post.authorId,
-      type: "participant_cancel",
+      type: "post_status_changed",
       title: "참여자 취소",
       message: `${post.title}에서 참여자가 취소했습니다.`,
       postId: postId,
+      actionUrl: `/post/${postId}`,
       isRead: false,
     });
   },
@@ -148,10 +181,11 @@ export const NotificationService = {
 
     const notifications = userIds.map((userId) => ({
       userId,
-      type: "post_completed" as NotificationType,
+      type: "trade_completed" as NotificationType,
       title: "공동구매 완료",
       message: `${post.title} 공동구매가 완료되었습니다.`,
       postId: postId,
+      actionUrl: `/post/${postId}`,
       isRead: false,
     }));
 
@@ -176,10 +210,11 @@ export const NotificationService = {
 
     const notifications = userIds.map((userId) => ({
       userId,
-      type: "post_cancelled" as NotificationType,
+      type: "trade_cancelled" as NotificationType,
       title: "공동구매 취소",
       message: `${post.title} 공동구매가 취소되었습니다.`,
       postId: postId,
+      actionUrl: `/post/${postId}`,
       isRead: false,
     }));
 
@@ -189,4 +224,3 @@ export const NotificationService = {
     }
   },
 };
-
