@@ -7,6 +7,7 @@ import uploadRouter from "./upload/UploadRoutes";
 import chatRouter from "./chat/ChatRoutes";
 import notificationRouter from "./notifications/NotificationRoutes";
 import noticeRouter from "./notices/NoticeRoutes";
+import faqRouter from "./faqs/FaqRoutes";
 
 const BaseRouter = Router();
 
@@ -27,5 +28,8 @@ BaseRouter.use(Paths.Notifications.Base, notificationRouter);
 
 // Notice 라우터: /api/notices
 BaseRouter.use(Paths.Notices.Base, noticeRouter);
+
+// FAQ 라우터: /api/faqs
+BaseRouter.use(Paths.Faqs.Base, faqRouter);
 
 export default BaseRouter;
