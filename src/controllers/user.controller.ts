@@ -229,6 +229,25 @@ export async function getUserSummary(
 }
 
 /**
+ * 사용자 신뢰 요약 조회
+ * GET /api/users/:id/trust-summary
+ */
+export async function getUserTrustSummary(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+    const summary = await UserService.getTrustSummary(id);
+
+    res.status(HttpStatusCodes.OK).json(summary);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * 사용자 설정 조회
  * GET /api/users/:id/settings
  */

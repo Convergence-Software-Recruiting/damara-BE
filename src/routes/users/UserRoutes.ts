@@ -9,6 +9,7 @@ import {
   login,
   getUserTrustEvents,
   getUserSummary,
+  getUserTrustSummary,
   getUserSettings,
   updateUserSettings,
   getMyPostsSummary,
@@ -379,6 +380,34 @@ userRouter.get("/:userId/my-posts/summary", getMyPostsSummary);
  */
 // GET /api/users/:id/summary - 마이페이지 통합 요약 조회
 userRouter.get("/:id/summary", getUserSummary);
+
+/**
+ * @swagger
+ * /api/users/{id}/trust-summary:
+ *   get:
+ *     summary: 사용자 신뢰 요약 조회
+ *     description: 마이페이지 프로필 카드, 안전거래 프로필, 공구 상세 판매자/참여자 카드에 필요한 현재 신뢰 요약값을 조회합니다.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 사용자 UUID
+ *     responses:
+ *       200:
+ *         description: 사용자 신뢰 요약 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TrustSummaryResponse'
+ *       404:
+ *         description: 사용자를 찾을 수 없음
+ */
+// GET /api/users/:id/trust-summary - 사용자 신뢰 요약 조회
+userRouter.get("/:id/trust-summary", getUserTrustSummary);
 
 /**
  * @swagger

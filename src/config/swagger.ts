@@ -281,6 +281,88 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        TrustSummaryResponse: {
+          type: "object",
+          required: [
+            "trustScore",
+            "trustGrade",
+            "gradeLabel",
+            "rankPercent",
+            "completedTradeCount",
+            "responseRate",
+            "avgResponseMinutes",
+            "cancelCount",
+            "noShowCount",
+            "badges",
+          ],
+          properties: {
+            trustScore: {
+              type: "integer",
+              description: "내부 신뢰점수",
+              minimum: 0,
+              maximum: 100,
+              example: 86,
+            },
+            trustGrade: {
+              type: "number",
+              format: "float",
+              description: "사용자에게 표시하는 신뢰학점",
+              minimum: 2.5,
+              maximum: 4.5,
+              example: 4.3,
+            },
+            gradeLabel: {
+              type: "string",
+              description: "신뢰학점 표시 라벨",
+              example: "매너 학생",
+            },
+            rankPercent: {
+              type: "integer",
+              description:
+                "현재 내부 신뢰점수 기반 추정 상위 퍼센트. 별도 랭킹 테이블이 생기면 실제 분포 기반으로 교체합니다.",
+              minimum: 1,
+              maximum: 100,
+              example: 15,
+            },
+            completedTradeCount: {
+              type: "integer",
+              description: "완료된 거래 수",
+              example: 12,
+            },
+            responseRate: {
+              type: "integer",
+              description:
+                "현재 데이터 기준 완료 거래 비율. 완료/취소/노쇼 이력으로 계산합니다.",
+              minimum: 0,
+              maximum: 100,
+              example: 92,
+            },
+            avgResponseMinutes: {
+              type: "integer",
+              description:
+                "응답 시간 데이터가 생기기 전까지 신뢰학점 기반으로 제공하는 추정 평균 응답 시간",
+              example: 10,
+            },
+            cancelCount: {
+              type: "integer",
+              description: "취소 관련 신뢰 이벤트 수",
+              example: 1,
+            },
+            noShowCount: {
+              type: "integer",
+              description: "노쇼 확정 이벤트 수",
+              example: 0,
+            },
+            badges: {
+              type: "array",
+              description: "신뢰 카드 표시용 배지",
+              items: {
+                type: "string",
+              },
+              example: ["꼼꼼해요", "친절해요", "약속시간 잘 지켜요"],
+            },
+          },
+        },
         UserSettings: {
           type: "object",
           required: [
