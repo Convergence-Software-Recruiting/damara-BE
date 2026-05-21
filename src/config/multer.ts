@@ -1,9 +1,11 @@
 // src/config/multer.ts
 
 import multer from "multer";
+import { RequestHandler } from "express";
 import path from "path";
 import { randomUUID } from "crypto";
 import fs from "fs";
+import HttpStatusCodes from "../common/constants/HttpStatusCodes";
 
 // 업로드 디렉토리 설정
 const uploadsDir = path.join(__dirname, "../public/uploads/images");
@@ -54,3 +56,39 @@ export const upload = multer({
   },
   fileFilter,
 });
+
+export function uploadWithErrorHandling(
+  middleware: RequestHandler
+): RequestHandler {
+  return (req, res, next) => {
+    middleware(req, res, (error: unknown) => {
+      if (!error) {
+        next();
+        return;
+      }
+
+      if (
+        error instanceof multer.MulterError &&
+        error.code === "LIMIT_FILE_SIZE"
+      ) {
+        res.status(HttpStatusCodes.BAD_REQUEST).json({
+          error: "UPLOAD_FILE_TOO_LARGE",
+          message: "이미지 파일은 5MB 이하만 업로드할 수 있습니다.",
+          details: {
+            limitBytes: 5 * 1024 * 1024,
+          },
+        });
+        return;
+      }
+
+      res.status(HttpStatusCodes.BAD_REQUEST).json({
+        error: "INVALID_IMAGE_FILE",
+        message:
+          error instanceof Error
+            ? error.message
+            : "이미지 파일만 업로드할 수 있습니다.",
+        details: {},
+      });
+    });
+  };
+}

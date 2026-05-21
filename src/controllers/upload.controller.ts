@@ -3,6 +3,23 @@
 import { Request, Response, NextFunction } from "express";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
 
+function toUploadedImage(filename: string, sortOrder: number) {
+  const imageUrl = `/uploads/images/${filename}`;
+
+  return {
+    imageUrl,
+    url: imageUrl,
+    filename,
+    sortOrder,
+  };
+}
+
+function normalizeUploadedFiles(
+  files: Express.Multer.File[] | { [fieldname: string]: Express.Multer.File[] }
+) {
+  return Array.isArray(files) ? files : Object.values(files).flat();
+}
+
 /**
  * 단일 이미지 업로드
  * POST /api/upload/image
@@ -21,15 +38,19 @@ export async function uploadImage(
     if (!req.file) {
       return res.status(HttpStatusCodes.BAD_REQUEST).json({
         error: "IMAGE_REQUIRED",
+        message: "업로드할 이미지 파일이 필요합니다.",
+        details: {},
       });
     }
 
     // 업로드된 파일의 URL 생성
-    const imageUrl = `/uploads/images/${req.file.filename}`;
+    const image = toUploadedImage(req.file.filename, 0);
 
     res.status(HttpStatusCodes.OK).json({
-      url: imageUrl,
+      url: image.imageUrl,
       filename: req.file.filename,
+      image,
+      images: [image],
     });
   } catch (error) {
     next(error);
@@ -54,17 +75,19 @@ export async function uploadImages(
     if (!req.files || (Array.isArray(req.files) && req.files.length === 0)) {
       return res.status(HttpStatusCodes.BAD_REQUEST).json({
         error: "IMAGES_REQUIRED",
+        message: "업로드할 이미지 파일이 필요합니다.",
+        details: {},
       });
     }
 
-    const files = Array.isArray(req.files) ? req.files : [req.files];
-    const imageUrls = files.map((file) => ({
-      url: `/uploads/images/${file.filename}`,
-      filename: file.filename,
-    }));
+    const files = normalizeUploadedFiles(req.files);
+    const images = files.map((file, index) =>
+      toUploadedImage(file.filename, index)
+    );
 
     res.status(HttpStatusCodes.OK).json({
-      images: imageUrls,
+      images,
+      imageUrls: images.map((image) => image.imageUrl),
     });
   } catch (error) {
     next(error);
