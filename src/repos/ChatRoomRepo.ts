@@ -91,6 +91,13 @@ export const ChatRoomRepo = {
   },
 
   /**
+   * 채팅방 목록 정렬 갱신용 updatedAt 터치
+   */
+  async touch(id: string) {
+    await ChatRoomModel.update({ updatedAt: new Date() }, { where: { id } });
+  },
+
+  /**
    * 사용자가 참여한 게시글의 채팅방 목록 조회
    * - PostParticipant를 통해 사용자가 참여한 게시글 찾기
    * - 작성자가 작성한 게시글의 채팅방도 포함
