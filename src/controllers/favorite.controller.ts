@@ -67,9 +67,12 @@ export async function checkFavorite(
   try {
     const { postId, userId } = req.params;
 
-    const isFavorite = await FavoriteService.isFavorite(postId, userId);
+    const favoriteState = await FavoriteService.getFavoriteState(
+      postId,
+      userId
+    );
 
-    res.status(HttpStatusCodes.OK).json({ isFavorite });
+    res.status(HttpStatusCodes.OK).json(favoriteState);
   } catch (error) {
     next(error);
   }
