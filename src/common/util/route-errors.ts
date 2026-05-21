@@ -10,10 +10,12 @@ import HttpStatusCodes from "../constants/HttpStatusCodes";
  * Error with status code and message.
  */
 export class RouteError extends Error {
+  public error: string;
   public status: HttpStatusCodes;
 
-  public constructor(status: HttpStatusCodes, message: string) {
+  public constructor(status: HttpStatusCodes, message: string, error = message) {
     super(message);
+    this.error = error;
     this.status = status;
   }
 }
