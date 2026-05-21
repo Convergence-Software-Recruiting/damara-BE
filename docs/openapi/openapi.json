@@ -4000,7 +4000,7 @@
                   "properties": {
                     "error": {
                       "type": "string",
-                      "example": "UNAUTHORIZED"
+                      "example": "FORBIDDEN"
                     },
                     "message": {
                       "type": "string",
@@ -4396,6 +4396,11 @@
                   "properties": {
                     "isFavorite": {
                       "type": "boolean"
+                    },
+                    "favoriteCount": {
+                      "type": "integer",
+                      "description": "현재 게시글 관심 등록 수",
+                      "example": 13
                     }
                   }
                 }
