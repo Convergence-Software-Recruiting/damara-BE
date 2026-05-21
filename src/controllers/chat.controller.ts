@@ -4,6 +4,7 @@ import { Request, Response, NextFunction } from "express";
 import { ChatService } from "../services/ChatService";
 import { parseReq } from "../routes/common/validation/parseReq";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
+import { sendErrorResponse } from "../common/util/route-errors";
 import {
   createChatRoomSchema,
   CreateChatRoomReq,
@@ -141,9 +142,12 @@ export async function markMessageAsRead(
     const userId = req.body.userId || req.query.userId; // TODO: 실제로는 인증 미들웨어에서 가져와야 함
 
     if (!userId || typeof userId !== "string") {
-      return res
-        .status(HttpStatusCodes.BAD_REQUEST)
-        .json({ error: "USER_ID_REQUIRED" });
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "USER_ID_REQUIRED",
+        "사용자 ID가 필요합니다."
+      );
     }
 
     const message = await ChatService.markMessageAsRead(id, userId);
@@ -168,9 +172,12 @@ export async function markAllMessagesAsRead(
     const userId = req.body.userId || req.query.userId; // TODO: 실제로는 인증 미들웨어에서 가져와야 함
 
     if (!userId || typeof userId !== "string") {
-      return res
-        .status(HttpStatusCodes.BAD_REQUEST)
-        .json({ error: "USER_ID_REQUIRED" });
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "USER_ID_REQUIRED",
+        "사용자 ID가 필요합니다."
+      );
     }
 
     await ChatService.markAllMessagesAsRead(chatRoomId, userId);
@@ -195,9 +202,12 @@ export async function getUnreadMessageCount(
     const userId = req.query.userId as string;
 
     if (!userId) {
-      return res
-        .status(HttpStatusCodes.BAD_REQUEST)
-        .json({ error: "USER_ID_REQUIRED" });
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "USER_ID_REQUIRED",
+        "사용자 ID가 필요합니다."
+      );
     }
 
     const count = await ChatService.getUnreadMessageCount(chatRoomId, userId);

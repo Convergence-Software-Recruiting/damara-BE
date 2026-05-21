@@ -2,6 +2,7 @@
 
 import { Request, Response, NextFunction } from "express";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
+import { sendErrorResponse } from "../common/util/route-errors";
 
 /**
  * 단일 이미지 업로드
@@ -19,9 +20,12 @@ export async function uploadImage(
 ) {
   try {
     if (!req.file) {
-      return res.status(HttpStatusCodes.BAD_REQUEST).json({
-        error: "IMAGE_REQUIRED",
-      });
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "IMAGE_REQUIRED",
+        "업로드할 이미지 파일이 필요합니다."
+      );
     }
 
     // 업로드된 파일의 URL 생성
@@ -52,9 +56,12 @@ export async function uploadImages(
 ) {
   try {
     if (!req.files || (Array.isArray(req.files) && req.files.length === 0)) {
-      return res.status(HttpStatusCodes.BAD_REQUEST).json({
-        error: "IMAGES_REQUIRED",
-      });
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "IMAGES_REQUIRED",
+        "업로드할 이미지 파일이 필요합니다."
+      );
     }
 
     const files = Array.isArray(req.files) ? req.files : [req.files];

@@ -3,6 +3,7 @@
 import { Request, Response, NextFunction } from "express";
 import { FavoriteService } from "../services/FavoriteService";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
+import { sendErrorResponse } from "../common/util/route-errors";
 
 /**
  * 관심 등록
@@ -18,10 +19,12 @@ export async function addFavorite(
     const userId = req.body.userId;
 
     if (!userId) {
-      return res.status(HttpStatusCodes.BAD_REQUEST).json({
-        error: "USER_ID_REQUIRED",
-        message: "사용자 ID가 필요합니다.",
-      });
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "USER_ID_REQUIRED",
+        "사용자 ID가 필요합니다."
+      );
     }
 
     const favorite = await FavoriteService.addFavorite(postId, userId);

@@ -3,6 +3,7 @@
 import { Request, Response, NextFunction } from "express";
 import { NotificationService } from "../services/NotificationService";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
+import { sendErrorResponse } from "../common/util/route-errors";
 
 /**
  * 알림 목록 조회
@@ -18,10 +19,12 @@ export async function getNotifications(
     const userId = (req.headers["x-user-id"] || req.query.userId) as string;
 
     if (!userId) {
-      return res.status(HttpStatusCodes.BAD_REQUEST).json({
-        error: "USER_ID_REQUIRED",
-        message: "사용자 ID가 필요합니다.",
-      });
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "USER_ID_REQUIRED",
+        "사용자 ID가 필요합니다."
+      );
     }
 
     const limit = req.query.limit
@@ -59,10 +62,12 @@ export async function markNotificationAsRead(
     const userId = (req.headers["x-user-id"] || req.body.userId) as string;
 
     if (!userId) {
-      return res.status(HttpStatusCodes.BAD_REQUEST).json({
-        error: "USER_ID_REQUIRED",
-        message: "사용자 ID가 필요합니다.",
-      });
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "USER_ID_REQUIRED",
+        "사용자 ID가 필요합니다."
+      );
     }
 
     const notification = await NotificationService.markAsRead(id, userId);
@@ -86,10 +91,12 @@ export async function markAllNotificationsAsRead(
     const userId = (req.headers["x-user-id"] || req.body.userId) as string;
 
     if (!userId) {
-      return res.status(HttpStatusCodes.BAD_REQUEST).json({
-        error: "USER_ID_REQUIRED",
-        message: "사용자 ID가 필요합니다.",
-      });
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "USER_ID_REQUIRED",
+        "사용자 ID가 필요합니다."
+      );
     }
 
     const result = await NotificationService.markAllAsRead(userId);
@@ -116,10 +123,12 @@ export async function getUnreadCount(
     const userId = (req.headers["x-user-id"] || req.query.userId) as string;
 
     if (!userId) {
-      return res.status(HttpStatusCodes.BAD_REQUEST).json({
-        error: "USER_ID_REQUIRED",
-        message: "사용자 ID가 필요합니다.",
-      });
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "USER_ID_REQUIRED",
+        "사용자 ID가 필요합니다."
+      );
     }
 
     const result = await NotificationService.getUnreadCount(userId);
@@ -144,10 +153,12 @@ export async function deleteNotification(
     const userId = (req.headers["x-user-id"] || req.query.userId) as string;
 
     if (!userId) {
-      return res.status(HttpStatusCodes.BAD_REQUEST).json({
-        error: "USER_ID_REQUIRED",
-        message: "사용자 ID가 필요합니다.",
-      });
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "USER_ID_REQUIRED",
+        "사용자 ID가 필요합니다."
+      );
     }
 
     await NotificationService.deleteNotification(id, userId);
@@ -159,4 +170,3 @@ export async function deleteNotification(
     next(error);
   }
 }
-

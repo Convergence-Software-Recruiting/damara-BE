@@ -5,6 +5,7 @@ import { PostService, PostParticipantService } from "../services/PostService";
 import { PostCreationAttributes } from "../models/Post";
 import { parseReq } from "../routes/common/validation/parseReq";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
+import { sendErrorResponse } from "../common/util/route-errors";
 import logger from "jet-logger";
 import {
   createPostSchema,
@@ -133,21 +134,24 @@ export async function getAllPosts(
     const statusValue = getSingleValue(req.query.status);
 
     if (!POST_LIST_SORTS.includes(sortValue as PostListSort)) {
-      return res.status(HttpStatusCodes.BAD_REQUEST).json({
-        error: "INVALID_SORT",
-        message: "sort는 latest, deadline, popular 중 하나여야 합니다.",
-      });
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "INVALID_SORT",
+        "sort는 latest, deadline, popular 중 하나여야 합니다."
+      );
     }
 
     if (
       statusValue &&
       !POST_LIST_STATUSES.includes(statusValue as PostListStatus)
     ) {
-      return res.status(HttpStatusCodes.BAD_REQUEST).json({
-        error: "INVALID_STATUS",
-        message:
-          "status는 open, closed, in_progress, completed, cancelled 중 하나여야 합니다.",
-      });
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "INVALID_STATUS",
+        "status는 open, closed, in_progress, completed, cancelled 중 하나여야 합니다."
+      );
     }
 
     logger.info(
@@ -359,10 +363,12 @@ export async function updatePostStatus(
     const authorId = req.body.authorId || (req.headers["x-user-id"] as string);
 
     if (!authorId) {
-      return res.status(HttpStatusCodes.BAD_REQUEST).json({
-        error: "AUTHOR_ID_REQUIRED",
-        message: "작성자 ID가 필요합니다.",
-      });
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "AUTHOR_ID_REQUIRED",
+        "작성자 ID가 필요합니다."
+      );
     }
 
     const updatedPost = await PostService.updatePostStatus(
@@ -392,9 +398,12 @@ export async function joinPost(
     const { userId } = req.body;
 
     if (!userId) {
-      return res.status(HttpStatusCodes.BAD_REQUEST).json({
-        error: "USER_ID_REQUIRED",
-      });
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "USER_ID_REQUIRED",
+        "사용자 ID가 필요합니다."
+      );
     }
 
     await PostParticipantService.joinPost(id, userId);
@@ -496,10 +505,12 @@ export async function updateParticipantStatus(
       validatedData.actorUserId || getSingleValue(req.headers["x-user-id"]);
 
     if (!actorUserId) {
-      return res.status(HttpStatusCodes.BAD_REQUEST).json({
-        error: "ACTOR_USER_ID_REQUIRED",
-        message: "상태를 변경하는 사용자 ID가 필요합니다.",
-      });
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "ACTOR_USER_ID_REQUIRED",
+        "상태를 변경하는 사용자 ID가 필요합니다."
+      );
     }
 
     const participant = await PostParticipantService.updateParticipantStatus(
