@@ -119,6 +119,7 @@ export const ChatService = {
     }
 
     const message = await MessageRepo.create(data);
+    await ChatRoomRepo.touch(data.chatRoomId);
 
     if (data.messageType !== "system") {
       try {
