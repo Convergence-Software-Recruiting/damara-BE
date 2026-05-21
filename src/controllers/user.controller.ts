@@ -14,6 +14,7 @@ import { UserSettingsService } from "../services/UserSettingsService";
 import { TrustService } from "../services/TrustService";
 import { parseReq } from "../routes/common/validation/parseReq";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
+import { sendErrorResponse } from "../common/util/route-errors";
 import {
   createUserSchema,
   CreateUserReq,
@@ -322,24 +323,32 @@ export async function getMyPostsSummary(
  * 내 공구 화면 탭별 목록 조회
  * GET /api/users/:userId/my-posts
  */
-export async function getMyPosts(req: Request, res: Response, next: NextFunction) {
+export async function getMyPosts(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   try {
     const { userId } = req.params;
     const tabValue = getSingleValue(req.query.tab) || "registered";
     const sortValue = getSingleValue(req.query.sort) || "latest";
 
     if (!MY_POSTS_TABS.includes(tabValue as MyPostsTab)) {
-      return res.status(HttpStatusCodes.BAD_REQUEST).json({
-        error: "INVALID_TAB",
-        message: "tab은 registered, participated, favorites 중 하나여야 합니다.",
-      });
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "INVALID_TAB",
+        "tab은 registered, participated, favorites 중 하나여야 합니다."
+      );
     }
 
     if (!MY_POSTS_SORTS.includes(sortValue as PostListSort)) {
-      return res.status(HttpStatusCodes.BAD_REQUEST).json({
-        error: "INVALID_SORT",
-        message: "sort는 latest, deadline, popular 중 하나여야 합니다.",
-      });
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "INVALID_SORT",
+        "sort는 latest, deadline, popular 중 하나여야 합니다."
+      );
     }
 
     const result = await UserService.listMyPosts(userId, {

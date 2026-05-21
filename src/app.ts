@@ -15,7 +15,7 @@ import { DataTypes } from "sequelize";
 import BaseRouter from "./routes";
 import Paths from "./common/constants/Paths";
 import HttpStatusCodes from "./common/constants/HttpStatusCodes";
-import { RouteError } from "./common/util/route-errors";
+import { buildErrorResponse, RouteError } from "./common/util/route-errors";
 import { sequelize } from "./db";
 import { setupSwagger } from "./config/swagger";
 import ENV from "./common/constants/ENV";
@@ -681,14 +681,17 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   logger.err(err, true);
 
   if (err instanceof RouteError) {
-    return res.status(err.status).json({
-      error: err.message,
-    });
+    return res
+      .status(err.status)
+      .json(buildErrorResponse(err.message, err.message));
   }
 
-  return res
-    .status(HttpStatusCodes.INTERNAL_SERVER_ERROR)
-    .json({ error: "INTERNAL_SERVER_ERROR" });
+  return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json(
+    buildErrorResponse(
+      "INTERNAL_SERVER_ERROR",
+      "서버 내부 오류가 발생했습니다."
+    )
+  );
 });
 
 export default app;
