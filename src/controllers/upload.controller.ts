@@ -4,6 +4,28 @@ import { Request, Response, NextFunction } from "express";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
 import { sendErrorResponse } from "../common/util/route-errors";
 
+type UploadedImage = {
+  imageUrl: string;
+  sortOrder: number;
+};
+
+function toUploadedImage(filename: string, sortOrder: number): UploadedImage {
+  return {
+    imageUrl: `/uploads/images/${filename}`,
+    sortOrder,
+  };
+}
+
+function normalizeFiles(
+  files: Express.Multer.File[] | { [fieldname: string]: Express.Multer.File[] }
+): Express.Multer.File[] {
+  if (Array.isArray(files)) {
+    return files;
+  }
+
+  return Object.values(files).flat();
+}
+
 /**
  * 단일 이미지 업로드
  * POST /api/upload/image
@@ -28,11 +50,12 @@ export async function uploadImage(
       );
     }
 
-    // 업로드된 파일의 URL 생성
-    const imageUrl = `/uploads/images/${req.file.filename}`;
+    const image = toUploadedImage(req.file.filename, 0);
 
     res.status(HttpStatusCodes.OK).json({
-      url: imageUrl,
+      image,
+      images: [image],
+      url: image.imageUrl,
       filename: req.file.filename,
     });
   } catch (error) {
@@ -64,14 +87,19 @@ export async function uploadImages(
       );
     }
 
-    const files = Array.isArray(req.files) ? req.files : [req.files];
-    const imageUrls = files.map((file) => ({
-      url: `/uploads/images/${file.filename}`,
+    const files = normalizeFiles(req.files);
+    const images = files.map((file, index) =>
+      toUploadedImage(file.filename, index)
+    );
+    const imageUrls = files.map((file, index) => ({
+      ...images[index],
+      url: images[index].imageUrl,
       filename: file.filename,
     }));
 
     res.status(HttpStatusCodes.OK).json({
-      images: imageUrls,
+      images,
+      imageUrls,
     });
   } catch (error) {
     next(error);
