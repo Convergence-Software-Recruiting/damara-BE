@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import HttpStatusCodes from "../../src/common/constants/HttpStatusCodes";
 import {
   buildErrorResponse,
+  RouteError,
   sendErrorResponse,
 } from "../../src/common/util/route-errors";
 
@@ -53,5 +54,17 @@ describe("route error response helpers", () => {
       message: "사용자 ID가 필요합니다.",
       details: {},
     });
+  });
+
+  it("RouteError는 고정 에러 코드와 사용자 메시지를 분리해 담는다", () => {
+    const error = new RouteError(
+      HttpStatusCodes.BAD_REQUEST,
+      "현재 상태에서는 완료 처리할 수 없습니다.",
+      "INVALID_STATUS_TRANSITION"
+    );
+
+    expect(error.status).toBe(400);
+    expect(error.error).toBe("INVALID_STATUS_TRANSITION");
+    expect(error.message).toBe("현재 상태에서는 완료 처리할 수 없습니다.");
   });
 });

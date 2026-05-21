@@ -418,7 +418,8 @@ export const PostService = {
     if (post.authorId !== authorId) {
       throw new RouteError(
         HttpStatusCodes.FORBIDDEN,
-        "작성자만 상태를 변경할 수 있습니다."
+        "작성자만 상태를 변경할 수 있습니다.",
+        "FORBIDDEN"
       );
     }
 
@@ -442,7 +443,8 @@ export const PostService = {
       if (currentStatus === "completed" || currentStatus === "cancelled") {
         throw new RouteError(
           HttpStatusCodes.BAD_REQUEST,
-          `${currentStatus} 상태에서는 상태를 변경할 수 없습니다.`
+          "현재 상태에서는 상태를 변경할 수 없습니다.",
+          "INVALID_STATUS_TRANSITION"
         );
       }
 
@@ -452,7 +454,8 @@ export const PostService = {
           HttpStatusCodes.BAD_REQUEST,
           `${currentStatus} 상태에서 ${newStatus} 상태로 변경할 수 없습니다. 가능한 상태: ${allowedStatuses.join(
             ", "
-          )}`
+          )}`,
+          "INVALID_STATUS_TRANSITION"
         );
       }
     }
@@ -465,7 +468,8 @@ export const PostService = {
     if (!newPost) {
       throw new RouteError(
         HttpStatusCodes.INTERNAL_SERVER_ERROR,
-        "게시글 업데이트 후 조회에 실패했습니다."
+        "게시글 업데이트 후 조회에 실패했습니다.",
+        "INTERNAL_SERVER_ERROR"
       );
     }
 
