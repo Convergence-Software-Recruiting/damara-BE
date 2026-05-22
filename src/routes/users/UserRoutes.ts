@@ -526,6 +526,10 @@ userRouter.put("/:id/settings", updateUserSettings);
  *                   type: integer
  *                 offset:
  *                   type: integer
+ *                 hasNext:
+ *                   type: boolean
+ *                   description: 다음 페이지 존재 여부
+ *                   example: true
  *       404:
  *         description: 사용자를 찾을 수 없음
  */

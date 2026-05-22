@@ -101,18 +101,22 @@ export const TrustService = {
       throw new RouteError(HttpStatusCodes.NOT_FOUND, "USER_NOT_FOUND");
     }
 
-    const events = await TrustEventRepo.findByUserId(userId, limit, offset);
-    const total = await TrustEventRepo.countByUserId(userId);
+    const [events, total] = await Promise.all([
+      TrustEventRepo.findByUserId(userId, limit, offset),
+      TrustEventRepo.countByUserId(userId),
+    ]);
+    const trustEvents = events.map((event) => ({
+      ...event,
+      previousGrade: this.calculateTrustGrade(event.previousScore),
+      nextGrade: this.calculateTrustGrade(event.nextScore),
+    }));
 
     return {
-      trustEvents: events.map((event) => ({
-        ...event,
-        previousGrade: this.calculateTrustGrade(event.previousScore),
-        nextGrade: this.calculateTrustGrade(event.nextScore),
-      })),
+      trustEvents,
       total,
       limit,
       offset,
+      hasNext: offset + trustEvents.length < total,
     };
   },
 
