@@ -296,6 +296,29 @@ describe("setupSocketIO 채팅 이벤트 핸들러", () => {
     );
   });
 
+  it("chat:send 메시지 타입이 지원 범위를 벗어나면 메시지를 저장하지 않는다", async () => {
+    connectSocket("chat-invalid-message-type-socket");
+    await state.handlers["chat:join"]({
+      chatRoomId: "room-1",
+      userId: "user-1",
+    });
+
+    await state.handlers["chat:send"]({
+      chatRoomId: "room-1",
+      senderId: "user-1",
+      content: "파일 메시지",
+      messageType: "file",
+    });
+
+    expect(chatService.sendMessage).not.toHaveBeenCalled();
+    expect(state.socket.emit).toHaveBeenCalledWith(
+      "socket:error",
+      expect.objectContaining({
+        message: "지원하지 않는 메시지 타입입니다.",
+      })
+    );
+  });
+
   it("chat:read 이벤트로 읽음 처리 후 기존/신규 읽음 이벤트를 모두 발행한다", async () => {
     connectSocket("chat-read-socket");
     await state.handlers["chat:join"]({
