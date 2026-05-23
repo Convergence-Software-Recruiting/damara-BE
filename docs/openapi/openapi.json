@@ -2021,7 +2021,6 @@
             "enum": [
               "text",
               "image",
-              "file",
               "system"
             ],
             "description": "메시지 타입",
@@ -2418,7 +2417,6 @@
                                 "enum": [
                                   "text",
                                   "image",
-                                  "file",
                                   "system"
                                 ]
                               },
@@ -2728,7 +2726,6 @@
                         "enum": [
                           "text",
                           "image",
-                          "file",
                           "system"
                         ],
                         "default": "text"
