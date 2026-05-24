@@ -9,8 +9,8 @@
     "lint": "eslint .",
     "test": "NODE_ENV=test vitest",
     "type-check": "tsc --noEmit",
-    "openapi:generate": "DOTENV_CONFIG_QUIET=true ts-node --files scripts/export-openapi.ts",
-    "openapi:lint": "npm run openapi:generate && spectral lint docs/openapi/openapi.json --ruleset .spectral.yaml",
+    "openapi:generate": "DOTENV_CONFIG_QUIET=true ts-node --transpile-only scripts/export-openapi.ts",
+    "openapi:lint": "npm run openapi:generate && ts-node --transpile-only scripts/lint-openapi.ts docs/openapi/openapi.json",
     "openapi:diff": "oasdiff changelog --format markdown",
     "openapi:diff:breaking": "oasdiff breaking --fail-on ERR --format text"
   },

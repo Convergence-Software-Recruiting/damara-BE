@@ -40,3 +40,5 @@ fs.writeFileSync(
 );
 
 console.log(`OpenAPI spec written to ${outputPath}`);
+
+process.exit(0);
