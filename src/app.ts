@@ -26,6 +26,11 @@ import { NOTICE_TYPES } from "./types/notice";
 import { FAQ_CATEGORIES } from "./types/faq";
 import { STORED_NOTIFICATION_TYPES } from "./types/notification";
 import { STORED_MESSAGE_TYPES } from "./types/chat";
+import {
+  POST_EXCEPTION_SEVERITIES,
+  POST_EXCEPTION_STATUSES,
+  POST_EXCEPTION_TYPES,
+} from "./types/post-exception";
 
 // 모든 모델을 import하여 Sequelize가 테이블을 인식하도록 함
 import "./models/User";
@@ -39,6 +44,7 @@ import "./models/UserSettings";
 import "./models/Notice";
 import "./models/Faq";
 import "./models/Notification";
+import "./models/PostException";
 
 const app = express();
 app.set("trust proxy", true);
@@ -555,6 +561,154 @@ async function ensureMessageTypeEnum() {
   }
 }
 
+async function ensurePostExceptionsTable() {
+  try {
+    const queryInterface = sequelize.getQueryInterface();
+    const tables = await queryInterface.showAllTables();
+    const hasPostExceptions = tables.some((table) => {
+      const tableName =
+        typeof table === "string"
+          ? table
+          : (table as { tableName?: string }).tableName;
+      return tableName === "post_exceptions";
+    });
+
+    if (!hasPostExceptions) {
+      await queryInterface.createTable("post_exceptions", {
+        id: {
+          type: DataTypes.UUID,
+          primaryKey: true,
+          defaultValue: DataTypes.UUIDV4,
+        },
+        post_id: {
+          type: DataTypes.UUID,
+          allowNull: false,
+          references: {
+            model: "posts",
+            key: "id",
+          },
+          onDelete: "CASCADE",
+        },
+        reporter_id: {
+          type: DataTypes.UUID,
+          allowNull: false,
+          references: {
+            model: "users",
+            key: "id",
+          },
+          onDelete: "CASCADE",
+        },
+        type: {
+          type: DataTypes.ENUM(...POST_EXCEPTION_TYPES),
+          allowNull: false,
+        },
+        status: {
+          type: DataTypes.ENUM(...POST_EXCEPTION_STATUSES),
+          allowNull: false,
+          defaultValue: "open",
+        },
+        reason: {
+          type: DataTypes.TEXT,
+          allowNull: false,
+        },
+        display_title: {
+          type: DataTypes.STRING(200),
+          allowNull: false,
+        },
+        display_message: {
+          type: DataTypes.STRING(500),
+          allowNull: false,
+        },
+        severity: {
+          type: DataTypes.ENUM(...POST_EXCEPTION_SEVERITIES),
+          allowNull: false,
+          defaultValue: "warning",
+        },
+        old_price: {
+          type: DataTypes.DECIMAL(10, 2),
+          allowNull: true,
+          defaultValue: null,
+        },
+        new_price: {
+          type: DataTypes.DECIMAL(10, 2),
+          allowNull: true,
+          defaultValue: null,
+        },
+        affected_quantity: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          defaultValue: null,
+        },
+        metadata: {
+          type: DataTypes.JSON,
+          allowNull: true,
+          defaultValue: null,
+        },
+        resolution_note: {
+          type: DataTypes.TEXT,
+          allowNull: true,
+          defaultValue: null,
+        },
+        created_at: {
+          type: DataTypes.DATE,
+          allowNull: false,
+        },
+        updated_at: {
+          type: DataTypes.DATE,
+          allowNull: false,
+        },
+      });
+
+      await queryInterface.addIndex("post_exceptions", [
+        "post_id",
+        "status",
+        "created_at",
+      ]);
+      await queryInterface.addIndex("post_exceptions", [
+        "reporter_id",
+        "created_at",
+      ]);
+      await queryInterface.addIndex("post_exceptions", ["type"]);
+      logger.info("✓ post_exceptions 테이블 생성 완료");
+      return;
+    }
+
+    const table = await queryInterface.describeTable("post_exceptions");
+
+    if (!table.display_title) {
+      await queryInterface.addColumn("post_exceptions", "display_title", {
+        type: DataTypes.STRING(200),
+        allowNull: false,
+        defaultValue: "공구 예외 상황이 등록되었어요",
+      });
+      logger.info("✓ post_exceptions.display_title 컬럼 추가 완료");
+    }
+
+    if (!table.display_message) {
+      await queryInterface.addColumn("post_exceptions", "display_message", {
+        type: DataTypes.STRING(500),
+        allowNull: false,
+        defaultValue: "공동구매 진행 중 예외 상황이 등록되었습니다.",
+      });
+      logger.info("✓ post_exceptions.display_message 컬럼 추가 완료");
+    }
+
+    if (!table.severity) {
+      await queryInterface.addColumn("post_exceptions", "severity", {
+        type: DataTypes.ENUM(...POST_EXCEPTION_SEVERITIES),
+        allowNull: false,
+        defaultValue: "warning",
+      });
+      logger.info("✓ post_exceptions.severity 컬럼 추가 완료");
+    }
+
+    logger.info("✓ post_exceptions 테이블 확인 완료");
+  } catch (error) {
+    logger.warn("post_exceptions 테이블 확인 중 경고 발생");
+    logger.warn(error, true);
+  }
+}
+
 export async function syncDatabase() {
   if (!ENV.DbForceSync) {
     logger.info("DB_FORCE_SYNC=false → 기존 데이터 유지");
@@ -573,6 +727,7 @@ export async function syncDatabase() {
     await ensureFaqsTable();
     await ensureNotificationActionColumns();
     await ensureMessageTypeEnum();
+    await ensurePostExceptionsTable();
     return;
   }
   try {
@@ -584,6 +739,7 @@ export async function syncDatabase() {
     await ensureFaqsTable();
     await ensureNotificationActionColumns();
     await ensureMessageTypeEnum();
+    await ensurePostExceptionsTable();
     logger.info("✓ 데이터베이스 force sync 완료");
   } catch (error) {
     logger.err("✗ 데이터베이스 동기화 실패");
