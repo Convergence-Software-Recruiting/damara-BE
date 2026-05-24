@@ -7,7 +7,7 @@ import { ChatService } from "../services/ChatService";
 import { NotificationService } from "../services/NotificationService";
 import { MessageCreationAttributes } from "../models/Message";
 import { MessageRepo } from "../repos/MessageRepo";
-import { MessageType } from "../types/chat";
+import { isMessageType, MessageType } from "../types/chat";
 import {
   getIO as getRegisteredIO,
   getUserRoom,
@@ -212,6 +212,11 @@ export function setupSocketIO(httpServer: HttpServer): SocketServer {
           return;
         }
 
+        if (!isMessageType(messageType)) {
+          emitSocketError(socket, "지원하지 않는 메시지 타입입니다.");
+          return;
+        }
+
         // 채팅방에 참여했는지 확인
         const clientInfo = connectedClients.get(socket.id);
         if (!clientInfo || clientInfo.chatRoomId !== chatRoomId) {
@@ -247,6 +252,18 @@ export function setupSocketIO(httpServer: HttpServer): SocketServer {
         // 해당 채팅방의 모든 사용자에게 메시지 브로드캐스트 (발신자 포함)
         io.to(chatRoomId).emit("receive_message", messageToBroadcast);
         io.to(chatRoomId).emit("chat:message", messageToBroadcast);
+        io.to(chatRoomId).emit("chat:roomUpdated", {
+          id: chatRoomId,
+          chatRoomId,
+          lastMessage: {
+            id: fullMessage.id,
+            content: fullMessage.content,
+            senderId: fullMessage.senderId,
+            messageType: fullMessage.messageType,
+            createdAt: fullMessage.createdAt,
+          },
+          updatedAt: new Date().toISOString(),
+        });
 
         logger.info(
           `✓ 메시지 브로드캐스트 완료: ${chatRoomId} - ${senderId} - ${fullMessage.id}`

@@ -36,13 +36,44 @@ const uploadRouter = Router();
  *             schema:
  *               type: object
  *               properties:
+ *                 image:
+ *                   type: object
+ *                   required:
+ *                     - imageUrl
+ *                     - sortOrder
+ *                   properties:
+ *                     imageUrl:
+ *                       type: string
+ *                       description: 업로드된 이미지 URL
+ *                       example: "/uploads/images/abc123.png"
+ *                     sortOrder:
+ *                       type: integer
+ *                       description: 이미지 정렬 순서
+ *                       example: 0
+ *                 images:
+ *                   type: array
+ *                   description: 게시글 images 필드와 동일한 이미지 객체 배열
+ *                   items:
+ *                     type: object
+ *                     required:
+ *                       - imageUrl
+ *                       - sortOrder
+ *                     properties:
+ *                       imageUrl:
+ *                         type: string
+ *                         description: 업로드된 이미지 URL
+ *                         example: "/uploads/images/abc123.png"
+ *                       sortOrder:
+ *                         type: integer
+ *                         description: 이미지 정렬 순서
+ *                         example: 0
  *                 url:
  *                   type: string
- *                   description: 업로드된 이미지 URL
+ *                   description: 업로드된 이미지 URL (기존 클라이언트 호환용)
  *                   example: "/uploads/images/abc123.png"
  *                 filename:
  *                   type: string
- *                   description: 업로드된 파일명
+ *                   description: 업로드된 파일명 (기존 클라이언트 호환용)
  *                   example: "abc123.png"
  *                 image:
  *                   type: object
@@ -134,8 +165,26 @@ uploadRouter.post(
  *             schema:
  *               type: object
  *               properties:
+ *                 images:
+ *                   type: array
+ *                   description: 게시글 images 필드와 동일한 이미지 객체 배열
+ *                   items:
+ *                     type: object
+ *                     required:
+ *                       - imageUrl
+ *                       - sortOrder
+ *                     properties:
+ *                       imageUrl:
+ *                         type: string
+ *                         description: 업로드된 이미지 URL
+ *                         example: "/uploads/images/abc123.png"
+ *                       sortOrder:
+ *                         type: integer
+ *                         description: 이미지 정렬 순서
+ *                         example: 0
  *                 imageUrls:
  *                   type: array
+ *                   description: 기존 클라이언트 호환용 이미지 정보 배열
  *                   items:
  *                     type: string
  *                   description: 업로드된 이미지 URL 배열

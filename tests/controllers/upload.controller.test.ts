@@ -92,5 +92,6 @@ describe("upload.controller", () => {
       message: "업로드할 이미지 파일이 필요합니다.",
       details: {},
     });
+    expect(next).not.toHaveBeenCalled();
   });
 });

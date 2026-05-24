@@ -40,6 +40,21 @@ export const FavoriteService = {
   },
 
   /**
+   * 관심 여부와 현재 관심 수를 함께 조회
+   */
+  async getFavoriteState(postId: string, userId: string) {
+    const [isFavorite, favoriteCount] = await Promise.all([
+      FavoriteRepo.isFavorite(postId, userId),
+      FavoriteRepo.countByPostId(postId),
+    ]);
+
+    return {
+      isFavorite,
+      favoriteCount,
+    };
+  },
+
+  /**
    * 사용자별 관심 목록 조회
    */
   async getFavorites(userId: string, limit = 20, offset = 0) {

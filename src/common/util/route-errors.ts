@@ -1,4 +1,5 @@
-import HttpStatusCodes from '../constants/HttpStatusCodes';
+import type { Response } from "express";
+import HttpStatusCodes from "../constants/HttpStatusCodes";
 
 
 /******************************************************************************
@@ -9,10 +10,12 @@ import HttpStatusCodes from '../constants/HttpStatusCodes';
  * Error with status code and message.
  */
 export class RouteError extends Error {
+  public error: string;
   public status: HttpStatusCodes;
 
-  public constructor(status: HttpStatusCodes, message: string) {
+  public constructor(status: HttpStatusCodes, message: string, error = message) {
     super(message);
+    this.error = error;
     this.status = status;
   }
 }
@@ -66,4 +69,32 @@ export class StudentIdAlreadyExistsError extends RouteError {
   public constructor() {
     super(HttpStatusCodes.CONFLICT, StudentIdAlreadyExistsError.MESSAGE);
   }
+}
+
+export type ErrorResponseBody = {
+  error: string;
+  message: string;
+  details: Record<string, unknown>;
+};
+
+export function buildErrorResponse(
+  error: string,
+  message = error,
+  details: Record<string, unknown> = {}
+): ErrorResponseBody {
+  return {
+    error,
+    message,
+    details,
+  };
+}
+
+export function sendErrorResponse(
+  res: Response,
+  status: HttpStatusCodes,
+  error: string,
+  message = error,
+  details: Record<string, unknown> = {}
+) {
+  return res.status(status).json(buildErrorResponse(error, message, details));
 }

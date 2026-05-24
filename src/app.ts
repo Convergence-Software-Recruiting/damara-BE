@@ -15,7 +15,7 @@ import { DataTypes } from "sequelize";
 import BaseRouter from "./routes";
 import Paths from "./common/constants/Paths";
 import HttpStatusCodes from "./common/constants/HttpStatusCodes";
-import { RouteError } from "./common/util/route-errors";
+import { buildErrorResponse, RouteError } from "./common/util/route-errors";
 import { sequelize } from "./db";
 import { setupSwagger } from "./config/swagger";
 import ENV from "./common/constants/ENV";
@@ -25,7 +25,7 @@ import { PARTICIPANT_STATUSES } from "./types/participant-status";
 import { NOTICE_TYPES } from "./types/notice";
 import { FAQ_CATEGORIES } from "./types/faq";
 import { STORED_NOTIFICATION_TYPES } from "./types/notification";
-import { MESSAGE_TYPES } from "./types/chat";
+import { STORED_MESSAGE_TYPES } from "./types/chat";
 
 // 모든 모델을 import하여 Sequelize가 테이블을 인식하도록 함
 import "./models/User";
@@ -543,7 +543,7 @@ async function ensureMessageTypeEnum() {
     const queryInterface = sequelize.getQueryInterface();
     await queryInterface.describeTable("messages");
     await queryInterface.changeColumn("messages", "message_type", {
-      type: DataTypes.ENUM(...MESSAGE_TYPES),
+      type: DataTypes.ENUM(...STORED_MESSAGE_TYPES),
       allowNull: false,
       defaultValue: "text",
     });
@@ -681,14 +681,17 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   logger.err(err, true);
 
   if (err instanceof RouteError) {
-    return res.status(err.status).json({
-      error: err.message,
-    });
+    return res
+      .status(err.status)
+      .json(buildErrorResponse(err.error, err.message));
   }
 
-  return res
-    .status(HttpStatusCodes.INTERNAL_SERVER_ERROR)
-    .json({ error: "INTERNAL_SERVER_ERROR" });
+  return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json(
+    buildErrorResponse(
+      "INTERNAL_SERVER_ERROR",
+      "서버 내부 오류가 발생했습니다."
+    )
+  );
 });
 
 export default app;

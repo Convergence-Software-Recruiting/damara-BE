@@ -2,6 +2,29 @@
 
 import { Request, Response, NextFunction } from "express";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
+import { sendErrorResponse } from "../common/util/route-errors";
+
+type UploadedImage = {
+  imageUrl: string;
+  sortOrder: number;
+};
+
+function toUploadedImage(filename: string, sortOrder: number): UploadedImage {
+  return {
+    imageUrl: `/uploads/images/${filename}`,
+    sortOrder,
+  };
+}
+
+function normalizeFiles(
+  files: Express.Multer.File[] | { [fieldname: string]: Express.Multer.File[] }
+): Express.Multer.File[] {
+  if (Array.isArray(files)) {
+    return files;
+  }
+
+  return Object.values(files).flat();
+}
 
 function toUploadedImage(filename: string, sortOrder: number) {
   const imageUrl = `/uploads/images/${filename}`;

@@ -2021,7 +2021,6 @@
             "enum": [
               "text",
               "image",
-              "file",
               "system"
             ],
             "description": "메시지 타입",
@@ -2199,10 +2198,27 @@
       },
       "Error": {
         "type": "object",
+        "required": [
+          "error",
+          "message",
+          "details"
+        ],
         "properties": {
           "error": {
             "type": "string",
-            "description": "에러 메시지"
+            "description": "프론트 분기용 고정 에러 코드",
+            "example": "POST_NOT_FOUND"
+          },
+          "message": {
+            "type": "string",
+            "description": "사용자 표시 또는 로그 확인용 에러 메시지",
+            "example": "게시글을 찾을 수 없습니다."
+          },
+          "details": {
+            "type": "object",
+            "description": "필드별 오류 등 추가 세부 정보",
+            "additionalProperties": true,
+            "example": {}
           }
         }
       }
@@ -2401,7 +2417,6 @@
                                 "enum": [
                                   "text",
                                   "image",
-                                  "file",
                                   "system"
                                 ]
                               },
@@ -2711,7 +2726,6 @@
                         "enum": [
                           "text",
                           "image",
-                          "file",
                           "system"
                         ],
                         "default": "text"
@@ -3983,7 +3997,7 @@
                   "properties": {
                     "error": {
                       "type": "string",
-                      "example": "UNAUTHORIZED"
+                      "example": "FORBIDDEN"
                     },
                     "message": {
                       "type": "string",
@@ -4379,6 +4393,11 @@
                   "properties": {
                     "isFavorite": {
                       "type": "boolean"
+                    },
+                    "favoriteCount": {
+                      "type": "integer",
+                      "description": "현재 게시글 관심 등록 수",
+                      "example": 13
                     }
                   }
                 }
@@ -4535,14 +4554,56 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "image": {
+                      "type": "object",
+                      "required": [
+                        "imageUrl",
+                        "sortOrder"
+                      ],
+                      "properties": {
+                        "imageUrl": {
+                          "type": "string",
+                          "description": "업로드된 이미지 URL",
+                          "example": "/uploads/images/abc123.png"
+                        },
+                        "sortOrder": {
+                          "type": "integer",
+                          "description": "이미지 정렬 순서",
+                          "example": 0
+                        }
+                      }
+                    },
+                    "images": {
+                      "type": "array",
+                      "description": "게시글 images 필드와 동일한 이미지 객체 배열",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "imageUrl",
+                          "sortOrder"
+                        ],
+                        "properties": {
+                          "imageUrl": {
+                            "type": "string",
+                            "description": "업로드된 이미지 URL",
+                            "example": "/uploads/images/abc123.png"
+                          },
+                          "sortOrder": {
+                            "type": "integer",
+                            "description": "이미지 정렬 순서",
+                            "example": 0
+                          }
+                        }
+                      }
+                    },
                     "url": {
                       "type": "string",
-                      "description": "업로드된 이미지 URL",
+                      "description": "업로드된 이미지 URL (기존 클라이언트 호환용)",
                       "example": "/uploads/images/abc123.png"
                     },
                     "filename": {
                       "type": "string",
-                      "description": "업로드된 파일명",
+                      "description": "업로드된 파일명 (기존 클라이언트 호환용)",
                       "example": "abc123.png"
                     },
                     "image": {
@@ -4667,8 +4728,32 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "images": {
+                      "type": "array",
+                      "description": "게시글 images 필드와 동일한 이미지 객체 배열",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "imageUrl",
+                          "sortOrder"
+                        ],
+                        "properties": {
+                          "imageUrl": {
+                            "type": "string",
+                            "description": "업로드된 이미지 URL",
+                            "example": "/uploads/images/abc123.png"
+                          },
+                          "sortOrder": {
+                            "type": "integer",
+                            "description": "이미지 정렬 순서",
+                            "example": 0
+                          }
+                        }
+                      }
+                    },
                     "imageUrls": {
                       "type": "array",
+                      "description": "기존 클라이언트 호환용 이미지 정보 배열",
                       "items": {
                         "type": "string"
                       },
@@ -5441,6 +5526,11 @@
                     },
                     "offset": {
                       "type": "integer"
+                    },
+                    "hasNext": {
+                      "type": "boolean",
+                      "description": "다음 페이지 존재 여부",
+                      "example": true
                     }
                   }
                 }

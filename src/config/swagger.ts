@@ -2030,10 +2030,23 @@ const options: swaggerJsdoc.Options = {
         },
         Error: {
           type: "object",
+          required: ["error", "message", "details"],
           properties: {
             error: {
               type: "string",
-              description: "에러 메시지",
+              description: "프론트 분기용 고정 에러 코드",
+              example: "POST_NOT_FOUND",
+            },
+            message: {
+              type: "string",
+              description: "사용자 표시 또는 로그 확인용 에러 메시지",
+              example: "게시글을 찾을 수 없습니다.",
+            },
+            details: {
+              type: "object",
+              description: "필드별 오류 등 추가 세부 정보",
+              additionalProperties: true,
+              example: {},
             },
           },
         },

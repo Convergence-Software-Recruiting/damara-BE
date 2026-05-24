@@ -443,7 +443,7 @@ postRouter.put("/:id", updatePost);
  *               properties:
  *                 error:
  *                   type: string
- *                   example: "UNAUTHORIZED"
+ *                   example: "FORBIDDEN"
  *                 message:
  *                   type: string
  *                   example: "작성자만 상태를 변경할 수 있습니다."
@@ -728,6 +728,10 @@ postRouter.post("/:postId/favorite", addFavorite);
  *               properties:
  *                 isFavorite:
  *                   type: boolean
+ *                 favoriteCount:
+ *                   type: integer
+ *                   description: 현재 게시글 관심 등록 수
+ *                   example: 13
  */
 // GET /api/posts/:postId/favorite/:userId - 관심 여부 확인
 postRouter.get("/:postId/favorite/:userId", checkFavorite);
