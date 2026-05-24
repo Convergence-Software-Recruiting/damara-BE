@@ -46,7 +46,18 @@ export function parseReq<T>(schema: z.ZodType<T>) {
         JSON.stringify(result.error, null, 2)
       );
       console.error("Input received:", JSON.stringify(input, null, 2));
-      throw new RouteError(HttpStatusCodes.BAD_REQUEST, "VALIDATION_ERROR");
+      throw new RouteError(
+        HttpStatusCodes.BAD_REQUEST,
+        "VALIDATION_ERROR",
+        "VALIDATION_ERROR",
+        {
+          issues: result.error.issues.map((issue) => ({
+            path: issue.path,
+            code: issue.code,
+            message: issue.message,
+          })),
+        }
+      );
     }
 
     return result.data;

@@ -60,11 +60,16 @@ describe("route error response helpers", () => {
     const error = new RouteError(
       HttpStatusCodes.BAD_REQUEST,
       "현재 상태에서는 완료 처리할 수 없습니다.",
-      "INVALID_STATUS_TRANSITION"
+      "INVALID_STATUS_TRANSITION",
+      { currentStatus: "open", nextStatus: "completed" }
     );
 
     expect(error.status).toBe(400);
     expect(error.error).toBe("INVALID_STATUS_TRANSITION");
     expect(error.message).toBe("현재 상태에서는 완료 처리할 수 없습니다.");
+    expect(error.details).toEqual({
+      currentStatus: "open",
+      nextStatus: "completed",
+    });
   });
 });

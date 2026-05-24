@@ -11,11 +11,18 @@ import HttpStatusCodes from "../constants/HttpStatusCodes";
  */
 export class RouteError extends Error {
   public error: string;
+  public details: Record<string, unknown>;
   public status: HttpStatusCodes;
 
-  public constructor(status: HttpStatusCodes, message: string, error = message) {
+  public constructor(
+    status: HttpStatusCodes,
+    message: string,
+    error = message,
+    details: Record<string, unknown> = {}
+  ) {
     super(message);
     this.error = error;
+    this.details = details;
     this.status = status;
   }
 }
@@ -34,7 +41,7 @@ export class ValidationError extends RouteError {
       message: ValidationError.MESSAGE,
       errors,
     });
-    super(HttpStatusCodes.BAD_REQUEST, msg);
+    super(HttpStatusCodes.BAD_REQUEST, msg, "VALIDATION_ERROR", { errors });
   }
 }
 

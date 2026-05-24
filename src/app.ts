@@ -683,7 +683,7 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof RouteError) {
     return res
       .status(err.status)
-      .json(buildErrorResponse(err.error, err.message));
+      .json(buildErrorResponse(err.error, err.message, err.details));
   }
 
   return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json(
