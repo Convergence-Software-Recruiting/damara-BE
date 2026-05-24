@@ -2060,7 +2060,48 @@ const options: swaggerJsdoc.Options = {
   ],
 };
 
-const swaggerSpec = swaggerJsdoc(options);
+type OpenApiOperation = {
+  summary?: string;
+  description?: string;
+};
+
+type OpenApiPathItem = Record<string, OpenApiOperation | unknown>;
+
+function withOperationDescriptions(spec: Record<string, any>) {
+  const paths = spec.paths as Record<string, OpenApiPathItem> | undefined;
+
+  if (!paths) {
+    return spec;
+  }
+
+  for (const pathItem of Object.values(paths)) {
+    for (const [method, operation] of Object.entries(pathItem)) {
+      if (
+        !["get", "post", "put", "patch", "delete"].includes(
+          method.toLowerCase()
+        ) ||
+        !operation ||
+        typeof operation !== "object"
+      ) {
+        continue;
+      }
+
+      const openApiOperation = operation as OpenApiOperation;
+
+      if (
+        (!openApiOperation.description ||
+          !openApiOperation.description.trim()) &&
+        openApiOperation.summary
+      ) {
+        openApiOperation.description = openApiOperation.summary;
+      }
+    }
+  }
+
+  return spec;
+}
+
+const swaggerSpec = withOperationDescriptions(swaggerJsdoc(options));
 
 /**
  * Swagger UI 설정
