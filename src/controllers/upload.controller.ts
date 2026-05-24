@@ -26,6 +26,23 @@ function normalizeFiles(
   return Object.values(files).flat();
 }
 
+function toUploadedImage(filename: string, sortOrder: number) {
+  const imageUrl = `/uploads/images/${filename}`;
+
+  return {
+    imageUrl,
+    url: imageUrl,
+    filename,
+    sortOrder,
+  };
+}
+
+function normalizeUploadedFiles(
+  files: Express.Multer.File[] | { [fieldname: string]: Express.Multer.File[] }
+) {
+  return Array.isArray(files) ? files : Object.values(files).flat();
+}
+
 /**
  * 단일 이미지 업로드
  * POST /api/upload/image
@@ -42,21 +59,21 @@ export async function uploadImage(
 ) {
   try {
     if (!req.file) {
-      return sendErrorResponse(
-        res,
-        HttpStatusCodes.BAD_REQUEST,
-        "IMAGE_REQUIRED",
-        "업로드할 이미지 파일이 필요합니다."
-      );
+      return res.status(HttpStatusCodes.BAD_REQUEST).json({
+        error: "IMAGE_REQUIRED",
+        message: "업로드할 이미지 파일이 필요합니다.",
+        details: {},
+      });
     }
 
+    // 업로드된 파일의 URL 생성
     const image = toUploadedImage(req.file.filename, 0);
 
     res.status(HttpStatusCodes.OK).json({
-      image,
-      images: [image],
       url: image.imageUrl,
       filename: req.file.filename,
+      image,
+      images: [image],
     });
   } catch (error) {
     next(error);
@@ -79,27 +96,21 @@ export async function uploadImages(
 ) {
   try {
     if (!req.files || (Array.isArray(req.files) && req.files.length === 0)) {
-      return sendErrorResponse(
-        res,
-        HttpStatusCodes.BAD_REQUEST,
-        "IMAGES_REQUIRED",
-        "업로드할 이미지 파일이 필요합니다."
-      );
+      return res.status(HttpStatusCodes.BAD_REQUEST).json({
+        error: "IMAGES_REQUIRED",
+        message: "업로드할 이미지 파일이 필요합니다.",
+        details: {},
+      });
     }
 
-    const files = normalizeFiles(req.files);
+    const files = normalizeUploadedFiles(req.files);
     const images = files.map((file, index) =>
       toUploadedImage(file.filename, index)
     );
-    const imageUrls = files.map((file, index) => ({
-      ...images[index],
-      url: images[index].imageUrl,
-      filename: file.filename,
-    }));
 
     res.status(HttpStatusCodes.OK).json({
       images,
-      imageUrls,
+      imageUrls: images.map((image) => image.imageUrl),
     });
   } catch (error) {
     next(error);

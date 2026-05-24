@@ -14,7 +14,7 @@ function createResponse() {
 }
 
 describe("upload.controller", () => {
-  it("단일 이미지 업로드 응답에 표준 images 구조와 기존 호환 필드를 함께 반환한다", async () => {
+  it("단일 이미지 업로드 응답에 기존 필드와 공통 images 배열을 함께 반환한다", async () => {
     const req = {
       file: {
         filename: "single.png",
@@ -27,25 +27,32 @@ describe("upload.controller", () => {
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({
+      url: "/uploads/images/single.png",
+      filename: "single.png",
       image: {
         imageUrl: "/uploads/images/single.png",
+        url: "/uploads/images/single.png",
+        filename: "single.png",
         sortOrder: 0,
       },
       images: [
         {
           imageUrl: "/uploads/images/single.png",
+          url: "/uploads/images/single.png",
+          filename: "single.png",
           sortOrder: 0,
         },
       ],
-      url: "/uploads/images/single.png",
-      filename: "single.png",
     });
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("다중 이미지 업로드 응답에 sortOrder가 포함된 images 배열을 반환한다", async () => {
+  it("다중 이미지 업로드 응답에 imageUrl과 sortOrder를 포함한다", async () => {
     const req = {
-      files: [{ filename: "first.png" }, { filename: "second.png" }],
+      files: [
+        { filename: "first.png" },
+        { filename: "second.png" },
+      ],
     };
     const res = createResponse();
     const next = vi.fn();
@@ -57,32 +64,23 @@ describe("upload.controller", () => {
       images: [
         {
           imageUrl: "/uploads/images/first.png",
-          sortOrder: 0,
-        },
-        {
-          imageUrl: "/uploads/images/second.png",
-          sortOrder: 1,
-        },
-      ],
-      imageUrls: [
-        {
-          imageUrl: "/uploads/images/first.png",
-          sortOrder: 0,
           url: "/uploads/images/first.png",
           filename: "first.png",
+          sortOrder: 0,
         },
         {
           imageUrl: "/uploads/images/second.png",
-          sortOrder: 1,
           url: "/uploads/images/second.png",
           filename: "second.png",
+          sortOrder: 1,
         },
       ],
+      imageUrls: ["/uploads/images/first.png", "/uploads/images/second.png"],
     });
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("파일이 없는 단일 업로드 요청은 공통 에러 응답을 반환한다", async () => {
+  it("파일이 없으면 명시적인 업로드 에러를 반환한다", async () => {
     const res = createResponse();
     const next = vi.fn();
 
