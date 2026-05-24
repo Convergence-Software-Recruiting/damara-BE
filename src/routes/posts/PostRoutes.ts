@@ -13,6 +13,9 @@ import {
   getParticipants,
   getParticipatedPosts,
   updateParticipantStatus,
+  createPostException,
+  getPostExceptions,
+  updatePostExceptionStatus,
   checkParticipation,
 } from "../../controllers/post.controller";
 import {
@@ -602,6 +605,208 @@ postRouter.get("/:id/participants", getParticipants);
  */
 // PATCH /api/posts/:id/participants/:userId/status - 참여자 상태 변경
 postRouter.patch("/:id/participants/:userId/status", updateParticipantStatus);
+
+/**
+ * @swagger
+ * /api/posts/{id}/exceptions:
+ *   get:
+ *     summary: 게시글 예외 케이스 목록 조회
+ *     description: 가격 변경, 품절, 수령 정보 변경, 파손/누락/불량 등 게시글 진행 중 발생한 예외 케이스 이력을 조회합니다.
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 게시글 UUID
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: 조회 개수
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: 시작 위치
+ *     responses:
+ *       200:
+ *         description: 예외 케이스 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PostExceptionsResponse'
+ *       404:
+ *         description: 게시글을 찾을 수 없음
+ *   post:
+ *     summary: 게시글 예외 케이스 등록
+ *     description: 작성자 또는 참여자가 가격 변경, 품절, 수령 정보 변경, 파손/누락/불량, 주최자 취소, 기타 예외를 등록합니다. 등록 시 작성자와 참여자에게 알림이 생성됩니다.
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 게시글 UUID
+ *       - in: header
+ *         name: x-user-id
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 예외 등록자 UUID. body.exception.reporterId 대신 사용할 수 있습니다.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - exception
+ *             properties:
+ *               exception:
+ *                 type: object
+ *                 required:
+ *                   - type
+ *                   - reason
+ *                 properties:
+ *                   reporterId:
+ *                     type: string
+ *                     format: uuid
+ *                     description: 예외 등록자 UUID. x-user-id 헤더를 쓰면 생략할 수 있습니다.
+ *                   type:
+ *                     $ref: '#/components/schemas/PostExceptionType'
+ *                   reason:
+ *                     type: string
+ *                     maxLength: 2000
+ *                     description: 예외 사유
+ *                   displayTitle:
+ *                     type: string
+ *                     maxLength: 200
+ *                     description: 프론트 배너/배지용 제목. 없으면 type 기준 기본 문구를 사용합니다.
+ *                   displayMessage:
+ *                     type: string
+ *                     maxLength: 500
+ *                     description: 프론트 배너/모달용 문구. 없으면 reason을 사용합니다.
+ *                   severity:
+ *                     $ref: '#/components/schemas/PostExceptionSeverity'
+ *                   oldPrice:
+ *                     type: number
+ *                     nullable: true
+ *                     description: 변경 전 가격
+ *                   newPrice:
+ *                     type: number
+ *                     nullable: true
+ *                     description: 변경 후 가격
+ *                   affectedQuantity:
+ *                     type: integer
+ *                     nullable: true
+ *                     description: 파손/누락 등 영향을 받은 수량
+ *                   metadata:
+ *                     type: object
+ *                     nullable: true
+ *                     additionalProperties: true
+ *                     description: 예외 유형별 확장 정보
+ *           example:
+ *             exception:
+ *               type: price_changed
+ *               reason: 할인 종료로 실제 구매 가격이 1000원 상승했습니다.
+ *               displayTitle: 가격이 변경되었어요
+ *               displayMessage: 할인 종료로 실제 구매 가격이 5,900원에서 6,900원으로 변경되었습니다.
+ *               severity: warning
+ *               oldPrice: 5900
+ *               newPrice: 6900
+ *     responses:
+ *       201:
+ *         description: 예외 케이스 등록 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PostException'
+ *       400:
+ *         description: 유효성 검증 실패 또는 등록자 ID 누락
+ *       403:
+ *         description: 작성자 또는 참여자가 아님
+ *       404:
+ *         description: 게시글 또는 사용자를 찾을 수 없음
+ */
+postRouter.get("/:id/exceptions", getPostExceptions);
+postRouter.post("/:id/exceptions", createPostException);
+
+/**
+ * @swagger
+ * /api/posts/{id}/exceptions/{exceptionId}/status:
+ *   patch:
+ *     summary: 게시글 예외 케이스 상태 변경
+ *     description: 작성자 또는 예외 등록자가 예외 케이스를 open, resolved, dismissed 상태로 변경합니다.
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 게시글 UUID
+ *       - in: path
+ *         name: exceptionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 예외 케이스 UUID
+ *       - in: header
+ *         name: x-user-id
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 상태 변경 요청자 UUID. body.actorUserId 대신 사용할 수 있습니다.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 $ref: '#/components/schemas/PostExceptionStatus'
+ *               actorUserId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: 상태 변경 요청자 UUID. x-user-id 헤더를 쓰면 생략할 수 있습니다.
+ *               resolutionNote:
+ *                 type: string
+ *                 nullable: true
+ *                 maxLength: 2000
+ *                 description: 처리 내용 또는 기각 사유
+ *           example:
+ *             status: resolved
+ *             resolutionNote: 참여자 동의 후 변경 가격으로 진행했습니다.
+ *     responses:
+ *       200:
+ *         description: 예외 케이스 상태 변경 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PostException'
+ *       400:
+ *         description: 유효성 검증 실패 또는 요청자 ID 누락
+ *       403:
+ *         description: 작성자 또는 예외 등록자가 아님
+ *       404:
+ *         description: 게시글 또는 예외 케이스를 찾을 수 없음
+ */
+postRouter.patch(
+  "/:id/exceptions/:exceptionId/status",
+  updatePostExceptionStatus
+);
 
 /**
  * @swagger
