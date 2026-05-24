@@ -748,3 +748,88 @@ docs/api/SWAGGER_CHANGELOG.md
 운영 DB에서는 `sequelize.sync({ alter: true })`에만 의존하지 않는 것이 좋다.
 
 운영 배포 전에는 `trust_events` 생성을 명시적인 migration으로 분리하는 것이 안전하다.
+
+## 2026-05-25 - post_exceptions 테이블 추가
+
+### 배경
+
+공동구매 진행 중 발생하는 예외 케이스는 게시글의 모집/진행/완료 상태와 별개의 사건 이력이다.
+
+가격 변경, 품절, 수령 정보 변경, 파손/누락/불량, 주최자 취소, 기타 예외를 기록하기 위해 `post_exceptions` 테이블을 추가한다.
+
+### 신규 테이블
+
+```text
+post_exceptions
+```
+
+컬럼:
+
+```text
+id UUID PK
+post_id UUID NOT NULL
+reporter_id UUID NOT NULL
+type ENUM(
+  price_changed,
+  sold_out,
+  pickup_changed,
+  damaged,
+  seller_cancelled,
+  other
+) NOT NULL
+status ENUM(
+  open,
+  resolved,
+  dismissed
+) NOT NULL DEFAULT open
+reason TEXT NOT NULL
+display_title VARCHAR(200) NOT NULL
+display_message VARCHAR(500) NOT NULL
+severity ENUM(
+  info,
+  warning,
+  critical
+) NOT NULL DEFAULT warning
+old_price DECIMAL(10,2) NULL
+new_price DECIMAL(10,2) NULL
+affected_quantity INTEGER NULL
+metadata JSON NULL
+resolution_note TEXT NULL
+created_at DATETIME NOT NULL
+updated_at DATETIME NOT NULL
+```
+
+### 관계
+
+```text
+posts 1:N post_exceptions
+users 1:N post_exceptions(reporter_id)
+```
+
+### 인덱스
+
+```text
+post_exceptions(post_id, status, created_at)
+post_exceptions(reporter_id, created_at)
+post_exceptions(type)
+```
+
+### 알림 enum 영향
+
+`notifications.type`에 `post_exception`이 추가된다.
+
+### 배포 주의점
+
+`syncDatabase()`에서 `post_exceptions` 테이블 존재 여부를 확인하고 없으면 생성한다.
+
+운영 DB에서는 다음 구조가 반영되어야 한다.
+
+```sql
+CREATE TABLE post_exceptions (...);
+```
+
+Swagger 변경 사항은 다음 문서에서 관리한다.
+
+```text
+docs/api/SWAGGER_CHANGELOG.md
+```
