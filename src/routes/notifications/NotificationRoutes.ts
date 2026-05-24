@@ -145,6 +145,12 @@ notificationRouter.get("/unread-count", getUnreadCount);
  *                   example: "모든 알림을 읽음 처리했습니다."
  *                 updatedCount:
  *                   type: integer
+ *       400:
+ *         description: 사용자 ID 누락 또는 유효성 검증 실패
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 // PATCH /api/notifications/read-all - 모든 알림 읽음 처리 (더 구체적인 라우트를 먼저 배치)
 notificationRouter.patch("/read-all", markAllNotificationsAsRead);
@@ -185,6 +191,18 @@ notificationRouter.patch("/read-all", markAllNotificationsAsRead);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Notification'
+ *       400:
+ *         description: 사용자 ID 누락 또는 유효성 검증 실패
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: 알림을 찾을 수 없음
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 // PATCH /api/notifications/:id/read - 알림 읽음 처리 (더 구체적인 라우트를 먼저 배치)
 notificationRouter.patch("/:id/read", markNotificationAsRead);
@@ -226,6 +244,18 @@ notificationRouter.patch("/:id/read", markNotificationAsRead);
  *                 message:
  *                   type: string
  *                   example: "알림이 삭제되었습니다."
+ *       400:
+ *         description: 사용자 ID 누락 또는 유효성 검증 실패
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: 알림을 찾을 수 없음
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 // DELETE /api/notifications/:id - 알림 삭제
 notificationRouter.delete("/:id", deleteNotification);

@@ -774,6 +774,12 @@ postRouter.get("/:postId/favorite/:userId", checkFavorite);
  *                 favoriteCount:
  *                   type: integer
  *                   example: 12
+ *       404:
+ *         description: 관심 등록 또는 게시글을 찾을 수 없음
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 // DELETE /api/posts/:postId/favorite/:userId - 관심 해제
 postRouter.delete("/:postId/favorite/:userId", removeFavorite);
