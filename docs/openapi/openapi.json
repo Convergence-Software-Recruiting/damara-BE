@@ -2274,7 +2274,8 @@
           "404": {
             "description": "Post를 찾을 수 없음"
           }
-        }
+        },
+        "description": "채팅방 생성"
       }
     },
     "/api/chat/rooms/user/{userId}": {
@@ -2460,7 +2461,8 @@
           "404": {
             "description": "사용자를 찾을 수 없음"
           }
-        }
+        },
+        "description": "사용자가 참여한 채팅방 목록 조회"
       }
     },
     "/api/chat/rooms/post/{postId}": {
@@ -2484,7 +2486,8 @@
           "200": {
             "description": "채팅방 조회 또는 생성 성공"
           }
-        }
+        },
+        "description": "Post ID로 채팅방 조회 또는 생성"
       }
     },
     "/api/chat/rooms/{chatRoomId}/messages": {
@@ -2554,7 +2557,8 @@
           "404": {
             "description": "채팅방을 찾을 수 없음"
           }
-        }
+        },
+        "description": "채팅방의 메시지 목록 조회"
       }
     },
     "/api/chat/rooms/{chatRoomId}/read-all": {
@@ -2617,7 +2621,8 @@
               }
             }
           }
-        }
+        },
+        "description": "채팅방의 모든 메시지 읽음 처리"
       }
     },
     "/api/chat/rooms/{chatRoomId}/unread-count": {
@@ -2650,7 +2655,8 @@
           "200": {
             "description": "읽지 않은 메시지 수 조회 성공"
           }
-        }
+        },
+        "description": "읽지 않은 메시지 수 조회"
       }
     },
     "/api/chat/rooms/{id}": {
@@ -2677,7 +2683,8 @@
           "404": {
             "description": "채팅방을 찾을 수 없음"
           }
-        }
+        },
+        "description": "채팅방 ID로 조회"
       },
       "delete": {
         "summary": "채팅방 삭제",
@@ -2702,7 +2709,8 @@
           "404": {
             "description": "채팅방을 찾을 수 없음"
           }
-        }
+        },
+        "description": "채팅방 삭제"
       }
     },
     "/api/chat/messages": {
@@ -2775,7 +2783,8 @@
           "404": {
             "description": "채팅방 또는 발신자를 찾을 수 없음"
           }
-        }
+        },
+        "description": "메시지 전송"
       }
     },
     "/api/chat/messages/{id}/read": {
@@ -2821,7 +2830,8 @@
           "404": {
             "description": "메시지를 찾을 수 없음"
           }
-        }
+        },
+        "description": "메시지 읽음 처리"
       }
     },
     "/api/chat/messages/{id}": {
@@ -2848,7 +2858,8 @@
           "404": {
             "description": "메시지를 찾을 수 없음"
           }
-        }
+        },
+        "description": "메시지 삭제"
       }
     },
     "/api/faqs": {
@@ -3123,7 +3134,8 @@
               }
             }
           }
-        }
+        },
+        "description": "알림 목록 조회"
       }
     },
     "/api/notifications/unread-count": {
@@ -3168,7 +3180,8 @@
               }
             }
           }
-        }
+        },
+        "description": "읽지 않은 알림 개수 조회"
       }
     },
     "/api/notifications/read-all": {
@@ -3233,7 +3246,8 @@
               }
             }
           }
-        }
+        },
+        "description": "모든 알림 읽음 처리"
       }
     },
     "/api/notifications/{id}/read": {
@@ -3309,7 +3323,8 @@
               }
             }
           }
-        }
+        },
+        "description": "알림 읽음 처리"
       }
     },
     "/api/notifications/{id}": {
@@ -3385,7 +3400,8 @@
               }
             }
           }
-        }
+        },
+        "description": "알림 삭제"
       }
     },
     "/api/posts": {
@@ -3509,7 +3525,8 @@
               }
             }
           }
-        }
+        },
+        "description": "홈 피드 상품 목록 조회 (페이징, 검색, 필터, 정렬 가능)"
       },
       "post": {
         "summary": "상품 등록",
@@ -3712,7 +3729,8 @@
           "404": {
             "description": "작성자를 찾을 수 없음"
           }
-        }
+        },
+        "description": "상품 등록"
       }
     },
     "/api/posts/student/{studentId}": {
@@ -3762,7 +3780,8 @@
               }
             }
           }
-        }
+        },
+        "description": "학번으로 상품 조회"
       }
     },
     "/api/posts/{id}": {
@@ -3903,7 +3922,8 @@
           "404": {
             "description": "상품을 찾을 수 없음"
           }
-        }
+        },
+        "description": "상품 수정"
       },
       "delete": {
         "summary": "상품 삭제",
@@ -3927,7 +3947,8 @@
           "404": {
             "description": "상품을 찾을 수 없음"
           }
-        }
+        },
+        "description": "상품 삭제"
       },
       "get": {
         "summary": "상품 상세 조회",
@@ -4081,7 +4102,8 @@
           "404": {
             "description": "게시글을 찾을 수 없음"
           }
-        }
+        },
+        "description": "게시글 상태 변경 (작성자만 가능)"
       }
     },
     "/api/posts/user/{userId}/participated": {
@@ -4115,7 +4137,8 @@
               }
             }
           }
-        }
+        },
+        "description": "사용자가 참여한 게시글 목록 조회"
       }
     },
     "/api/posts/{id}/participants": {
@@ -4164,7 +4187,8 @@
               }
             }
           }
-        }
+        },
+        "description": "게시글의 참여자 목록 조회"
       }
     },
     "/api/posts/{id}/participants/{userId}/status": {
@@ -4297,7 +4321,8 @@
               }
             }
           }
-        }
+        },
+        "description": "사용자가 특정 게시글에 참여했는지 확인"
       },
       "delete": {
         "summary": "공동구매 참여 취소",
@@ -4338,7 +4363,8 @@
           "404": {
             "description": "참여 정보를 찾을 수 없음"
           }
-        }
+        },
+        "description": "공동구매 참여 취소"
       }
     },
     "/api/posts/{postId}/favorite": {
@@ -4422,7 +4448,8 @@
           "400": {
             "description": "이미 관심 등록됨"
           }
-        }
+        },
+        "description": "관심 등록"
       }
     },
     "/api/posts/{postId}/favorite/{userId}": {
@@ -4474,7 +4501,8 @@
               }
             }
           }
-        }
+        },
+        "description": "관심 여부 확인"
       },
       "delete": {
         "summary": "관심 해제",
@@ -4538,7 +4566,8 @@
               }
             }
           }
-        }
+        },
+        "description": "관심 해제"
       }
     },
     "/api/posts/{id}/participate": {
@@ -4597,7 +4626,8 @@
           "404": {
             "description": "게시글 또는 사용자를 찾을 수 없음"
           }
-        }
+        },
+        "description": "공동구매 참여"
       }
     },
     "/api/upload/image": {
@@ -4634,6 +4664,16 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "url": {
+                      "type": "string",
+                      "description": "업로드된 이미지 URL (기존 클라이언트 호환용)",
+                      "example": "/uploads/images/abc123.png"
+                    },
+                    "filename": {
+                      "type": "string",
+                      "description": "업로드된 파일명 (기존 클라이언트 호환용)",
+                      "example": "abc123.png"
+                    },
                     "image": {
                       "type": "object",
                       "description": "업로드된 이미지 객체",
@@ -4682,16 +4722,6 @@
                           }
                         }
                       }
-                    },
-                    "url": {
-                      "type": "string",
-                      "description": "업로드된 이미지 URL (기존 클라이언트 호환용)",
-                      "example": "/uploads/images/abc123.png"
-                    },
-                    "filename": {
-                      "type": "string",
-                      "description": "업로드된 파일명 (기존 클라이언트 호환용)",
-                      "example": "abc123.png"
                     }
                   }
                 }
@@ -4726,7 +4756,8 @@
               }
             }
           }
-        }
+        },
+        "description": "단일 이미지 업로드"
       }
     },
     "/api/upload/images": {
@@ -4766,6 +4797,13 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "imageUrls": {
+                      "type": "array",
+                      "description": "기존 클라이언트 호환용 이미지 URL 배열",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
                     "images": {
                       "type": "array",
                       "description": "게시글 images 응답과 맞춘 이미지 객체 배열",
@@ -4790,13 +4828,6 @@
                             "example": 0
                           }
                         }
-                      }
-                    },
-                    "imageUrls": {
-                      "type": "array",
-                      "description": "기존 클라이언트 호환용 이미지 URL 배열",
-                      "items": {
-                        "type": "string"
                       }
                     }
                   }
@@ -4832,7 +4863,8 @@
               }
             }
           }
-        }
+        },
+        "description": "다중 이미지 업로드 (최대 10개)"
       }
     },
     "/api/users": {
@@ -4875,7 +4907,8 @@
               }
             }
           }
-        }
+        },
+        "description": "전체 사용자 조회"
       },
       "post": {
         "summary": "회원가입",
@@ -4974,7 +5007,8 @@
               }
             }
           }
-        }
+        },
+        "description": "회원가입"
       }
     },
     "/api/users/login": {
@@ -5028,7 +5062,8 @@
               }
             }
           }
-        }
+        },
+        "description": "로그인 (학번 + 비밀번호)"
       }
     },
     "/api/users/{userId}/favorites": {
@@ -5107,7 +5142,8 @@
               }
             }
           }
-        }
+        },
+        "description": "내가 관심 등록한 게시글 목록 조회"
       }
     },
     "/api/users/{userId}/my-posts": {
@@ -5554,7 +5590,8 @@
           "404": {
             "description": "사용자를 찾을 수 없음"
           }
-        }
+        },
+        "description": "사용자 신뢰 이벤트 이력 조회"
       }
     },
     "/api/users/{id}": {
@@ -5589,7 +5626,8 @@
           "404": {
             "description": "사용자를 찾을 수 없음"
           }
-        }
+        },
+        "description": "사용자 정보 조회"
       },
       "put": {
         "summary": "회원 정보 수정",
@@ -5672,7 +5710,8 @@
           "404": {
             "description": "사용자를 찾을 수 없음"
           }
-        }
+        },
+        "description": "회원 정보 수정"
       },
       "delete": {
         "summary": "회원 삭제",
@@ -5697,7 +5736,8 @@
           "404": {
             "description": "사용자를 찾을 수 없음"
           }
-        }
+        },
+        "description": "회원 삭제"
       }
     }
   }
