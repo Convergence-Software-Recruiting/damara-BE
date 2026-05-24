@@ -7,6 +7,10 @@ import { NOTICE_TYPES } from "../types/notice";
 import { FAQ_CATEGORIES } from "../types/faq";
 import { NOTIFICATION_TYPES } from "../types/notification";
 import { MESSAGE_TYPES } from "../types/chat";
+import {
+  POST_EXCEPTION_STATUSES,
+  POST_EXCEPTION_TYPES,
+} from "../types/post-exception";
 
 // 환경 변수에서 API 베이스 URL 가져오기 (배포 환경에서 설정)
 const getServerUrl = () => {
@@ -890,6 +894,11 @@ const options: swaggerJsdoc.Options = {
               description: "현재 사용자가 작성자인지 여부",
               example: false,
             },
+            exceptionSummary: {
+              $ref: "#/components/schemas/PostExceptionSummary",
+              description:
+                "카드/상세 경고 배지용 예외 요약. 홈, 내 공구, 관심 공구 카드에서 공통으로 사용할 수 있습니다.",
+            },
             deadlineStatus: {
               type: "string",
               enum: ["open", "closingSoon", "closed"],
@@ -994,6 +1003,249 @@ const options: swaggerJsdoc.Options = {
           description:
             "참여자별 진행 상태 (participating=참여중, payment_pending=입금대기, pickup_ready=수령예정, received=수령완료)",
           example: "participating",
+        },
+        PostExceptionType: {
+          type: "string",
+          enum: POST_EXCEPTION_TYPES,
+          description:
+            "게시글 예외 유형 (price_changed=가격 변경, sold_out=품절, pickup_changed=수령 정보 변경, damaged=파손/누락/불량, seller_cancelled=주최자 취소, other=기타)",
+          example: "price_changed",
+        },
+        PostExceptionStatus: {
+          type: "string",
+          enum: POST_EXCEPTION_STATUSES,
+          description:
+            "게시글 예외 처리 상태 (open=처리 중, resolved=처리 완료, dismissed=처리 불필요/기각)",
+          example: "open",
+        },
+        PostExceptionSeverity: {
+          type: "string",
+          enum: ["info", "warning", "critical"],
+          description:
+            "프론트 UI 표시 강도 (info=안내, warning=주의, critical=긴급)",
+          example: "warning",
+        },
+        PostException: {
+          type: "object",
+          required: [
+            "id",
+            "postId",
+            "reporterId",
+            "type",
+            "typeLabel",
+            "status",
+            "reason",
+            "displayTitle",
+            "displayMessage",
+            "severity",
+            "handlingGuide",
+            "createdAt",
+            "updatedAt",
+          ],
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              description: "예외 케이스 UUID",
+            },
+            postId: {
+              type: "string",
+              format: "uuid",
+              description: "게시글 UUID",
+            },
+            reporterId: {
+              type: "string",
+              format: "uuid",
+              description: "예외 등록자 UUID",
+            },
+            type: {
+              $ref: "#/components/schemas/PostExceptionType",
+            },
+            typeLabel: {
+              type: "string",
+              description: "예외 유형 한글 라벨",
+              example: "가격 변경",
+            },
+            status: {
+              $ref: "#/components/schemas/PostExceptionStatus",
+            },
+            reason: {
+              type: "string",
+              description: "예외 사유",
+              example: "할인 종료로 실제 구매 가격이 상승했습니다.",
+            },
+            displayTitle: {
+              type: "string",
+              description: "프론트 배너/배지용 제목",
+              example: "가격이 변경되었어요",
+            },
+            displayMessage: {
+              type: "string",
+              description: "프론트 배너/모달용 문구",
+              example:
+                "할인 종료로 실제 구매 가격이 5,900원에서 6,900원으로 변경되었습니다.",
+            },
+            severity: {
+              $ref: "#/components/schemas/PostExceptionSeverity",
+            },
+            oldPrice: {
+              type: "number",
+              nullable: true,
+              description: "변경 전 가격",
+              example: 5900,
+            },
+            newPrice: {
+              type: "number",
+              nullable: true,
+              description: "변경 후 가격",
+              example: 6900,
+            },
+            affectedQuantity: {
+              type: "integer",
+              nullable: true,
+              description: "영향을 받은 수량",
+              example: 3,
+            },
+            metadata: {
+              type: "object",
+              nullable: true,
+              additionalProperties: true,
+              description: "예외 유형별 확장 정보",
+            },
+            resolutionNote: {
+              type: "string",
+              nullable: true,
+              description: "처리 내용 또는 기각 사유",
+            },
+            handlingGuide: {
+              type: "string",
+              description: "기본 처리 방향",
+              example:
+                "참여자에게 알리고 계속 참여 또는 취소 여부를 확인하세요.",
+            },
+            reporter: {
+              type: "object",
+              nullable: true,
+              properties: {
+                id: {
+                  type: "string",
+                  format: "uuid",
+                },
+                nickname: {
+                  type: "string",
+                },
+                studentId: {
+                  type: "string",
+                },
+                department: {
+                  type: "string",
+                  nullable: true,
+                },
+                avatarUrl: {
+                  type: "string",
+                  format: "uri",
+                  nullable: true,
+                },
+              },
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+            },
+          },
+        },
+        PostExceptionSummary: {
+          type: "object",
+          required: [
+            "hasOpenException",
+            "openCount",
+            "latestType",
+            "latestTitle",
+            "latestMessage",
+            "severity",
+            "latest",
+          ],
+          properties: {
+            hasOpenException: {
+              type: "boolean",
+              description: "처리 중인 예외 케이스 존재 여부",
+              example: true,
+            },
+            openCount: {
+              type: "integer",
+              description: "처리 중인 예외 케이스 수",
+              example: 1,
+            },
+            latestType: {
+              nullable: true,
+              allOf: [
+                {
+                  $ref: "#/components/schemas/PostExceptionType",
+                },
+              ],
+            },
+            latestTitle: {
+              type: "string",
+              nullable: true,
+              description: "카드/상세 경고 배지용 최신 예외 제목",
+              example: "가격이 변경되었어요",
+            },
+            latestMessage: {
+              type: "string",
+              nullable: true,
+              description: "카드/상세 경고 배너용 최신 예외 문구",
+              example:
+                "할인 종료로 실제 구매 가격이 5,900원에서 6,900원으로 변경되었습니다.",
+            },
+            severity: {
+              nullable: true,
+              allOf: [
+                {
+                  $ref: "#/components/schemas/PostExceptionSeverity",
+                },
+              ],
+            },
+            latest: {
+              nullable: true,
+              allOf: [
+                {
+                  $ref: "#/components/schemas/PostException",
+                },
+              ],
+            },
+          },
+        },
+        PostExceptionsResponse: {
+          type: "object",
+          required: ["exceptions", "total", "limit", "offset", "hasNext"],
+          properties: {
+            exceptions: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/PostException",
+              },
+            },
+            total: {
+              type: "integer",
+              example: 3,
+            },
+            limit: {
+              type: "integer",
+              example: 20,
+            },
+            offset: {
+              type: "integer",
+              example: 0,
+            },
+            hasNext: {
+              type: "boolean",
+              example: false,
+            },
+          },
         },
         PublicUserProfile: {
           type: "object",
@@ -1542,6 +1794,7 @@ const options: swaggerJsdoc.Options = {
             "author",
             "participants",
             "participantCount",
+            "exceptionSummary",
             "isParticipant",
           ],
           properties: {
@@ -1742,6 +1995,9 @@ const options: swaggerJsdoc.Options = {
               type: "integer",
               description: "전체 참여자 수",
               example: 2,
+            },
+            exceptionSummary: {
+              $ref: "#/components/schemas/PostExceptionSummary",
             },
             isParticipant: {
               type: "boolean",
