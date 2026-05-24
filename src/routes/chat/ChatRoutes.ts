@@ -278,6 +278,18 @@ chatRouter.get("/rooms/:chatRoomId/messages", getMessagesByChatRoomId);
  *     responses:
  *       204:
  *         description: 읽음 처리 성공
+ *       400:
+ *         description: 사용자 ID 누락 또는 유효성 검증 실패
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: 채팅방을 찾을 수 없음
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 // PATCH /api/chat/rooms/:chatRoomId/read-all - 채팅방의 모든 메시지 읽음 처리
 // 중요: 더 구체적인 라우트를 먼저 배치해야 함
