@@ -25,7 +25,7 @@ import { PARTICIPANT_STATUSES } from "./types/participant-status";
 import { NOTICE_TYPES } from "./types/notice";
 import { FAQ_CATEGORIES } from "./types/faq";
 import { STORED_NOTIFICATION_TYPES } from "./types/notification";
-import { MESSAGE_TYPES } from "./types/chat";
+import { STORED_MESSAGE_TYPES } from "./types/chat";
 
 // 모든 모델을 import하여 Sequelize가 테이블을 인식하도록 함
 import "./models/User";
@@ -543,7 +543,7 @@ async function ensureMessageTypeEnum() {
     const queryInterface = sequelize.getQueryInterface();
     await queryInterface.describeTable("messages");
     await queryInterface.changeColumn("messages", "message_type", {
-      type: DataTypes.ENUM(...MESSAGE_TYPES),
+      type: DataTypes.ENUM(...STORED_MESSAGE_TYPES),
       allowNull: false,
       defaultValue: "text",
     });

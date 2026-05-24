@@ -7,7 +7,7 @@ import { ChatService } from "../services/ChatService";
 import { NotificationService } from "../services/NotificationService";
 import { MessageCreationAttributes } from "../models/Message";
 import { MessageRepo } from "../repos/MessageRepo";
-import { MessageType } from "../types/chat";
+import { isMessageType, MessageType } from "../types/chat";
 import {
   getIO as getRegisteredIO,
   getUserRoom,
@@ -209,6 +209,11 @@ export function setupSocketIO(httpServer: HttpServer): SocketServer {
         // 메시지 데이터 검증
         if (!chatRoomId || !senderId || !content) {
           emitSocketError(socket, "필수 필드가 누락되었습니다.");
+          return;
+        }
+
+        if (!isMessageType(messageType)) {
+          emitSocketError(socket, "지원하지 않는 메시지 타입입니다.");
           return;
         }
 

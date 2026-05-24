@@ -152,7 +152,7 @@ chatRouter.post("/rooms", createChatRoom);
  *                             format: uuid
  *                           messageType:
  *                             type: string
- *                             enum: [text, image, file, system]
+ *                             enum: [text, image, system]
  *                           createdAt:
  *                             type: string
  *                             format: date-time
@@ -365,7 +365,7 @@ chatRouter.get("/rooms/:id", getChatRoomById);
  *                     minLength: 1
  *                   messageType:
  *                     type: string
- *                     enum: [text, image, file, system]
+ *                     enum: [text, image, system]
  *                     default: text
  *           example:
  *             message:
