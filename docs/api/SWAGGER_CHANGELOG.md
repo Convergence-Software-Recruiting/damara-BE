@@ -24,7 +24,63 @@ src/routes/**/*.ts
 배포 환경에서는 다음 URL로 최종 OpenAPI JSON을 확인한다.
 
 ```text
-https://damara.bluerack.org/api-docs.json
+https://be.damara.bluerack.org/api-docs.json
+```
+
+## 2026-05-25 - 운영 API 도메인 be 서브도메인 기준 정리
+
+브랜치:
+
+```text
+feature/post-exceptions-api
+```
+
+변경 전 기준 커밋:
+
+```text
+c001aea
+```
+
+### 변경 요약
+
+프론트엔드 운영 API base URL을 `https://be.damara.bluerack.org/api`로
+고정하기 위해 Swagger/OpenAPI 서버 URL과 배포 기본 환경변수를
+`https://be.damara.bluerack.org` 기준으로 정리했다.
+
+런타임 Swagger는 `API_BASE_URL`이 설정되어 있으면 자동 감지 URL보다
+설정 URL을 먼저 노출한다. 따라서 Swagger UI에서 HTTPS 운영 서버가
+기본 선택된다.
+
+### 영향 API
+
+REST path, request body, response body, status code 변경은 없다.
+
+OpenAPI `servers` 값의 운영 URL이 다음처럼 바뀐다.
+
+```text
+기존: https://damara.bluerack.org
+변경: https://be.damara.bluerack.org
+```
+
+### 프론트엔드 영향
+
+프론트엔드 운영 환경변수는 다음 기준을 사용한다.
+
+```text
+VITE_API_BASE_URL=https://be.damara.bluerack.org/api
+VITE_API_BASE=https://be.damara.bluerack.org
+VITE_API_URL=https://be.damara.bluerack.org/api
+```
+
+프론트 코드에서 endpoint에 `/api`를 다시 붙이면 `/api/api/...`가 되어
+404가 날 수 있으므로, `.../api` base에는 `/posts`, `/users`처럼 리소스
+path만 붙인다.
+
+### 배포 확인
+
+```bash
+curl -s https://be.damara.bluerack.org/api-docs.json | grep -A8 '"servers"'
+curl -s https://be.damara.bluerack.org/api/posts?limit=1
 ```
 
 ## 2026-05-21 - 알림 삭제 Socket 이벤트 추가

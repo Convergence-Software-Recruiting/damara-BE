@@ -17,6 +17,25 @@ const getServerUrl = () => {
   return ENV.ApiBaseUrl;
 };
 
+const getRuntimeServers = (currentServerUrl: string) => {
+  const currentServer = {
+    url: currentServerUrl,
+    description: "Current server (자동 감지)",
+  };
+
+  if (!ENV.ApiBaseUrlConfigured || ENV.ApiBaseUrl === currentServerUrl) {
+    return [currentServer];
+  }
+
+  return [
+    {
+      url: ENV.ApiBaseUrl,
+      description: "Configured API Base URL",
+    },
+    currentServer,
+  ];
+};
+
 const options: swaggerJsdoc.Options = {
   definition: {
     openapi: "3.0.0",
@@ -2378,20 +2397,7 @@ export const setupSwagger = (app: Express) => {
 
     const dynamicSpec = {
       ...swaggerSpec,
-      servers: [
-        {
-          url: currentServerUrl,
-          description: "Current server (자동 감지)",
-        },
-        ...(ENV.ApiBaseUrl && ENV.ApiBaseUrl !== currentServerUrl
-          ? [
-              {
-                url: ENV.ApiBaseUrl,
-                description: "Configured API Base URL",
-              },
-            ]
-          : []),
-      ],
+      servers: getRuntimeServers(currentServerUrl),
     };
 
     res.json(dynamicSpec);
@@ -2407,21 +2413,9 @@ export const setupSwagger = (app: Express) => {
       const swaggerHtml = swaggerUi.generateHTML(
         {
           ...swaggerSpec,
-          servers: [
-            {
-              url: `${req.protocol}://${req.get("host")}`,
-              description: "Current server (자동 감지)",
-            },
-            ...(ENV.ApiBaseUrl &&
-            ENV.ApiBaseUrl !== `${req.protocol}://${req.get("host")}`
-              ? [
-                  {
-                    url: ENV.ApiBaseUrl,
-                    description: "Configured API Base URL",
-                  },
-                ]
-              : []),
-          ],
+          servers: getRuntimeServers(
+            `${req.protocol}://${req.get("host")}`
+          ),
         },
         {
           swaggerOptions: {

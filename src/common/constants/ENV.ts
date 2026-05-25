@@ -94,6 +94,7 @@ const ENV = {
   DbPort: parsed.DB_PORT,
 
   ApiBaseUrl: parsed.API_BASE_URL || `http://localhost:${parsed.PORT}`,
+  ApiBaseUrlConfigured: Boolean(parsed.API_BASE_URL),
   DbForceSync: parsed.DB_FORCE_SYNC ?? false,
 
   KakaoClientId: parsed.KAKAO_CLIENT_ID,
