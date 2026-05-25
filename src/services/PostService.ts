@@ -10,6 +10,7 @@ import PostModel from "../models/Post";
 import { FavoriteService } from "./FavoriteService";
 import { NotificationService } from "./NotificationService";
 import { TrustService } from "./TrustService";
+import { PostExceptionService } from "./PostExceptionService";
 import { PostListOptions } from "../types/post-list";
 import {
   ParticipantStatus,
@@ -23,6 +24,9 @@ type EnrichedPostListItem = PostListItem & {
   isParticipant: boolean;
   isOwner: boolean;
   thumbnailUrl: string | null;
+  exceptionSummary: Awaited<
+    ReturnType<typeof PostExceptionService.getExceptionSummary>
+  >;
   deadlineStatus: "open" | "closingSoon" | "closed";
   deadlineLabel: string;
   remainingSeconds: number;
@@ -146,10 +150,16 @@ async function enrichPostListItem(
   post: PostListItem,
   userId?: string
 ): Promise<EnrichedPostListItem> {
-  const [favoriteCount, isFavorite, isParticipant] = await Promise.all([
+  const [
+    favoriteCount,
+    isFavorite,
+    isParticipant,
+    exceptionSummary,
+  ] = await Promise.all([
     FavoriteService.getFavoriteCount(post.id),
     userId ? FavoriteService.isFavorite(post.id, userId) : false,
     userId ? PostParticipantRepo.isParticipant(post.id, userId) : false,
+    PostExceptionService.getExceptionSummary(post.id),
   ]);
   const isOwner = userId ? post.authorId === userId : false;
 
@@ -160,6 +170,7 @@ async function enrichPostListItem(
     isParticipant,
     isOwner,
     thumbnailUrl: getThumbnailUrl(post as { images?: PostImageSource[] }),
+    exceptionSummary,
     ...getDeadlineMeta(post.deadline),
   };
 }
@@ -264,12 +275,18 @@ export const PostService = {
       throw new RouteError(HttpStatusCodes.NOT_FOUND, "POST_NOT_FOUND");
     }
 
-    const [favoriteCount, isFavorite, participants] = await Promise.all([
+    const [
+      favoriteCount,
+      isFavorite,
+      participants,
+      exceptionSummary,
+    ] = await Promise.all([
       FavoriteService.getFavoriteCount(id),
       userId ? FavoriteService.isFavorite(id, userId) : false,
       PostParticipantRepo.findProfilesByPostId(
         id
       ) as Promise<PostParticipantProfileSource[]>,
+      PostExceptionService.getExceptionSummary(id),
     ]);
     const participantProfiles = participants.map((participant) => ({
       id: participant.id,
@@ -304,6 +321,7 @@ export const PostService = {
       participantCount: participantProfiles.length,
       participantsPreview,
       participantsTotal: participantProfiles.length,
+      exceptionSummary,
       favoriteCount,
       isFavorite,
       isParticipant,

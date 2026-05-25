@@ -27,7 +27,7 @@ const stableOpenApiSpec = {
       description: "Local development server",
     },
     {
-      url: "https://damara.bluerack.org",
+      url: "https://be.damara.bluerack.org",
       description: "Production server",
     },
   ],

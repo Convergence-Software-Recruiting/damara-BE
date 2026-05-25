@@ -133,7 +133,7 @@ Check for typescript errors.
 서버 실행 후 브라우저에서 다음 URL로 접속:
 
 - **로컬 개발**: `http://localhost:3000/api-docs`
-- **배포 환경**: `https://your-domain.com/api-docs`
+- **배포 환경**: `https://be.damara.bluerack.org/api-docs`
 
 ### 배포 환경 설정
 
@@ -141,12 +141,13 @@ Check for typescript errors.
 
 1. **환경 변수 설정** (`.env.production` 또는 배포 환경 설정):
    ```bash
-   API_BASE_URL=https://your-api-domain.com
+   API_BASE_URL=https://be.damara.bluerack.org
    ```
 
-2. **동적 서버 URL**: 
+2. **동적 서버 URL**:
+   - `API_BASE_URL`이 설정되면, Swagger는 해당 URL을 첫 번째 서버로 사용합니다.
    - `API_BASE_URL`이 설정되지 않으면, Swagger는 요청하는 서버의 현재 URL을 자동으로 사용합니다.
-   - 배포된 서버에서 `https://your-domain.com/api-docs`로 접속하면 자동으로 해당 URL이 서버 URL로 설정됩니다.
+   - 배포 환경의 REST API base URL은 `https://be.damara.bluerack.org/api`입니다.
 
 3. **JSON 스펙 다운로드**:
    - `/api-docs.json` 엔드포인트에서 OpenAPI JSON 스펙을 다운로드할 수 있습니다.

@@ -24,7 +24,63 @@ src/routes/**/*.ts
 배포 환경에서는 다음 URL로 최종 OpenAPI JSON을 확인한다.
 
 ```text
-https://damara.bluerack.org/api-docs.json
+https://be.damara.bluerack.org/api-docs.json
+```
+
+## 2026-05-25 - 운영 API 도메인 be 서브도메인 기준 정리
+
+브랜치:
+
+```text
+feature/post-exceptions-api
+```
+
+변경 전 기준 커밋:
+
+```text
+c001aea
+```
+
+### 변경 요약
+
+프론트엔드 운영 API base URL을 `https://be.damara.bluerack.org/api`로
+고정하기 위해 Swagger/OpenAPI 서버 URL과 배포 기본 환경변수를
+`https://be.damara.bluerack.org` 기준으로 정리했다.
+
+런타임 Swagger는 `API_BASE_URL`이 설정되어 있으면 자동 감지 URL보다
+설정 URL을 먼저 노출한다. 따라서 Swagger UI에서 HTTPS 운영 서버가
+기본 선택된다.
+
+### 영향 API
+
+REST path, request body, response body, status code 변경은 없다.
+
+OpenAPI `servers` 값의 운영 URL이 다음처럼 바뀐다.
+
+```text
+기존: https://damara.bluerack.org
+변경: https://be.damara.bluerack.org
+```
+
+### 프론트엔드 영향
+
+프론트엔드 운영 환경변수는 다음 기준을 사용한다.
+
+```text
+VITE_API_BASE_URL=https://be.damara.bluerack.org/api
+VITE_API_BASE=https://be.damara.bluerack.org
+VITE_API_URL=https://be.damara.bluerack.org/api
+```
+
+프론트 코드에서 endpoint에 `/api`를 다시 붙이면 `/api/api/...`가 되어
+404가 날 수 있으므로, `.../api` base에는 `/posts`, `/users`처럼 리소스
+path만 붙인다.
+
+### 배포 확인
+
+```bash
+curl -s https://be.damara.bluerack.org/api-docs.json | grep -A8 '"servers"'
+curl -s https://be.damara.bluerack.org/api/posts?limit=1
 ```
 
 ## 2026-05-21 - 알림 삭제 Socket 이벤트 추가
@@ -1766,4 +1822,150 @@ curl -s https://damara.bluerack.org/api-docs.json | grep -A8 '"servers"'
 관리자 신뢰도 수동 조정 API
 학교 인증 단계 API
 신뢰학점 기반 참여 제한/필터링 API
+```
+
+## 2026-05-25 - 게시글 예외 케이스 API 추가
+
+### 배경
+
+프론트엔드 팜플렛의 예외 케이스 대응 화면은 가격 변경, 품절, 수령 정보 변경, 파손/누락/불량 같은 사건을 게시글 상태와 별도로 추적해야 한다.
+
+게시글의 큰 흐름은 기존 `posts.status`가 담당하고, 참여자별 진행 상태는 `post_participants.participant_status`가 담당한다. 이번 변경에서는 게시글 진행 중 발생한 예외 사건을 별도 API와 스키마로 제공한다.
+
+### 신규 API
+
+```text
+GET /api/posts/{id}/exceptions
+POST /api/posts/{id}/exceptions
+PATCH /api/posts/{id}/exceptions/{exceptionId}/status
+```
+
+### 신규 스키마
+
+```text
+components.schemas.PostExceptionType
+components.schemas.PostExceptionStatus
+components.schemas.PostExceptionSeverity
+components.schemas.PostException
+components.schemas.PostExceptionSummary
+components.schemas.PostExceptionsResponse
+```
+
+### 예외 유형
+
+```text
+price_changed
+sold_out
+pickup_changed
+damaged
+seller_cancelled
+other
+```
+
+### 예외 상태
+
+```text
+open
+resolved
+dismissed
+```
+
+### 상세 응답 변경
+
+`GET /api/posts/{id}` 응답에 `exceptionSummary`가 추가된다.
+
+또한 홈 피드, 내 공구, 관심 공구 카드 응답도 같은 `exceptionSummary`를 포함한다. 프론트엔드는 상세 진입 전 카드에서 예외 배지와 경고 색상을 표시할 수 있다.
+
+```json
+{
+  "exceptionSummary": {
+    "hasOpenException": true,
+    "openCount": 1,
+    "latestType": "price_changed",
+    "latestTitle": "가격이 변경되었어요",
+    "latestMessage": "할인 종료로 실제 구매 가격이 5,900원에서 6,900원으로 변경되었습니다.",
+    "severity": "warning",
+    "latest": {
+      "id": "exception-id",
+      "type": "price_changed",
+      "typeLabel": "가격 변경",
+      "status": "open",
+      "reason": "할인 종료로 실제 구매 가격이 상승했습니다.",
+      "displayTitle": "가격이 변경되었어요",
+      "displayMessage": "할인 종료로 실제 구매 가격이 5,900원에서 6,900원으로 변경되었습니다.",
+      "severity": "warning",
+      "handlingGuide": "참여자에게 알리고 계속 참여 또는 취소 여부를 확인하세요."
+    }
+  }
+}
+```
+
+처리 중인 예외가 없으면 다음처럼 내려간다.
+
+```json
+{
+  "exceptionSummary": {
+    "hasOpenException": false,
+    "openCount": 0,
+    "latestType": null,
+    "latestTitle": null,
+    "latestMessage": null,
+    "severity": null,
+    "latest": null
+  }
+}
+```
+
+### 알림 영향
+
+예외 케이스 등록 시 작성자와 참여자에게 `post_exception` 알림이 생성된다. 예외를 등록한 사용자는 중복 알림 대상에서 제외된다.
+
+### 프론트엔드 영향
+
+상세 화면은 `exceptionSummary.hasOpenException`으로 경고 배지를 표시할 수 있다.
+
+홈/내 공구/관심 공구 카드에서는 다음 경량 필드를 우선 사용한다.
+
+```text
+exceptionSummary.hasOpenException
+exceptionSummary.openCount
+exceptionSummary.latestType
+exceptionSummary.latestTitle
+exceptionSummary.latestMessage
+exceptionSummary.severity
+```
+
+예외 이력 화면은 `GET /api/posts/{id}/exceptions`를 사용한다.
+
+예외 등록 화면은 다음 요청 바디를 사용한다.
+
+```json
+{
+  "exception": {
+    "type": "price_changed",
+    "reason": "할인 종료로 실제 구매 가격이 상승했습니다.",
+    "displayTitle": "가격이 변경되었어요",
+    "displayMessage": "할인 종료로 실제 구매 가격이 5,900원에서 6,900원으로 변경되었습니다.",
+    "severity": "warning",
+    "oldPrice": 5900,
+    "newPrice": 6900
+  }
+}
+```
+
+상태 변경은 다음 요청 바디를 사용한다.
+
+```json
+{
+  "status": "resolved",
+  "resolutionNote": "참여자 동의 후 변경 가격으로 진행했습니다."
+}
+```
+
+### 검증
+
+```bash
+npm run build
+npm run openapi:generate
+npm run openapi:lint
 ```

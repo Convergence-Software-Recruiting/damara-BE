@@ -2,6 +2,7 @@
 
 import { Request, Response, NextFunction } from "express";
 import { PostService, PostParticipantService } from "../services/PostService";
+import { PostExceptionService } from "../services/PostExceptionService";
 import { PostCreationAttributes } from "../models/Post";
 import { parseReq } from "../routes/common/validation/parseReq";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
@@ -21,6 +22,12 @@ import {
   updateParticipantStatusSchema,
   UpdateParticipantStatusReq,
 } from "../routes/common/validation/participant-status-schemas";
+import {
+  createPostExceptionSchema,
+  CreatePostExceptionReq,
+  updatePostExceptionStatusSchema,
+  UpdatePostExceptionStatusReq,
+} from "../routes/common/validation/post-exception-schemas";
 import { PostListSort, PostListStatus } from "../types/post-list";
 
 const POST_LIST_SORTS: PostListSort[] = ["latest", "deadline", "popular"];
@@ -521,6 +528,109 @@ export async function updateParticipantStatus(
     );
 
     res.status(HttpStatusCodes.OK).json(participant);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 게시글 예외 케이스 등록
+ * POST /api/posts/:id/exceptions
+ */
+export async function createPostException(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+    const validatedData = parseReq<CreatePostExceptionReq>(
+      createPostExceptionSchema
+    )(req.body);
+    const reporterId =
+      validatedData.exception.reporterId ||
+      getSingleValue(req.headers["x-user-id"]);
+
+    if (!reporterId) {
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "REPORTER_ID_REQUIRED",
+        "예외 케이스를 등록하는 사용자 ID가 필요합니다."
+      );
+    }
+
+    const postException = await PostExceptionService.createPostException(id, {
+      ...validatedData.exception,
+      reporterId,
+    });
+
+    res.status(HttpStatusCodes.CREATED).json(postException);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 게시글 예외 케이스 목록 조회
+ * GET /api/posts/:id/exceptions
+ */
+export async function getPostExceptions(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+    const limit = parseNonNegativeInteger(req.query.limit, 20);
+    const offset = parseNonNegativeInteger(req.query.offset, 0);
+    const exceptions = await PostExceptionService.listPostExceptions(
+      id,
+      limit,
+      offset
+    );
+
+    res.status(HttpStatusCodes.OK).json(exceptions);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 게시글 예외 케이스 처리 상태 변경
+ * PATCH /api/posts/:id/exceptions/:exceptionId/status
+ */
+export async function updatePostExceptionStatus(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id, exceptionId } = req.params;
+    const validatedData = parseReq<UpdatePostExceptionStatusReq>(
+      updatePostExceptionStatusSchema
+    )(req.body);
+    const actorUserId =
+      validatedData.actorUserId || getSingleValue(req.headers["x-user-id"]);
+
+    if (!actorUserId) {
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "ACTOR_USER_ID_REQUIRED",
+        "예외 케이스 상태를 변경하는 사용자 ID가 필요합니다."
+      );
+    }
+
+    const postException = await PostExceptionService.updatePostExceptionStatus(
+      id,
+      exceptionId,
+      validatedData.status,
+      actorUserId,
+      validatedData.resolutionNote
+    );
+
+    res.status(HttpStatusCodes.OK).json(postException);
   } catch (error) {
     next(error);
   }

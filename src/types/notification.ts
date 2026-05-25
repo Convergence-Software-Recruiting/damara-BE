@@ -5,6 +5,7 @@ export const NOTIFICATION_TYPES = [
   "post_status_changed",
   "new_chat_message",
   "favorite_post_deadline_soon",
+  "post_exception",
   "trade_completed",
   "trade_cancelled",
   "system_notice",
