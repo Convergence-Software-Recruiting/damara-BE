@@ -16,6 +16,86 @@ DB 구조가 바뀌면 다음 내용을 기록한다.
 6. API 응답 영향
 7. 배포 시 마이그레이션 주의점
 
+## 2026-05-30 - 모이면 싸지는 공구 컬럼 추가
+
+브랜치:
+
+```text
+main
+```
+
+변경 전 기준 커밋:
+
+```text
+5a9d625
+```
+
+### 변경 요약
+
+선모집형 공동구매에 목표 참여 인원 달성 시 가격이 내려가는
+`price_unlock` 모드를 지원하기 위해 `posts` 테이블에 거래 세부 모드와
+목표 조건 컬럼을 추가한다.
+
+### 변경 테이블
+
+```text
+posts
+```
+
+### 신규 컬럼
+
+```text
+group_buy_mode
+target_participants
+target_price
+```
+
+정의:
+
+```text
+group_buy_mode: VARCHAR(50), not null, default 'normal'
+target_participants: INTEGER, nullable
+target_price: DECIMAL(10, 2), nullable
+```
+
+### 관계 변경
+
+관계 변경은 없다.
+
+### API 영향
+
+다음 API의 요청/응답에 거래 방식 필드와 가격 해금 계산 필드가 추가된다.
+
+```text
+POST /api/posts
+PUT /api/posts/{id}
+GET /api/posts
+GET /api/posts/{id}
+POST /api/posts/{id}/participate
+DELETE /api/posts/{id}/participate/{userId}
+GET /api/users/{userId}/my-posts
+GET /api/users/{userId}/favorites
+```
+
+Swagger 변경 사항은 다음 문서에서 관리한다.
+
+```text
+docs/api/SWAGGER_CHANGELOG.md
+```
+
+### 배포 주의점
+
+서버 시작 시 `posts` 테이블의 신규 컬럼을 확인하고 누락 시 추가한다.
+
+운영 반영용 SQL:
+
+```sql
+ALTER TABLE posts
+  ADD COLUMN group_buy_mode VARCHAR(50) NOT NULL DEFAULT 'normal',
+  ADD COLUMN target_participants INT NULL,
+  ADD COLUMN target_price DECIMAL(10, 2) NULL;
+```
+
 ## 2026-05-20 - 채팅 메시지 system 타입 추가
 
 브랜치:

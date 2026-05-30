@@ -27,6 +27,125 @@ src/routes/**/*.ts
 https://be.damara.bluerack.org/api-docs.json
 ```
 
+## 2026-05-30 - 모이면 싸지는 공구 거래 방식 추가
+
+브랜치:
+
+```text
+main
+```
+
+변경 전 기준 커밋:
+
+```text
+5a9d625
+```
+
+### 변경 요약
+
+선모집형/후모집형 A/B 구조를 백엔드 계약으로 정리하고,
+선모집형의 1차 세부 모드로 `price_unlock`을 추가했다.
+
+`price_unlock`은 목표 참여 인원에 도달하면 목표 가격이 적용되는
+"모이면 싸지는 공구" 방식이다.
+
+### 변경된 API
+
+```text
+GET /api/posts
+GET /api/posts/{id}
+POST /api/posts
+PUT /api/posts/{id}
+POST /api/posts/{id}/participate
+DELETE /api/posts/{id}/participate/{userId}
+GET /api/posts/student/{studentId}
+GET /api/users/{userId}/my-posts
+GET /api/users/{userId}/favorites
+```
+
+### 요청 바디 변경
+
+`POST /api/posts`, `PUT /api/posts/{id}`의 `post` 객체에 다음 계약을 추가한다.
+
+```text
+groupBuyType: pre_recruit | post_recruit
+groupBuyMode: normal | price_unlock
+targetParticipants: number | null
+targetPrice: number | null
+```
+
+`price_unlock`은 `groupBuyType=pre_recruit`에서만 유효하다.
+
+요청 예시:
+
+```json
+{
+  "post": {
+    "authorId": "a87522bd-bc79-47b0-a73f-46ea4068a158",
+    "title": "물티슈 공동구매",
+    "content": "도톰한 물티슈를 같이 구매합니다.",
+    "price": 5000,
+    "minParticipants": 3,
+    "deadline": "2026-06-17T23:59:59.000Z",
+    "pickupLocation": "명지대 정문",
+    "groupBuyType": "pre_recruit",
+    "groupBuyMode": "price_unlock",
+    "targetParticipants": 5,
+    "targetPrice": 4500
+  }
+}
+```
+
+### 응답 스키마 변경
+
+Post 응답에 다음 계산 필드가 추가된다.
+
+```text
+currentPrice
+participantsToUnlock
+priceUnlocked
+dealMessage
+```
+
+예시:
+
+```json
+{
+  "groupBuyType": "pre_recruit",
+  "groupBuyMode": "price_unlock",
+  "price": 5000,
+  "targetParticipants": 5,
+  "targetPrice": 4500,
+  "currentPrice": 5000,
+  "participantsToUnlock": 2,
+  "priceUnlocked": false,
+  "dealMessage": "2명만 더 모이면 4,500원"
+}
+```
+
+### 프론트엔드 영향
+
+프론트엔드는 최소 구현에서 `dealMessage`만 표시해도 된다.
+
+```text
+2명만 더 모이면 4,500원
+```
+
+등록 화면에서는 가격 해금 조건을 사용하는 경우 다음 필드만 추가로 받으면 된다.
+
+```text
+할인 조건 사용 여부
+목표 인원
+목표 달성 가격
+```
+
+### 배포 확인
+
+```bash
+curl -s "https://be.damara.bluerack.org/api-docs.json" | grep -A20 '"groupBuyMode"'
+curl -s "https://be.damara.bluerack.org/api/posts?limit=1"
+```
+
 ## 2026-05-25 - 운영 API 도메인 be 서브도메인 기준 정리
 
 브랜치:
