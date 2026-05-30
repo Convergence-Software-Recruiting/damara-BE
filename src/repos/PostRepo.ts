@@ -92,6 +92,8 @@ export function buildPostListWhere(options: PostListOptions = {}) {
       { pickupLocation: { [Op.like]: `%${normalizedKeyword}%` } },
       { pickupGuide: { [Op.like]: `%${normalizedKeyword}%` } },
       { notice: { [Op.like]: `%${normalizedKeyword}%` } },
+      { groupBuyType: { [Op.like]: `%${normalizedKeyword}%` } },
+      { groupBuyMode: { [Op.like]: `%${normalizedKeyword}%` } },
       { category: { [Op.like]: `%${normalizedKeyword}%` } },
     ];
     const categoryValues = findCategoryValuesByKeyword(normalizedKeyword);
