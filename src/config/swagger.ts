@@ -11,6 +11,7 @@ import {
   POST_EXCEPTION_STATUSES,
   POST_EXCEPTION_TYPES,
 } from "../types/post-exception";
+import { GROUP_BUY_MODES, GROUP_BUY_TYPES } from "../types/group-buy";
 
 // 환경 변수에서 API 베이스 URL 가져오기 (배포 환경에서 설정)
 const getServerUrl = () => {
@@ -854,9 +855,55 @@ const options: swaggerJsdoc.Options = {
             },
             groupBuyType: {
               type: "string",
+              enum: GROUP_BUY_TYPES,
+              description:
+                "공구 A/B 타입 (pre_recruit=선모집형, post_recruit=후모집형)",
+              example: "pre_recruit",
+            },
+            groupBuyMode: {
+              type: "string",
+              enum: GROUP_BUY_MODES,
+              description:
+                "거래 세부 모드 (normal=기본형, price_unlock=모이면 싸지는 공구)",
+              example: "price_unlock",
+            },
+            targetParticipants: {
+              type: "integer",
               nullable: true,
-              description: "공구 방식/유형. 프론트 선택값을 문자열로 저장합니다.",
-              example: "campus_pickup",
+              description:
+                "price_unlock 목표 참여 인원. 이 인원 이상이면 목표 가격이 적용됩니다.",
+              example: 5,
+            },
+            targetPrice: {
+              type: "number",
+              nullable: true,
+              description: "price_unlock 목표 달성 가격",
+              example: 4500,
+            },
+            currentPrice: {
+              type: "number",
+              description:
+                "현재 참여 인원 기준 프론트 표시 가격. 목표 달성 전에는 price, 달성 후에는 targetPrice입니다.",
+              example: 5000,
+            },
+            participantsToUnlock: {
+              type: "integer",
+              nullable: true,
+              description:
+                "목표 가격 해금까지 남은 참여자 수. price_unlock이 아니면 null입니다.",
+              example: 2,
+            },
+            priceUnlocked: {
+              type: "boolean",
+              description: "목표 가격 달성 여부",
+              example: false,
+            },
+            dealMessage: {
+              type: "string",
+              nullable: true,
+              description:
+                "프론트가 그대로 표시할 수 있는 거래 방식 안내 문구",
+              example: "2명만 더 모이면 4,500원",
             },
             tags: {
               type: "array",
@@ -1011,6 +1058,48 @@ const options: swaggerJsdoc.Options = {
                     "cancelled",
                   ],
                   example: "open",
+                },
+                price: {
+                  type: "number",
+                  example: 5000,
+                },
+                groupBuyType: {
+                  type: "string",
+                  enum: GROUP_BUY_TYPES,
+                  example: "pre_recruit",
+                },
+                groupBuyMode: {
+                  type: "string",
+                  enum: GROUP_BUY_MODES,
+                  example: "price_unlock",
+                },
+                targetParticipants: {
+                  type: "integer",
+                  nullable: true,
+                  example: 5,
+                },
+                targetPrice: {
+                  type: "number",
+                  nullable: true,
+                  example: 4500,
+                },
+                currentPrice: {
+                  type: "number",
+                  example: 5000,
+                },
+                participantsToUnlock: {
+                  type: "integer",
+                  nullable: true,
+                  example: 2,
+                },
+                priceUnlocked: {
+                  type: "boolean",
+                  example: false,
+                },
+                dealMessage: {
+                  type: "string",
+                  nullable: true,
+                  example: "2명만 더 모이면 4,500원",
                 },
               },
             },
@@ -1907,9 +1996,55 @@ const options: swaggerJsdoc.Options = {
             },
             groupBuyType: {
               type: "string",
+              enum: GROUP_BUY_TYPES,
+              description:
+                "공구 A/B 타입 (pre_recruit=선모집형, post_recruit=후모집형)",
+              example: "pre_recruit",
+            },
+            groupBuyMode: {
+              type: "string",
+              enum: GROUP_BUY_MODES,
+              description:
+                "거래 세부 모드 (normal=기본형, price_unlock=모이면 싸지는 공구)",
+              example: "price_unlock",
+            },
+            targetParticipants: {
+              type: "integer",
               nullable: true,
-              description: "공구 방식/유형. 프론트 선택값을 문자열로 저장합니다.",
-              example: "campus_pickup",
+              description:
+                "price_unlock 목표 참여 인원. 이 인원 이상이면 목표 가격이 적용됩니다.",
+              example: 5,
+            },
+            targetPrice: {
+              type: "number",
+              nullable: true,
+              description: "price_unlock 목표 달성 가격",
+              example: 4500,
+            },
+            currentPrice: {
+              type: "number",
+              description:
+                "현재 참여 인원 기준 프론트 표시 가격. 목표 달성 전에는 price, 달성 후에는 targetPrice입니다.",
+              example: 5900,
+            },
+            participantsToUnlock: {
+              type: "integer",
+              nullable: true,
+              description:
+                "목표 가격 해금까지 남은 참여자 수. price_unlock이 아니면 null입니다.",
+              example: 4,
+            },
+            priceUnlocked: {
+              type: "boolean",
+              description: "목표 가격 달성 여부",
+              example: false,
+            },
+            dealMessage: {
+              type: "string",
+              nullable: true,
+              description:
+                "프론트가 그대로 표시할 수 있는 거래 방식 안내 문구",
+              example: "4명만 더 모이면 4,900원",
             },
             tags: {
               type: "array",
