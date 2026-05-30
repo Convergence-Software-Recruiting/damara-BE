@@ -251,6 +251,30 @@ async function ensurePostUiDetailColumns() {
       },
     },
     {
+      name: "group_buy_mode",
+      definition: {
+        type: DataTypes.STRING(50),
+        allowNull: false,
+        defaultValue: "normal",
+      },
+    },
+    {
+      name: "target_participants",
+      definition: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: null,
+      },
+    },
+    {
+      name: "target_price",
+      definition: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+        defaultValue: null,
+      },
+    },
+    {
       name: "tags",
       definition: {
         type: DataTypes.JSON,

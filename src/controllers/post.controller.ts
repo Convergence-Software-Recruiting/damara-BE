@@ -92,12 +92,11 @@ function normalizeTags(tags: string[] | null | undefined) {
   return normalizedTags.length > 0 ? normalizedTags : null;
 }
 
-function normalizePostDetailFields<T extends Partial<PostCreationAttributes>>(
-  data: T
-) {
+function normalizePostDetailFields<T extends Record<string, unknown>>(data: T) {
   const mutableData = data as T &
     Record<NullableStringPostField, string | null | undefined> & {
       tags?: string[] | null;
+      groupBuyMode?: string | null;
     };
 
   for (const field of nullableStringPostFields) {
@@ -108,6 +107,13 @@ function normalizePostDetailFields<T extends Partial<PostCreationAttributes>>(
 
   if (Object.prototype.hasOwnProperty.call(mutableData, "tags")) {
     mutableData.tags = normalizeTags(mutableData.tags);
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(mutableData, "groupBuyMode") &&
+    mutableData.groupBuyMode === null
+  ) {
+    mutableData.groupBuyMode = undefined;
   }
 
   return mutableData;
@@ -269,7 +275,7 @@ export async function createPost(
       ...postData,
       deadline: new Date(deadline),
       category: normalizedCategory,
-    });
+    }) as PostCreationAttributes;
     createData.productName = createData.productName ?? post.title;
 
     const createdPost = await PostService.createPost(createData, images);
@@ -303,9 +309,9 @@ export async function updatePost(
 
     // deadline을 분리하여 Date 객체로 변환
     const { deadline, ...patchWithoutDeadline } = post;
-    const updateData: Partial<PostCreationAttributes> = normalizePostDetailFields({
+    const updateData = normalizePostDetailFields({
       ...patchWithoutDeadline,
-    });
+    }) as Partial<PostCreationAttributes>;
     if (deadline) {
       updateData.deadline = new Date(deadline);
     }

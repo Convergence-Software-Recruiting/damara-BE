@@ -1,4 +1,5 @@
 import z from "zod";
+import { GROUP_BUY_MODES, GROUP_BUY_TYPES } from "../../../types/group-buy";
 
 const dateOnlySchema = z
   .string()
@@ -14,6 +15,8 @@ const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/, {
 });
 
 const tagsSchema = z.array(z.string().trim().min(1).max(50)).max(10);
+const groupBuyTypeSchema = z.enum(GROUP_BUY_TYPES);
+const groupBuyModeSchema = z.enum(GROUP_BUY_MODES);
 
 /**
  * 공동구매 상품 생성 요청 스키마
@@ -34,7 +37,10 @@ export const createPostSchema = z.object({
     pickupStartTime: timeSchema.optional().nullable(),
     pickupEndTime: timeSchema.optional().nullable(),
     pickupGuide: z.string().trim().max(1000).optional().nullable(),
-    groupBuyType: z.string().trim().min(1).max(50).optional().nullable(),
+    groupBuyType: groupBuyTypeSchema.optional().nullable(),
+    groupBuyMode: groupBuyModeSchema.optional().nullable(),
+    targetParticipants: z.number().int().positive().optional().nullable(),
+    targetPrice: z.number().positive().optional().nullable(),
     tags: tagsSchema.optional().nullable(),
     notice: z.string().trim().max(2000).optional().nullable(),
     images: z.array(z.string().min(1)).optional(), // 이미지 URL 배열 (상대 경로 또는 절대 URL 모두 허용)
@@ -69,7 +75,10 @@ export const updatePostSchema = z.object({
     pickupStartTime: timeSchema.optional().nullable(),
     pickupEndTime: timeSchema.optional().nullable(),
     pickupGuide: z.string().trim().max(1000).optional().nullable(),
-    groupBuyType: z.string().trim().min(1).max(50).optional().nullable(),
+    groupBuyType: groupBuyTypeSchema.optional().nullable(),
+    groupBuyMode: groupBuyModeSchema.optional().nullable(),
+    targetParticipants: z.number().int().positive().optional().nullable(),
+    targetPrice: z.number().positive().optional().nullable(),
     tags: tagsSchema.optional().nullable(),
     notice: z.string().trim().max(2000).optional().nullable(),
     images: z.array(z.string().min(1)).optional(), // 이미지 URL 배열 (상대 경로 또는 절대 URL 모두 허용)

@@ -16,6 +16,7 @@ import {
   ParticipantStatus,
   PARTICIPANT_STATUS_LABELS,
 } from "../types/participant-status";
+import { GroupBuyMode, GroupBuyType } from "../types/group-buy";
 
 type PostListItem = Awaited<ReturnType<typeof PostRepo.list>>[number];
 type EnrichedPostListItem = PostListItem & {
@@ -27,6 +28,10 @@ type EnrichedPostListItem = PostListItem & {
   exceptionSummary: Awaited<
     ReturnType<typeof PostExceptionService.getExceptionSummary>
   >;
+  currentPrice: number;
+  participantsToUnlock: number | null;
+  priceUnlocked: boolean;
+  dealMessage: string | null;
   deadlineStatus: "open" | "closingSoon" | "closed";
   deadlineLabel: string;
   remainingSeconds: number;
@@ -67,6 +72,15 @@ type PostParticipantListSource = Awaited<
 type ProductNamedPost = {
   title: string;
   productName?: string | null;
+};
+type TradeModePost = {
+  price: number | string;
+  minParticipants?: number | string | null;
+  currentQuantity?: number | string | null;
+  groupBuyType?: GroupBuyType | string | null;
+  groupBuyMode?: GroupBuyMode | string | null;
+  targetParticipants?: number | string | null;
+  targetPrice?: number | string | null;
 };
 
 const getPostCreatedTime = (post: PostListItem) => {
@@ -130,6 +144,83 @@ function getDeadlineMeta(deadline: Date | string) {
   };
 }
 
+function normalizeGroupBuyType(
+  groupBuyType?: GroupBuyType | string | null
+): GroupBuyType {
+  return groupBuyType === "post_recruit" ? "post_recruit" : "pre_recruit";
+}
+
+function normalizeGroupBuyMode(
+  groupBuyMode?: GroupBuyMode | string | null
+): GroupBuyMode {
+  return groupBuyMode === "price_unlock" ? "price_unlock" : "normal";
+}
+
+function toNullableNumber(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function toNullableInteger(value: number | string | null | undefined) {
+  const parsed = toNullableNumber(value);
+  return parsed === null ? null : Math.trunc(parsed);
+}
+
+function formatPrice(value: number) {
+  return `${Math.round(value).toLocaleString("ko-KR")}원`;
+}
+
+function getDealMeta(post: TradeModePost) {
+  const groupBuyType = normalizeGroupBuyType(post.groupBuyType);
+  const groupBuyMode = normalizeGroupBuyMode(post.groupBuyMode);
+  const price = toNullableNumber(post.price) ?? 0;
+  const currentQuantity = Math.max(
+    0,
+    toNullableInteger(post.currentQuantity) ?? 0
+  );
+  const targetParticipants = toNullableInteger(post.targetParticipants);
+  const targetPrice = toNullableNumber(post.targetPrice);
+  const hasPriceUnlock =
+    groupBuyType === "pre_recruit" &&
+    groupBuyMode === "price_unlock" &&
+    targetParticipants !== null &&
+    targetPrice !== null;
+
+  if (!hasPriceUnlock) {
+    return {
+      groupBuyType,
+      groupBuyMode,
+      currentPrice: price,
+      participantsToUnlock: null,
+      priceUnlocked: false,
+      dealMessage: null,
+    };
+  }
+
+  const participantsToUnlock = Math.max(
+    0,
+    targetParticipants - currentQuantity
+  );
+  const priceUnlocked = participantsToUnlock === 0;
+  const currentPrice = priceUnlocked ? targetPrice : price;
+  const dealMessage = priceUnlocked
+    ? `목표 달성! 현재 ${formatPrice(targetPrice)}`
+    : `${participantsToUnlock}명만 더 모이면 ${formatPrice(targetPrice)}`;
+
+  return {
+    groupBuyType,
+    groupBuyMode,
+    currentPrice,
+    participantsToUnlock,
+    priceUnlocked,
+    dealMessage,
+  };
+}
+
 function withProductNameFallback<T extends ProductNamedPost>(post: T) {
   return {
     ...post,
@@ -137,12 +228,107 @@ function withProductNameFallback<T extends ProductNamedPost>(post: T) {
   };
 }
 
-function toPostSnapshot(post: Pick<PostListItem, "id" | "currentQuantity" | "minParticipants" | "status">) {
+function withTradeDealFields<T extends TradeModePost>(post: T) {
+  return {
+    ...post,
+    ...getDealMeta(post),
+  };
+}
+
+function validateTradeModeFields(
+  data: Partial<PostCreationAttributes>,
+  base?: Partial<PostCreationAttributes>
+) {
+  const price = toNullableNumber(data.price ?? base?.price);
+  const minParticipants =
+    toNullableInteger(data.minParticipants ?? base?.minParticipants) ?? 1;
+  const groupBuyType = normalizeGroupBuyType(
+    data.groupBuyType ?? base?.groupBuyType
+  );
+  const groupBuyMode = normalizeGroupBuyMode(
+    data.groupBuyMode ?? base?.groupBuyMode
+  );
+  const targetParticipants = toNullableInteger(
+    Object.prototype.hasOwnProperty.call(data, "targetParticipants")
+      ? data.targetParticipants
+      : base?.targetParticipants
+  );
+  const targetPrice = toNullableNumber(
+    Object.prototype.hasOwnProperty.call(data, "targetPrice")
+      ? data.targetPrice
+      : base?.targetPrice
+  );
+
+  data.groupBuyType = groupBuyType;
+  data.groupBuyMode = groupBuyMode;
+
+  if (groupBuyMode === "normal") {
+    data.targetParticipants = null;
+    data.targetPrice = null;
+    return data;
+  }
+
+  if (groupBuyType !== "pre_recruit") {
+    throw new RouteError(
+      HttpStatusCodes.BAD_REQUEST,
+      "price_unlock은 선모집형(pre_recruit)에서만 사용할 수 있습니다.",
+      "INVALID_GROUP_BUY_MODE"
+    );
+  }
+
+  if (targetParticipants === null || targetPrice === null || price === null) {
+    throw new RouteError(
+      HttpStatusCodes.BAD_REQUEST,
+      "price_unlock에는 기본 가격, 목표 인원, 목표 달성 가격이 필요합니다.",
+      "PRICE_UNLOCK_FIELDS_REQUIRED"
+    );
+  }
+
+  if (targetParticipants < minParticipants) {
+    throw new RouteError(
+      HttpStatusCodes.BAD_REQUEST,
+      "targetParticipants는 minParticipants 이상이어야 합니다.",
+      "INVALID_TARGET_PARTICIPANTS"
+    );
+  }
+
+  if (targetPrice >= price) {
+    throw new RouteError(
+      HttpStatusCodes.BAD_REQUEST,
+      "targetPrice는 기본 price보다 낮아야 합니다.",
+      "INVALID_TARGET_PRICE"
+    );
+  }
+
+  data.targetParticipants = targetParticipants;
+  data.targetPrice = targetPrice;
+
+  return data;
+}
+
+function toPostSnapshot(
+  post: Pick<
+    PostListItem,
+    | "id"
+    | "currentQuantity"
+    | "minParticipants"
+    | "status"
+    | "price"
+    | "groupBuyType"
+    | "groupBuyMode"
+    | "targetParticipants"
+    | "targetPrice"
+  >
+) {
   return {
     id: post.id,
     currentQuantity: post.currentQuantity,
     minParticipants: post.minParticipants,
     status: post.status,
+    price: post.price,
+    targetParticipants: post.targetParticipants ?? null,
+    targetPrice: post.targetPrice ?? null,
+    ...getDealMeta(post),
   };
 }
 
@@ -164,7 +350,7 @@ async function enrichPostListItem(
   const isOwner = userId ? post.authorId === userId : false;
 
   return {
-    ...withProductNameFallback(post),
+    ...withTradeDealFields(withProductNameFallback(post)),
     favoriteCount,
     isFavorite,
     isParticipant,
@@ -253,9 +439,12 @@ export const PostService = {
       throw new RouteError(HttpStatusCodes.NOT_FOUND, "AUTHOR_NOT_FOUND");
     }
 
-    const post = await PostRepo.create(data, imageUrls);
+    const createData = validateTradeModeFields(data) as PostCreationAttributes;
+    const post = await PostRepo.create(createData, imageUrls);
     const plainPost = post?.get();
-    return plainPost ? withProductNameFallback(plainPost) : plainPost;
+    return plainPost
+      ? withTradeDealFields(withProductNameFallback(plainPost))
+      : plainPost;
   },
 
   /**
@@ -315,7 +504,7 @@ export const PostService = {
     });
 
     return {
-      ...withProductNameFallback(postWithoutAuthor),
+      ...withTradeDealFields(withProductNameFallback(postWithoutAuthor)),
       author: toPublicUserProfile(author),
       participants: participantProfiles,
       participantCount: participantProfiles.length,
@@ -400,7 +589,9 @@ export const PostService = {
    */
   async listPostsByAuthor(authorId: string, limit = 20, offset = 0) {
     const posts = await PostRepo.findByAuthorId(authorId, limit, offset);
-    return posts.map((post) => withProductNameFallback(post));
+    return posts.map((post) =>
+      withTradeDealFields(withProductNameFallback(post))
+    );
   },
 
   /**
@@ -413,7 +604,9 @@ export const PostService = {
       throw new RouteError(HttpStatusCodes.NOT_FOUND, "AUTHOR_NOT_FOUND");
     }
     const posts = await PostRepo.findByAuthorId(author.id, limit, offset);
-    return posts.map((post) => withProductNameFallback(post));
+    return posts.map((post) =>
+      withTradeDealFields(withProductNameFallback(post))
+    );
   },
 
   /**
@@ -562,7 +755,7 @@ export const PostService = {
       }
     }
 
-    return withProductNameFallback(newPost);
+    return withTradeDealFields(withProductNameFallback(newPost));
   },
 
   /**
@@ -576,7 +769,8 @@ export const PostService = {
       throw new RouteError(HttpStatusCodes.NOT_FOUND, "POST_NOT_FOUND");
     }
 
-    const updatedPost = await PostRepo.update(id, patch);
+    const updatePatch = validateTradeModeFields(patch, oldPost);
+    const updatedPost = await PostRepo.update(id, updatePatch);
     const newPost = updatedPost?.get();
 
     // status 변경 시 신뢰도 업데이트
@@ -660,7 +854,9 @@ export const PostService = {
       }
     }
 
-    return newPost ? withProductNameFallback(newPost) : newPost;
+    return newPost
+      ? withTradeDealFields(withProductNameFallback(newPost))
+      : newPost;
   },
 
   /**
