@@ -851,9 +851,12 @@
           },
           "groupBuyType": {
             "type": "string",
-            "nullable": true,
-            "description": "공구 방식/유형. 프론트 선택값을 문자열로 저장합니다.",
-            "example": "campus_pickup"
+            "enum": [
+              "pre_recruit",
+              "post_recruit"
+            ],
+            "description": "공구 A/B 타입 (pre_recruit=선모집형, post_recruit=후모집형)",
+            "example": "pre_recruit"
           },
           "tags": {
             "type": "array",
@@ -953,6 +956,49 @@
             "type": "string",
             "format": "date-time",
             "description": "수정일시"
+          },
+          "groupBuyMode": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "price_unlock"
+            ],
+            "description": "거래 세부 모드 (normal=기본형, price_unlock=모이면 싸지는 공구)",
+            "example": "price_unlock"
+          },
+          "targetParticipants": {
+            "type": "integer",
+            "nullable": true,
+            "description": "price_unlock 목표 참여 인원. 이 인원 이상이면 목표 가격이 적용됩니다.",
+            "example": 5
+          },
+          "targetPrice": {
+            "type": "number",
+            "nullable": true,
+            "description": "price_unlock 목표 달성 가격",
+            "example": 4500
+          },
+          "currentPrice": {
+            "type": "number",
+            "description": "현재 참여 인원 기준 프론트 표시 가격. 목표 달성 전에는 price, 달성 후에는 targetPrice입니다.",
+            "example": 5000
+          },
+          "participantsToUnlock": {
+            "type": "integer",
+            "nullable": true,
+            "description": "목표 가격 해금까지 남은 참여자 수. price_unlock이 아니면 null입니다.",
+            "example": 2
+          },
+          "priceUnlocked": {
+            "type": "boolean",
+            "description": "목표 가격 달성 여부",
+            "example": false
+          },
+          "dealMessage": {
+            "type": "string",
+            "nullable": true,
+            "description": "프론트가 그대로 표시할 수 있는 거래 방식 안내 문구",
+            "example": "2명만 더 모이면 4,500원"
           }
         }
       },
@@ -1035,6 +1081,62 @@
                   "cancelled"
                 ],
                 "example": "open"
+              },
+              "price": {
+                "type": "number",
+                "example": 5000
+              },
+              "groupBuyType": {
+                "type": "string",
+                "enum": [
+                  "pre_recruit",
+                  "post_recruit"
+                ],
+                "description": "공구 A/B 타입 (pre_recruit=선모집형, post_recruit=후모집형)",
+                "example": "pre_recruit"
+              },
+              "groupBuyMode": {
+                "type": "string",
+                "enum": [
+                  "normal",
+                  "price_unlock"
+                ],
+                "description": "거래 세부 모드 (normal=기본형, price_unlock=모이면 싸지는 공구)",
+                "example": "price_unlock"
+              },
+              "targetParticipants": {
+                "type": "integer",
+                "nullable": true,
+                "description": "price_unlock 목표 참여 인원. 이 인원 이상이면 목표 가격이 적용됩니다.",
+                "example": 5
+              },
+              "targetPrice": {
+                "type": "number",
+                "nullable": true,
+                "description": "price_unlock 목표 달성 가격",
+                "example": 4500
+              },
+              "currentPrice": {
+                "type": "number",
+                "description": "현재 참여 인원 기준 프론트 표시 가격. 목표 달성 전에는 price, 달성 후에는 targetPrice입니다.",
+                "example": 5000
+              },
+              "participantsToUnlock": {
+                "type": "integer",
+                "nullable": true,
+                "description": "목표 가격 해금까지 남은 참여자 수. price_unlock이 아니면 null입니다.",
+                "example": 2
+              },
+              "priceUnlocked": {
+                "type": "boolean",
+                "description": "목표 가격 달성 여부",
+                "example": false
+              },
+              "dealMessage": {
+                "type": "string",
+                "nullable": true,
+                "description": "프론트가 그대로 표시할 수 있는 거래 방식 안내 문구",
+                "example": "2명만 더 모이면 4,500원"
               }
             }
           }
@@ -2017,9 +2119,12 @@
           },
           "groupBuyType": {
             "type": "string",
-            "nullable": true,
-            "description": "공구 방식/유형. 프론트 선택값을 문자열로 저장합니다.",
-            "example": "campus_pickup"
+            "enum": [
+              "pre_recruit",
+              "post_recruit"
+            ],
+            "description": "공구 A/B 타입 (pre_recruit=선모집형, post_recruit=후모집형)",
+            "example": "pre_recruit"
           },
           "tags": {
             "type": "array",
@@ -2176,6 +2281,49 @@
             "type": "string",
             "format": "date-time",
             "description": "수정일시"
+          },
+          "groupBuyMode": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "price_unlock"
+            ],
+            "description": "거래 세부 모드 (normal=기본형, price_unlock=모이면 싸지는 공구)",
+            "example": "price_unlock"
+          },
+          "targetParticipants": {
+            "type": "integer",
+            "nullable": true,
+            "description": "price_unlock 목표 참여 인원. 이 인원 이상이면 목표 가격이 적용됩니다.",
+            "example": 5
+          },
+          "targetPrice": {
+            "type": "number",
+            "nullable": true,
+            "description": "price_unlock 목표 달성 가격",
+            "example": 4500
+          },
+          "currentPrice": {
+            "type": "number",
+            "description": "현재 참여 인원 기준 프론트 표시 가격. 목표 달성 전에는 price, 달성 후에는 targetPrice입니다.",
+            "example": 5000
+          },
+          "participantsToUnlock": {
+            "type": "integer",
+            "nullable": true,
+            "description": "목표 가격 해금까지 남은 참여자 수. price_unlock이 아니면 null입니다.",
+            "example": 2
+          },
+          "priceUnlocked": {
+            "type": "boolean",
+            "description": "목표 가격 달성 여부",
+            "example": false
+          },
+          "dealMessage": {
+            "type": "string",
+            "nullable": true,
+            "description": "프론트가 그대로 표시할 수 있는 거래 방식 안내 문구",
+            "example": "2명만 더 모이면 4,500원"
           }
         }
       },
@@ -3899,9 +4047,12 @@
                       },
                       "groupBuyType": {
                         "type": "string",
-                        "nullable": true,
-                        "example": "campus_pickup",
-                        "description": "공구 방식/유형"
+                        "enum": [
+                          "pre_recruit",
+                          "post_recruit"
+                        ],
+                        "description": "공구 A/B 타입 (pre_recruit=선모집형, post_recruit=후모집형)",
+                        "example": "pre_recruit"
                       },
                       "tags": {
                         "type": "array",
@@ -3945,6 +4096,27 @@
                           "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=400"
                         ],
                         "description": "이미지 URL 배열 (선택사항)"
+                      },
+                      "groupBuyMode": {
+                        "type": "string",
+                        "enum": [
+                          "normal",
+                          "price_unlock"
+                        ],
+                        "description": "거래 세부 모드 (normal=기본형, price_unlock=모이면 싸지는 공구)",
+                        "example": "price_unlock"
+                      },
+                      "targetParticipants": {
+                        "type": "integer",
+                        "nullable": true,
+                        "example": 5,
+                        "description": "price_unlock 목표 참여 인원"
+                      },
+                      "targetPrice": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 4500,
+                        "description": "price_unlock 목표 달성 가격"
                       }
                     }
                   }
@@ -4129,7 +4301,12 @@
                       },
                       "groupBuyType": {
                         "type": "string",
-                        "nullable": true
+                        "enum": [
+                          "pre_recruit",
+                          "post_recruit"
+                        ],
+                        "description": "공구 A/B 타입 (pre_recruit=선모집형, post_recruit=후모집형)",
+                        "example": "pre_recruit"
                       },
                       "tags": {
                         "type": "array",
@@ -4160,6 +4337,27 @@
                         "items": {
                           "type": "string"
                         }
+                      },
+                      "groupBuyMode": {
+                        "type": "string",
+                        "enum": [
+                          "normal",
+                          "price_unlock"
+                        ],
+                        "description": "거래 세부 모드 (normal=기본형, price_unlock=모이면 싸지는 공구)",
+                        "example": "price_unlock"
+                      },
+                      "targetParticipants": {
+                        "type": "integer",
+                        "nullable": true,
+                        "example": 5,
+                        "description": "price_unlock 목표 참여 인원"
+                      },
+                      "targetPrice": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 4500,
+                        "description": "price_unlock 목표 달성 가격"
                       }
                     }
                   }

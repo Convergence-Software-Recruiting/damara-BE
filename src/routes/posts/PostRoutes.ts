@@ -233,9 +233,24 @@ postRouter.get("/student/:studentId", getPostsByStudentId);
  *                     description: 수령 안내
  *                   groupBuyType:
  *                     type: string
+ *                     enum: [pre_recruit, post_recruit]
+ *                     example: "pre_recruit"
+ *                     description: "공구 A/B 타입 (pre_recruit=선모집형, post_recruit=후모집형)"
+ *                   groupBuyMode:
+ *                     type: string
+ *                     enum: [normal, price_unlock]
+ *                     example: "price_unlock"
+ *                     description: "거래 세부 모드 (normal=기본형, price_unlock=모이면 싸지는 공구)"
+ *                   targetParticipants:
+ *                     type: integer
  *                     nullable: true
- *                     example: "campus_pickup"
- *                     description: 공구 방식/유형
+ *                     example: 5
+ *                     description: price_unlock 목표 참여 인원
+ *                   targetPrice:
+ *                     type: number
+ *                     nullable: true
+ *                     example: 22500
+ *                     description: price_unlock 목표 달성 가격
  *                   tags:
  *                     type: array
  *                     nullable: true
@@ -275,7 +290,10 @@ postRouter.get("/student/:studentId", getPostsByStudentId);
  *               pickupStartTime: "17:00"
  *               pickupEndTime: "19:00"
  *               pickupGuide: "정문 앞 파란 우산 근처에서 수령해 주세요."
- *               groupBuyType: "campus_pickup"
+ *               groupBuyType: "pre_recruit"
+ *               groupBuyMode: "price_unlock"
+ *               targetParticipants: 5
+ *               targetPrice: 22500
  *               tags: ["대용량", "생활용품"]
  *               notice: "입금 확인 후 주문 예정입니다."
  *               category: "food"
@@ -351,6 +369,17 @@ postRouter.post("/", createPost);
  *                     nullable: true
  *                   groupBuyType:
  *                     type: string
+ *                     enum: [pre_recruit, post_recruit]
+ *                     nullable: true
+ *                   groupBuyMode:
+ *                     type: string
+ *                     enum: [normal, price_unlock]
+ *                     nullable: true
+ *                   targetParticipants:
+ *                     type: integer
+ *                     nullable: true
+ *                   targetPrice:
+ *                     type: number
  *                     nullable: true
  *                   tags:
  *                     type: array

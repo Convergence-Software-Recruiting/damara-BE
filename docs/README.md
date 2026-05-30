@@ -59,6 +59,8 @@ https://be.damara.bluerack.org/api-docs.json
 - [채팅 기능 온보딩](./features/CHAT_FEATURE_ONBOARDING.md)
 - [OpenAPI 변경 감지 및 품질 검사 도구](./features/OPENAPI_TOOLING_FEATURE.md)
 - [운영 API 도메인 정리](./features/PRODUCTION_API_DOMAIN_FEATURE.md)
+- [거래 방식 다각화 기획 제안](./features/TRADE_MODE_DIVERSIFICATION_PROPOSAL.md)
+- [모이면 싸지는 공구](./features/PRICE_UNLOCK_GROUP_BUY_FEATURE.md)
 - [신뢰학점](./features/TRUST_SCORE_FEATURE.md)
 
 ## 문서 작성 규칙

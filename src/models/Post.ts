@@ -3,6 +3,7 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../db";
 import UserModel from "./User";
+import { GroupBuyMode, GroupBuyType } from "../types/group-buy";
 
 // ----------------------------
 // TypeScript 타입 정의
@@ -28,7 +29,10 @@ export interface PostAttributes {
   pickupStartTime: string | null;
   pickupEndTime: string | null;
   pickupGuide: string | null;
-  groupBuyType: string | null;
+  groupBuyType: GroupBuyType | null;
+  groupBuyMode: GroupBuyMode;
+  targetParticipants: number | null;
+  targetPrice: number | null;
   tags: string[] | null;
   notice: string | null;
   category: string | null; // 카테고리 ID (food, daily, beauty, electronics, school, freemarket)
@@ -53,6 +57,9 @@ export type PostCreationAttributes = Optional<
   | "pickupEndTime"
   | "pickupGuide"
   | "groupBuyType"
+  | "groupBuyMode"
+  | "targetParticipants"
+  | "targetPrice"
   | "tags"
   | "notice"
   | "createdAt"
@@ -83,7 +90,10 @@ export class PostModel
   public pickupStartTime!: string | null;
   public pickupEndTime!: string | null;
   public pickupGuide!: string | null;
-  public groupBuyType!: string | null;
+  public groupBuyType!: GroupBuyType | null;
+  public groupBuyMode!: GroupBuyMode;
+  public targetParticipants!: number | null;
+  public targetPrice!: number | null;
   public tags!: string[] | null;
   public notice!: string | null;
   public category!: string | null;
@@ -206,6 +216,27 @@ PostModel.init(
       allowNull: true,
       defaultValue: null,
       field: "group_buy_type",
+    },
+
+    groupBuyMode: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+      defaultValue: "normal",
+      field: "group_buy_mode",
+    },
+
+    targetParticipants: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: null,
+      field: "target_participants",
+    },
+
+    targetPrice: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: null,
+      field: "target_price",
     },
 
     tags: {
