@@ -27,6 +27,115 @@ src/routes/**/*.ts
 https://be.damara.bluerack.org/api-docs.json
 ```
 
+## 2026-05-31 - 다마라존 공식 접선지 API 추가
+
+브랜치:
+
+```text
+feature/damara-pickup-zones
+```
+
+변경 전 기준 커밋:
+
+```text
+main
+```
+
+### 변경 요약
+
+게시글 수령 장소를 자유 입력만 받던 구조에서,
+직접 입력(`custom`)과 공식 접선지인 다마라존(`damara_zone`)을 선택할 수 있는 구조로 확장했다.
+
+### 신규 API
+
+```text
+GET /api/pickup-zones
+GET /api/pickup-zones/{id}
+```
+
+`GET /api/pickup-zones`는 등록 화면에서 사용할 공식 접선지 목록을 반환한다.
+
+응답 예시:
+
+```json
+{
+  "items": [
+    {
+      "id": "s2810",
+      "name": "S2810",
+      "campus": "natural",
+      "campusLabel": "자연캠퍼스",
+      "displayName": "자연캠퍼스 S2810"
+    }
+  ],
+  "total": 1
+}
+```
+
+### 변경된 API
+
+```text
+POST /api/posts
+PUT /api/posts/{id}
+GET /api/posts
+GET /api/posts/{id}
+```
+
+### 요청 바디 변경
+
+`POST /api/posts`, `PUT /api/posts/{id}`의 `post` 객체에 다음 계약을 추가한다.
+
+```text
+pickupType: custom | damara_zone
+pickupZoneId: string | null
+pickupLocation: string | null
+```
+
+직접 입력 예시:
+
+```json
+{
+  "post": {
+    "pickupType": "custom",
+    "pickupLocation": "명지대 정문 앞"
+  }
+}
+```
+
+다마라존 선택 예시:
+
+```json
+{
+  "post": {
+    "pickupType": "damara_zone",
+    "pickupZoneId": "s2810"
+  }
+}
+```
+
+`pickupType=damara_zone`이면 서버가 `pickupLocation`을 다마라존 표시명으로 채운다.
+
+### 응답 스키마 변경
+
+Post 응답에 다음 필드가 추가된다.
+
+```text
+pickupType
+pickupZoneId
+pickupZone
+```
+
+### 프론트엔드 영향
+
+등록 화면에서 수령 장소 선택지를 다음처럼 구성하면 된다.
+
+```text
+직접 입력
+다마라존 선택
+```
+
+다마라존 선택 시 `/api/pickup-zones`에서 받은 `id`를 `pickupZoneId`로 전송한다.
+
 ## 2026-05-30 - 모이면 싸지는 공구 거래 방식 추가
 
 브랜치:
