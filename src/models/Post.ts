@@ -4,6 +4,7 @@ import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../db";
 import UserModel from "./User";
 import { GroupBuyMode, GroupBuyType } from "../types/group-buy";
+import { PickupType } from "../types/pickup-zone";
 
 // ----------------------------
 // TypeScript 타입 정의
@@ -24,6 +25,8 @@ export interface PostAttributes {
   currentQuantity: number;
   status: "open" | "closed" | "in_progress" | "completed" | "cancelled";
   deadline: Date;
+  pickupType: PickupType;
+  pickupZoneId: string | null;
   pickupLocation: string | null;
   pickupDate: string | null;
   pickupStartTime: string | null;
@@ -52,6 +55,8 @@ export type PostCreationAttributes = Optional<
   | "currentQuantity"
   | "status"
   // | "pickupLocation"
+  | "pickupType"
+  | "pickupZoneId"
   | "pickupDate"
   | "pickupStartTime"
   | "pickupEndTime"
@@ -85,6 +90,8 @@ export class PostModel
   public currentQuantity!: number;
   public status!: "open" | "closed" | "in_progress" | "completed" | "cancelled";
   public deadline!: Date;
+  public pickupType!: PickupType;
+  public pickupZoneId!: string | null;
   public pickupLocation!: string | null;
   public pickupDate!: string | null;
   public pickupStartTime!: string | null;
@@ -175,6 +182,20 @@ PostModel.init(
     deadline: {
       type: DataTypes.DATE,
       allowNull: false,
+    },
+
+    pickupType: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+      defaultValue: "custom",
+      field: "pickup_type",
+    },
+
+    pickupZoneId: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      defaultValue: null,
+      field: "pickup_zone_id",
     },
 
     pickupLocation: {

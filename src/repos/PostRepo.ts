@@ -90,6 +90,7 @@ export function buildPostListWhere(options: PostListOptions = {}) {
       { productName: { [Op.like]: `%${normalizedKeyword}%` } },
       { content: { [Op.like]: `%${normalizedKeyword}%` } },
       { pickupLocation: { [Op.like]: `%${normalizedKeyword}%` } },
+      { pickupZoneId: { [Op.like]: `%${normalizedKeyword}%` } },
       { pickupGuide: { [Op.like]: `%${normalizedKeyword}%` } },
       { notice: { [Op.like]: `%${normalizedKeyword}%` } },
       { groupBuyType: { [Op.like]: `%${normalizedKeyword}%` } },

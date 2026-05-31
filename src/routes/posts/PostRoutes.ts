@@ -166,7 +166,6 @@ postRouter.get("/student/:studentId", getPostsByStudentId);
  *                   - price
  *                   - minParticipants
  *                   - deadline
- *                   - pickupLocation
  *                 properties:
  *                   authorId:
  *                     type: string
@@ -205,11 +204,23 @@ postRouter.get("/student/:studentId", getPostsByStudentId);
  *                     format: date-time
  *                     example: "2025-11-27T23:59:59.000Z"
  *                     description: 마감 시간 (ISO 8601 형식)
+ *                   pickupType:
+ *                     type: string
+ *                     enum: [custom, damara_zone]
+ *                     nullable: true
+ *                     example: "damara_zone"
+ *                     description: "수령 장소 선택 방식 (custom=직접 입력, damara_zone=다마라존)"
+ *                   pickupZoneId:
+ *                     type: string
+ *                     nullable: true
+ *                     example: "s2810"
+ *                     description: "다마라존 ID. pickupType=damara_zone일 때 사용"
  *                   pickupLocation:
  *                     type: string
+ *                     nullable: true
  *                     maxLength: 200
  *                     example: "명지대학교 정문"
- *                     description: 픽업 장소
+ *                     description: "직접 입력 장소. pickupType=custom일 때 필요하며 damara_zone이면 서버가 다마라존 표시명으로 채움"
  *                   pickupDate:
  *                     type: string
  *                     format: date
@@ -285,7 +296,8 @@ postRouter.get("/student/:studentId", getPostsByStudentId);
  *               price: 25000
  *               minParticipants: 2
  *               deadline: "2025-11-27T23:59:59.000Z"
- *               pickupLocation: "명지대학교 정문"
+ *               pickupType: "damara_zone"
+ *               pickupZoneId: "s2810"
  *               pickupDate: "2026-06-17"
  *               pickupStartTime: "17:00"
  *               pickupEndTime: "19:00"
@@ -352,8 +364,16 @@ postRouter.post("/", createPost);
  *                   deadline:
  *                     type: string
  *                     format: date-time
+ *                   pickupType:
+ *                     type: string
+ *                     enum: [custom, damara_zone]
+ *                     nullable: true
+ *                   pickupZoneId:
+ *                     type: string
+ *                     nullable: true
  *                   pickupLocation:
  *                     type: string
+ *                     nullable: true
  *                   pickupDate:
  *                     type: string
  *                     format: date

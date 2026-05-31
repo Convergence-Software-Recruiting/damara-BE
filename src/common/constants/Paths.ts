@@ -22,6 +22,9 @@ export default {
   Notices: {
     Base: "/notices",
   },
+  PickupZones: {
+    Base: "/pickup-zones",
+  },
   Faqs: {
     Base: "/faqs",
   },

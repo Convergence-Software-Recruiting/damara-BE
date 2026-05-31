@@ -12,6 +12,7 @@ import {
   POST_EXCEPTION_TYPES,
 } from "../types/post-exception";
 import { GROUP_BUY_MODES, GROUP_BUY_TYPES } from "../types/group-buy";
+import { PICKUP_TYPES, PICKUP_ZONE_CAMPUSES } from "../types/pickup-zone";
 
 // 환경 변수에서 API 베이스 URL 가져오기 (배포 환경에서 설정)
 const getServerUrl = () => {
@@ -83,6 +84,10 @@ const options: swaggerJsdoc.Options = {
       {
         name: "Notices",
         description: "공지사항 API",
+      },
+      {
+        name: "PickupZones",
+        description: "다마라존 공식 접선지 API",
       },
       {
         name: "Faqs",
@@ -753,6 +758,80 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        PickupZone: {
+          type: "object",
+          required: [
+            "id",
+            "name",
+            "campus",
+            "campusLabel",
+            "detailLocation",
+            "displayName",
+            "description",
+            "isActive",
+            "sortOrder",
+          ],
+          properties: {
+            id: {
+              type: "string",
+              description: "다마라존 ID. 게시글 등록 시 pickupZoneId로 전달합니다.",
+              example: "s2810",
+            },
+            name: {
+              type: "string",
+              description: "짧은 장소명",
+              example: "S2810",
+            },
+            campus: {
+              type: "string",
+              enum: PICKUP_ZONE_CAMPUSES,
+              description: "캠퍼스 구분",
+              example: "natural",
+            },
+            campusLabel: {
+              type: "string",
+              description: "캠퍼스 표시명",
+              example: "자연캠퍼스",
+            },
+            building: {
+              type: "string",
+              nullable: true,
+              description: "건물명",
+              example: "S동",
+            },
+            floor: {
+              type: "string",
+              nullable: true,
+              description: "층 정보",
+              example: "2층",
+            },
+            detailLocation: {
+              type: "string",
+              description: "건물 내 상세 위치",
+              example: "S2810",
+            },
+            displayName: {
+              type: "string",
+              description: "프론트 표시용 전체 장소명",
+              example: "자연캠퍼스 S2810",
+            },
+            description: {
+              type: "string",
+              description: "장소 설명",
+              example: "자연캠퍼스 S동 2층 S2810 앞 공식 접선지",
+            },
+            isActive: {
+              type: "boolean",
+              description: "사용 가능 여부",
+              example: true,
+            },
+            sortOrder: {
+              type: "integer",
+              description: "표시 순서",
+              example: 10,
+            },
+          },
+        },
         Post: {
           type: "object",
           required: [
@@ -822,11 +901,29 @@ const options: swaggerJsdoc.Options = {
               description: "마감 시간",
               example: "2025-11-27T23:59:59.000Z",
             },
+            pickupType: {
+              type: "string",
+              enum: PICKUP_TYPES,
+              description:
+                "수령 장소 선택 방식 (custom=직접 입력, damara_zone=다마라존)",
+              example: "damara_zone",
+            },
+            pickupZoneId: {
+              type: "string",
+              nullable: true,
+              description: "다마라존 ID. pickupType=damara_zone일 때 사용합니다.",
+              example: "s2810",
+            },
+            pickupZone: {
+              allOf: [{ $ref: "#/components/schemas/PickupZone" }],
+              nullable: true,
+              description: "선택된 다마라존 상세 정보",
+            },
             pickupLocation: {
               type: "string",
               nullable: true,
               description: "픽업 장소",
-              example: "명지대학교 정문",
+              example: "자연캠퍼스 S2810",
             },
             pickupDate: {
               type: "string",
@@ -1058,6 +1155,25 @@ const options: swaggerJsdoc.Options = {
                     "cancelled",
                   ],
                   example: "open",
+                },
+                pickupType: {
+                  type: "string",
+                  enum: PICKUP_TYPES,
+                  example: "damara_zone",
+                },
+                pickupZoneId: {
+                  type: "string",
+                  nullable: true,
+                  example: "s2810",
+                },
+                pickupZone: {
+                  allOf: [{ $ref: "#/components/schemas/PickupZone" }],
+                  nullable: true,
+                },
+                pickupLocation: {
+                  type: "string",
+                  nullable: true,
+                  example: "자연캠퍼스 S2810",
                 },
                 price: {
                   type: "number",
@@ -1963,11 +2079,29 @@ const options: swaggerJsdoc.Options = {
               description: "마감 시간",
               example: "2026-04-17T23:59:59.000Z",
             },
+            pickupType: {
+              type: "string",
+              enum: PICKUP_TYPES,
+              description:
+                "수령 장소 선택 방식 (custom=직접 입력, damara_zone=다마라존)",
+              example: "damara_zone",
+            },
+            pickupZoneId: {
+              type: "string",
+              nullable: true,
+              description: "다마라존 ID. pickupType=damara_zone일 때 사용합니다.",
+              example: "humanities-student-hall-3f-cafe",
+            },
+            pickupZone: {
+              allOf: [{ $ref: "#/components/schemas/PickupZone" }],
+              nullable: true,
+              description: "선택된 다마라존 상세 정보",
+            },
             pickupLocation: {
               type: "string",
               nullable: true,
               description: "픽업 장소",
-              example: "명지대 정문앞",
+              example: "인문캠퍼스 학생회관 3층 카페앞",
             },
             pickupDate: {
               type: "string",

@@ -16,6 +16,88 @@ DB 구조가 바뀌면 다음 내용을 기록한다.
 6. API 응답 영향
 7. 배포 시 마이그레이션 주의점
 
+## 2026-05-31 - 다마라존 수령 방식 컬럼 추가
+
+브랜치:
+
+```text
+feature/damara-pickup-zones
+```
+
+변경 전 기준 커밋:
+
+```text
+main
+```
+
+### 변경 요약
+
+게시글 수령 장소를 직접 입력과 다마라존 선택으로 구분하기 위해
+`posts` 테이블에 수령 방식과 다마라존 ID 컬럼을 추가한다.
+
+### 변경 테이블
+
+```text
+posts
+```
+
+### 신규 컬럼
+
+```text
+pickup_type
+pickup_zone_id
+```
+
+정의:
+
+```text
+pickup_type: VARCHAR(50), not null, default 'custom'
+pickup_zone_id: VARCHAR(100), nullable
+```
+
+### 관계 변경
+
+관계 변경은 없다.
+
+초기 MVP에서는 다마라존을 별도 테이블로 관리하지 않고 코드 상수 기반 API로 제공한다.
+따라서 `pickup_zone_id`는 논리적 참조값이며 DB foreign key는 없다.
+
+### API 영향
+
+다음 API의 요청/응답에 수령 방식 필드가 추가된다.
+
+```text
+POST /api/posts
+PUT /api/posts/{id}
+GET /api/posts
+GET /api/posts/{id}
+```
+
+신규 다마라존 조회 API가 추가된다.
+
+```text
+GET /api/pickup-zones
+GET /api/pickup-zones/{id}
+```
+
+Swagger 변경 사항은 다음 문서에서 관리한다.
+
+```text
+docs/api/SWAGGER_CHANGELOG.md
+```
+
+### 배포 주의점
+
+서버 시작 시 `posts` 테이블의 신규 컬럼을 확인하고 누락 시 추가한다.
+
+운영 반영용 SQL:
+
+```sql
+ALTER TABLE posts
+  ADD COLUMN pickup_type VARCHAR(50) NOT NULL DEFAULT 'custom',
+  ADD COLUMN pickup_zone_id VARCHAR(100) NULL;
+```
+
 ## 2026-05-30 - 모이면 싸지는 공구 컬럼 추가
 
 브랜치:
