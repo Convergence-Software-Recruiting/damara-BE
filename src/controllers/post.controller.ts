@@ -61,6 +61,8 @@ function parseNonNegativeInteger(value: unknown, fallback: number) {
 
 const nullableStringPostFields = [
   "productName",
+  "pickupLocation",
+  "pickupZoneId",
   "pickupDate",
   "pickupStartTime",
   "pickupEndTime",
@@ -97,6 +99,7 @@ function normalizePostDetailFields<T extends Record<string, unknown>>(data: T) {
     Record<NullableStringPostField, string | null | undefined> & {
       tags?: string[] | null;
       groupBuyMode?: string | null;
+      pickupType?: string | null;
     };
 
   for (const field of nullableStringPostFields) {
@@ -114,6 +117,13 @@ function normalizePostDetailFields<T extends Record<string, unknown>>(data: T) {
     mutableData.groupBuyMode === null
   ) {
     mutableData.groupBuyMode = undefined;
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(mutableData, "pickupType") &&
+    mutableData.pickupType === null
+  ) {
+    mutableData.pickupType = undefined;
   }
 
   return mutableData;

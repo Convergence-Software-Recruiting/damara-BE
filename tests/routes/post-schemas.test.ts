@@ -66,4 +66,30 @@ describe("post schemas", () => {
 
     expect(parsed.post.groupBuyMode).toBe("normal");
   });
+
+  it("다마라존 선택 방식 생성을 허용한다", () => {
+    const { pickupLocation, ...postWithoutPickupLocation } = basePost;
+    const parsed = createPostSchema.parse({
+      post: {
+        ...postWithoutPickupLocation,
+        pickupType: "damara_zone",
+        pickupZoneId: "s2810",
+      },
+    });
+
+    expect(parsed.post.pickupType).toBe("damara_zone");
+    expect(parsed.post.pickupZoneId).toBe("s2810");
+    expect(parsed.post.pickupLocation).toBeUndefined();
+  });
+
+  it("지원하지 않는 수령 방식은 거부한다", () => {
+    const result = createPostSchema.safeParse({
+      post: {
+        ...basePost,
+        pickupType: "random_place",
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
 });

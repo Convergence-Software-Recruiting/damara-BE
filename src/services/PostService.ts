@@ -17,6 +17,11 @@ import {
   PARTICIPANT_STATUS_LABELS,
 } from "../types/participant-status";
 import { GroupBuyMode, GroupBuyType } from "../types/group-buy";
+import {
+  findDamaraPickupZoneById,
+  PickupType,
+  PickupZone,
+} from "../types/pickup-zone";
 
 type PostListItem = Awaited<ReturnType<typeof PostRepo.list>>[number];
 type EnrichedPostListItem = PostListItem & {
@@ -32,6 +37,7 @@ type EnrichedPostListItem = PostListItem & {
   participantsToUnlock: number | null;
   priceUnlocked: boolean;
   dealMessage: string | null;
+  pickupZone: PickupZone | null;
   deadlineStatus: "open" | "closingSoon" | "closed";
   deadlineLabel: string;
   remainingSeconds: number;
@@ -81,6 +87,11 @@ type TradeModePost = {
   groupBuyMode?: GroupBuyMode | string | null;
   targetParticipants?: number | string | null;
   targetPrice?: number | string | null;
+};
+type PickupModePost = {
+  pickupType?: PickupType | string | null;
+  pickupZoneId?: string | null;
+  pickupLocation?: string | null;
 };
 
 const getPostCreatedTime = (post: PostListItem) => {
@@ -154,6 +165,25 @@ function normalizeGroupBuyMode(
   groupBuyMode?: GroupBuyMode | string | null
 ): GroupBuyMode {
   return groupBuyMode === "price_unlock" ? "price_unlock" : "normal";
+}
+
+function normalizePickupType(
+  pickupType?: PickupType | string | null,
+  pickupZoneId?: string | null
+): PickupType {
+  if (pickupType === "damara_zone") {
+    return "damara_zone";
+  }
+
+  if (pickupType === "custom") {
+    return "custom";
+  }
+
+  if (pickupZoneId) {
+    return "damara_zone";
+  }
+
+  return "custom";
 }
 
 function toNullableNumber(value: number | string | null | undefined) {
@@ -233,6 +263,95 @@ function withTradeDealFields<T extends TradeModePost>(post: T) {
     ...post,
     ...getDealMeta(post),
   };
+}
+
+function getPickupMeta(post: PickupModePost): {
+  pickupType: PickupType;
+  pickupZoneId: string | null;
+  pickupZone: PickupZone | null;
+} {
+  const pickupZoneId = post.pickupZoneId ?? null;
+  const pickupType = normalizePickupType(post.pickupType, pickupZoneId);
+  const pickupZone =
+    pickupType === "damara_zone"
+      ? findDamaraPickupZoneById(pickupZoneId)
+      : null;
+
+  return {
+    pickupType,
+    pickupZoneId: pickupType === "damara_zone" ? pickupZoneId : null,
+    pickupZone: pickupZone?.isActive ? pickupZone : null,
+  };
+}
+
+function withPickupFields<T extends PickupModePost>(post: T) {
+  return {
+    ...post,
+    ...getPickupMeta(post),
+  };
+}
+
+function withPostComputedFields<
+  T extends ProductNamedPost & TradeModePost & PickupModePost,
+>(post: T) {
+  return withPickupFields(withTradeDealFields(withProductNameFallback(post)));
+}
+
+function validatePickupFields(
+  data: Partial<PostCreationAttributes>,
+  base?: Partial<PostCreationAttributes>
+) {
+  const hasPickupType = Object.prototype.hasOwnProperty.call(data, "pickupType");
+  const hasPickupZoneId = Object.prototype.hasOwnProperty.call(
+    data,
+    "pickupZoneId"
+  );
+  const hasPickupLocation = Object.prototype.hasOwnProperty.call(
+    data,
+    "pickupLocation"
+  );
+
+  const pickupZoneId = hasPickupZoneId
+    ? data.pickupZoneId
+    : base?.pickupZoneId;
+  const pickupType = normalizePickupType(
+    hasPickupType ? data.pickupType : base?.pickupType,
+    pickupZoneId
+  );
+  const pickupLocation = hasPickupLocation
+    ? data.pickupLocation
+    : base?.pickupLocation;
+
+  data.pickupType = pickupType;
+
+  if (pickupType === "damara_zone") {
+    const zone = findDamaraPickupZoneById(pickupZoneId);
+    if (!zone || !zone.isActive) {
+      throw new RouteError(
+        HttpStatusCodes.BAD_REQUEST,
+        "유효한 다마라존을 선택해야 합니다.",
+        "INVALID_PICKUP_ZONE"
+      );
+    }
+
+    data.pickupZoneId = zone.id;
+    data.pickupLocation = zone.displayName;
+    return data;
+  }
+
+  const normalizedLocation =
+    typeof pickupLocation === "string" ? pickupLocation.trim() : "";
+  if (!normalizedLocation) {
+    throw new RouteError(
+      HttpStatusCodes.BAD_REQUEST,
+      "직접 입력 수령 방식에는 pickupLocation이 필요합니다.",
+      "PICKUP_LOCATION_REQUIRED"
+    );
+  }
+
+  data.pickupZoneId = null;
+  data.pickupLocation = normalizedLocation;
+  return data;
 }
 
 function validateTradeModeFields(
@@ -318,6 +437,9 @@ function toPostSnapshot(
     | "groupBuyMode"
     | "targetParticipants"
     | "targetPrice"
+    | "pickupType"
+    | "pickupZoneId"
+    | "pickupLocation"
   >
 ) {
   return {
@@ -326,9 +448,11 @@ function toPostSnapshot(
     minParticipants: post.minParticipants,
     status: post.status,
     price: post.price,
+    pickupLocation: post.pickupLocation ?? null,
     targetParticipants: post.targetParticipants ?? null,
     targetPrice: post.targetPrice ?? null,
     ...getDealMeta(post),
+    ...getPickupMeta(post),
   };
 }
 
@@ -350,7 +474,7 @@ async function enrichPostListItem(
   const isOwner = userId ? post.authorId === userId : false;
 
   return {
-    ...withTradeDealFields(withProductNameFallback(post)),
+    ...withPostComputedFields(post),
     favoriteCount,
     isFavorite,
     isParticipant,
@@ -439,12 +563,12 @@ export const PostService = {
       throw new RouteError(HttpStatusCodes.NOT_FOUND, "AUTHOR_NOT_FOUND");
     }
 
-    const createData = validateTradeModeFields(data) as PostCreationAttributes;
+    const createData = validateTradeModeFields(
+      validatePickupFields(data)
+    ) as PostCreationAttributes;
     const post = await PostRepo.create(createData, imageUrls);
     const plainPost = post?.get();
-    return plainPost
-      ? withTradeDealFields(withProductNameFallback(plainPost))
-      : plainPost;
+    return plainPost ? withPostComputedFields(plainPost) : plainPost;
   },
 
   /**
@@ -504,7 +628,7 @@ export const PostService = {
     });
 
     return {
-      ...withTradeDealFields(withProductNameFallback(postWithoutAuthor)),
+      ...withPostComputedFields(postWithoutAuthor),
       author: toPublicUserProfile(author),
       participants: participantProfiles,
       participantCount: participantProfiles.length,
@@ -590,7 +714,7 @@ export const PostService = {
   async listPostsByAuthor(authorId: string, limit = 20, offset = 0) {
     const posts = await PostRepo.findByAuthorId(authorId, limit, offset);
     return posts.map((post) =>
-      withTradeDealFields(withProductNameFallback(post))
+      withPostComputedFields(post)
     );
   },
 
@@ -605,7 +729,7 @@ export const PostService = {
     }
     const posts = await PostRepo.findByAuthorId(author.id, limit, offset);
     return posts.map((post) =>
-      withTradeDealFields(withProductNameFallback(post))
+      withPostComputedFields(post)
     );
   },
 
@@ -755,7 +879,7 @@ export const PostService = {
       }
     }
 
-    return withTradeDealFields(withProductNameFallback(newPost));
+    return withPostComputedFields(newPost);
   },
 
   /**
@@ -769,7 +893,10 @@ export const PostService = {
       throw new RouteError(HttpStatusCodes.NOT_FOUND, "POST_NOT_FOUND");
     }
 
-    const updatePatch = validateTradeModeFields(patch, oldPost);
+    const updatePatch = validateTradeModeFields(
+      validatePickupFields(patch, oldPost),
+      oldPost
+    );
     const updatedPost = await PostRepo.update(id, updatePatch);
     const newPost = updatedPost?.get();
 
@@ -854,9 +981,7 @@ export const PostService = {
       }
     }
 
-    return newPost
-      ? withTradeDealFields(withProductNameFallback(newPost))
-      : newPost;
+    return newPost ? withPostComputedFields(newPost) : newPost;
   },
 
   /**

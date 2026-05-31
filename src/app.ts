@@ -219,6 +219,22 @@ async function ensurePostUiDetailColumns() {
       },
     },
     {
+      name: "pickup_type",
+      definition: {
+        type: DataTypes.STRING(50),
+        allowNull: false,
+        defaultValue: "custom",
+      },
+    },
+    {
+      name: "pickup_zone_id",
+      definition: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+        defaultValue: null,
+      },
+    },
+    {
       name: "pickup_start_time",
       definition: {
         type: DataTypes.TIME,

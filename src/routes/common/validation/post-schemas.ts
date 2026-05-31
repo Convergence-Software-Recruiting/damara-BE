@@ -1,5 +1,6 @@
 import z from "zod";
 import { GROUP_BUY_MODES, GROUP_BUY_TYPES } from "../../../types/group-buy";
+import { PICKUP_TYPES } from "../../../types/pickup-zone";
 
 const dateOnlySchema = z
   .string()
@@ -17,6 +18,7 @@ const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/, {
 const tagsSchema = z.array(z.string().trim().min(1).max(50)).max(10);
 const groupBuyTypeSchema = z.enum(GROUP_BUY_TYPES);
 const groupBuyModeSchema = z.enum(GROUP_BUY_MODES);
+const pickupTypeSchema = z.enum(PICKUP_TYPES);
 
 /**
  * 공동구매 상품 생성 요청 스키마
@@ -32,7 +34,9 @@ export const createPostSchema = z.object({
     deadline: z.string().refine((val) => !isNaN(Date.parse(val)), {
       message: "Invalid datetime format",
     }), // ISO 8601 형식 검증
-    pickupLocation: z.string().max(200),
+    pickupType: pickupTypeSchema.optional().nullable(),
+    pickupZoneId: z.string().trim().min(1).max(100).optional().nullable(),
+    pickupLocation: z.string().max(200).optional().nullable(),
     pickupDate: dateOnlySchema.optional().nullable(),
     pickupStartTime: timeSchema.optional().nullable(),
     pickupEndTime: timeSchema.optional().nullable(),
@@ -70,7 +74,9 @@ export const updatePostSchema = z.object({
         message: "Invalid datetime format",
       })
       .optional(),
-    pickupLocation: z.string().max(200).optional(),
+    pickupType: pickupTypeSchema.optional().nullable(),
+    pickupZoneId: z.string().trim().min(1).max(100).optional().nullable(),
+    pickupLocation: z.string().max(200).optional().nullable(),
     pickupDate: dateOnlySchema.optional().nullable(),
     pickupStartTime: timeSchema.optional().nullable(),
     pickupEndTime: timeSchema.optional().nullable(),
