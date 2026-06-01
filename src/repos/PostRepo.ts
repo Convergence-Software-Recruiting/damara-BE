@@ -32,6 +32,10 @@ function findCategoryValuesByKeyword(keyword: string) {
     .map(([category]) => category);
 }
 
+function normalizeProductSearchTerm(productName: string) {
+  return productName.trim().replace(/\s+/g, " ");
+}
+
 export function buildPostListWhere(options: PostListOptions = {}) {
   const {
     authorId,
@@ -249,6 +253,47 @@ export const PostRepo = {
     return await PostModel.count({
       where: buildPostListWhere(options),
     });
+  },
+
+  async searchByProductName(productName: string, limit = 10) {
+    const normalizedProductName = normalizeProductSearchTerm(productName);
+    const partialWhere = {
+      [Op.or]: [
+        { title: { [Op.like]: `%${normalizedProductName}%` } },
+        { productName: { [Op.like]: `%${normalizedProductName}%` } },
+      ],
+    };
+    const exactWhere = {
+      [Op.or]: [
+        { title: normalizedProductName },
+        { productName: normalizedProductName },
+      ],
+    };
+
+    const [posts, total, exactTotal] = await Promise.all([
+      PostModel.findAll({
+        where: partialWhere,
+        include: [
+          {
+            model: PostImageModel,
+            as: "images",
+            attributes: ["id", "imageUrl", "sortOrder"],
+            order: [["sortOrder", "ASC"]],
+          },
+        ],
+        order: [["createdAt", "DESC"]],
+        limit,
+      }),
+      PostModel.count({ where: partialWhere }),
+      PostModel.count({ where: exactWhere }),
+    ]);
+
+    return {
+      query: normalizedProductName,
+      posts: posts.map((post) => post.get()),
+      total,
+      exactTotal,
+    };
   },
 
   /**

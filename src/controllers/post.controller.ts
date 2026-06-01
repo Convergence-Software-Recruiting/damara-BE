@@ -197,6 +197,41 @@ export async function getAllPosts(
   }
 }
 
+export async function searchProductName(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const productName =
+      getSingleValue(req.query.productName) ||
+      getSingleValue(req.query.q) ||
+      getSingleValue(req.query.keyword);
+    const userId =
+      getSingleValue(req.headers["x-user-id"]) ||
+      getSingleValue(req.query.userId);
+
+    if (!productName) {
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "PRODUCT_NAME_REQUIRED",
+        "상품명을 입력해 주세요."
+      );
+    }
+
+    const result = await PostService.searchProductName(
+      productName,
+      parseNonNegativeInteger(req.query.limit, 10),
+      userId
+    );
+
+    res.status(HttpStatusCodes.OK).json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
 /**
  * 특정 작성자의 상품 목록 (학번 기준)
  * GET /api/posts/student/:studentId
