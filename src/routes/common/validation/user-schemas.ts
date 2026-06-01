@@ -33,6 +33,12 @@ export const updateUserSchema = z.object({
 
 export type UpdateUserReq = z.infer<typeof updateUserSchema>;
 
+export const updateProfileImageSchema = z.object({
+  avatarUrl: z.string().trim().min(1).max(500).nullable(),
+});
+
+export type UpdateProfileImageReq = z.infer<typeof updateProfileImageSchema>;
+
 /**
  * 로그인 요청 스키마 (학번 + 비밀번호)
  */
