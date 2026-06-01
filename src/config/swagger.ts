@@ -1128,6 +1128,67 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        PostProductSearchResponse: {
+          type: "object",
+          required: [
+            "query",
+            "exists",
+            "exactMatchExists",
+            "partialMatchExists",
+            "total",
+            "exactMatchCount",
+            "limit",
+            "items",
+          ],
+          properties: {
+            query: {
+              type: "string",
+              description: "서버가 공백을 정리한 검색어",
+              example: "물티슈",
+            },
+            exists: {
+              type: "boolean",
+              description:
+                "정확히 같거나 일부 포함되는 상품명/게시글 제목이 하나라도 있는지 여부",
+              example: true,
+            },
+            exactMatchExists: {
+              type: "boolean",
+              description:
+                "상품명(productName) 또는 제목(title)이 검색어와 완전히 같은 게시글 존재 여부",
+              example: false,
+            },
+            partialMatchExists: {
+              type: "boolean",
+              description:
+                "상품명(productName) 또는 제목(title)에 검색어가 포함된 게시글 존재 여부",
+              example: true,
+            },
+            total: {
+              type: "integer",
+              description: "일부 포함 검색까지 포함한 전체 검색 결과 수",
+              example: 3,
+            },
+            exactMatchCount: {
+              type: "integer",
+              description: "정확히 일치하는 검색 결과 수",
+              example: 0,
+            },
+            limit: {
+              type: "integer",
+              description: "items에 반환된 최대 게시글 수",
+              example: 10,
+            },
+            items: {
+              type: "array",
+              description:
+                "검색어와 유사한 게시글 목록. 카드 UI용 favoriteCount, isFavorite, isParticipant, deadlineStatus 등이 포함됩니다.",
+              items: {
+                $ref: "#/components/schemas/Post",
+              },
+            },
+          },
+        },
         PostParticipationResult: {
           type: "object",
           required: ["isParticipant", "post"],
@@ -2492,18 +2553,19 @@ const options: swaggerJsdoc.Options = {
             type: {
               type: "string",
               enum: [...NOTIFICATION_TYPES],
-              description: "알림 타입",
+              description:
+                "알림 타입. 공동구매 참여 알림은 작성자에게 new_participant 타입으로 전달됩니다.",
               example: "new_participant",
             },
             title: {
               type: "string",
               description: "알림 제목",
-              example: "새로운 참여자",
+              example: "공동구매 참여 알림",
             },
             message: {
               type: "string",
               description: "알림 메시지",
-              example: "호빵 공동구매에 새로운 참여자가 있습니다.",
+              example: "김다마라님이 \"물티슈 공동구매\" 공동구매에 참여했습니다.",
             },
             postId: {
               type: "string",
@@ -2522,7 +2584,8 @@ const options: swaggerJsdoc.Options = {
             actionUrl: {
               type: "string",
               nullable: true,
-              description: "알림 클릭 시 이동할 프론트엔드 경로",
+              description:
+                "알림 클릭 시 이동할 프론트엔드 경로. postId가 있으면 기본값은 /post/{postId}입니다.",
               example: "/post/123e4567-e89b-12d3-a456-426614174000",
             },
             isRead: {

@@ -696,6 +696,37 @@ export const PostService = {
     return response;
   },
 
+  async searchProductName(productName: string, limit = 10, userId?: string) {
+    const query = productName.trim().replace(/\s+/g, " ");
+    if (!query) {
+      throw new RouteError(
+        HttpStatusCodes.BAD_REQUEST,
+        "상품명을 입력해 주세요.",
+        "PRODUCT_NAME_REQUIRED"
+      );
+    }
+
+    const normalizedLimit = Math.min(Math.max(limit, 1), 20);
+    const { posts, total, exactTotal } = await PostRepo.searchByProductName(
+      query,
+      normalizedLimit
+    );
+    const items = await Promise.all(
+      posts.map((post) => enrichPostListItem(post, userId))
+    );
+
+    return {
+      query,
+      exists: total > 0,
+      exactMatchExists: exactTotal > 0,
+      partialMatchExists: total > 0,
+      total,
+      exactMatchCount: exactTotal,
+      limit: normalizedLimit,
+      items,
+    };
+  },
+
   /**
    * 참여/참여취소 후 프론트 진행률 갱신용 최소 게시글 스냅샷
    */
