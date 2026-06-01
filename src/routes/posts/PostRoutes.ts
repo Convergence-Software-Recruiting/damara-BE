@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import {
   getAllPosts,
+  searchProductName,
   getPostsByStudentId,
   getPostById,
   createPost,
@@ -105,6 +106,46 @@ logger.info("PostRoutes: 라우터 초기화됨");
  */
 // GET /api/posts - 전체 조회 (페이징 가능)
 postRouter.get("/", getAllPosts);
+
+/**
+ * @swagger
+ * /api/posts/product-search:
+ *   get:
+ *     summary: 상품명 기반 게시글 존재 여부 검색
+ *     description: 상품명 또는 게시글 제목에 같은/비슷한 공동구매가 있는지 확인합니다. 등록 화면에서 중복 공구 확인이나 검색 자동완성에 사용할 수 있습니다.
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: query
+ *         name: productName
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: 검색할 상품명. 앞뒤 공백과 연속 공백은 서버에서 정리합니다. q 또는 keyword도 같은 의미로 사용할 수 있습니다.
+ *         example: 물티슈
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           maximum: 20
+ *         description: 함께 반환할 유사 게시글 개수. 1~20 범위로 보정됩니다.
+ *       - in: header
+ *         name: x-user-id
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 현재 사용자 UUID. 전달하면 items의 isFavorite, isParticipant, isOwner를 계산합니다.
+ *     responses:
+ *       200:
+ *         description: 상품명 검색 성공. exactMatchExists는 상품명/제목이 완전히 같은 게시글 존재 여부, partialMatchExists는 일부 포함 검색 결과 존재 여부입니다.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PostProductSearchResponse'
+ *       400:
+ *         description: 상품명 누락
+ */
+postRouter.get("/product-search", searchProductName);
 
 /**
  * @swagger

@@ -27,6 +27,82 @@ src/routes/**/*.ts
 https://be.damara.bluerack.org/api-docs.json
 ```
 
+## 2026-06-01 - 게시글 상품명 검색 API 추가
+
+브랜치:
+
+```text
+feature/post-product-search
+```
+
+변경 전 기준 커밋:
+
+```text
+ef8b3f1
+```
+
+### 변경 요약
+
+프론트엔드가 상품명을 입력했을 때 동일하거나 유사한 공동구매 게시글이 있는지
+즉시 판단할 수 있도록 상품명 검색 전용 API를 추가했다.
+
+### 신규 API
+
+```text
+GET /api/posts/product-search
+```
+
+### 요청 쿼리
+
+```text
+productName: string
+limit?: number
+```
+
+`q`, `keyword`도 `productName`과 같은 검색어 alias로 사용할 수 있다.
+
+요청 예시:
+
+```bash
+GET /api/posts/product-search?productName=물티슈&limit=10
+```
+
+### 응답 스키마
+
+```text
+PostProductSearchResponse
+```
+
+응답 예시:
+
+```json
+{
+  "query": "물티슈",
+  "exists": true,
+  "exactMatchExists": false,
+  "partialMatchExists": true,
+  "total": 3,
+  "exactMatchCount": 0,
+  "limit": 10,
+  "items": []
+}
+```
+
+### 프론트엔드 영향
+
+등록 화면에서 사용자가 상품명을 입력했을 때 다음 기준으로 안내 문구를 만들 수 있다.
+
+```text
+exactMatchExists=true:
+이미 같은 상품명의 공동구매가 있어요.
+
+partialMatchExists=true:
+비슷한 상품명의 공동구매가 있어요.
+
+exists=false:
+아직 등록된 유사 공동구매가 없어요.
+```
+
 ## 2026-05-31 - 다마라존 공식 접선지 API 추가
 
 브랜치:
