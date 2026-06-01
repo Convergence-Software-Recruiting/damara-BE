@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { upload, uploadWithErrorHandling } from "../../config/multer";
 
 import {
   createUser,
@@ -14,6 +15,8 @@ import {
   updateUserSettings,
   getMyPostsSummary,
   getMyPosts,
+  uploadUserProfileImage,
+  updateUserProfileImage,
 } from "../../controllers/user.controller";
 import { getFavorites } from "../../controllers/favorite.controller";
 
@@ -535,6 +538,118 @@ userRouter.put("/:id/settings", updateUserSettings);
  */
 // GET /api/users/:id/trust-events - 사용자 신뢰 이벤트 이력 조회
 userRouter.get("/:id/trust-events", getUserTrustEvents);
+
+/**
+ * @swagger
+ * /api/users/{id}/profile-image:
+ *   post:
+ *     summary: 프로필 이미지 업로드 및 설정
+ *     description: 마이페이지에서 프로필 이미지 파일을 업로드하고 사용자의 avatarUrl에 즉시 반영합니다. 이미지 파일은 기존 업로드 정책과 동일하게 jpeg, jpg, png, gif, webp 형식과 5MB 이하만 허용합니다.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 사용자 UUID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - image
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *                 description: 프로필 이미지 파일
+ *     responses:
+ *       201:
+ *         description: 프로필 이미지 업로드 및 설정 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserProfileImageResponse'
+ *       400:
+ *         description: 이미지 파일 누락, 용량 초과, 형식 오류
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: 사용자를 찾을 수 없음
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *   put:
+ *     summary: 프로필 이미지 수정
+ *     description: 프로필 이미지를 새 파일로 교체하거나 JSON avatarUrl 값으로 직접 수정합니다. avatarUrl을 null로 보내면 프로필 이미지를 제거합니다.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 사용자 UUID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *                 description: 교체할 프로필 이미지 파일
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - avatarUrl
+ *             properties:
+ *               avatarUrl:
+ *                 type: string
+ *                 nullable: true
+ *                 description: 직접 설정할 프로필 이미지 URL. null이면 이미지 제거
+ *                 example: "/uploads/images/abc123.png"
+ *     responses:
+ *       200:
+ *         description: 프로필 이미지 수정 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserProfileImageResponse'
+ *       400:
+ *         description: 유효성 검증 실패, 용량 초과, 형식 오류
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: 사용자를 찾을 수 없음
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+userRouter.post(
+  "/:id/profile-image",
+  uploadWithErrorHandling(upload.single("image")),
+  uploadUserProfileImage
+);
+userRouter.put(
+  "/:id/profile-image",
+  uploadWithErrorHandling(upload.single("image")),
+  updateUserProfileImage
+);
 
 /**
  * @swagger
