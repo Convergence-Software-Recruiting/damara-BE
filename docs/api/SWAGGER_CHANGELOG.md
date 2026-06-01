@@ -27,6 +27,68 @@ src/routes/**/*.ts
 https://be.damara.bluerack.org/api-docs.json
 ```
 
+## 2026-06-01 - 기본 공지사항 데이터 및 category 응답 정리
+
+브랜치:
+
+```text
+feature/default-service-notices
+```
+
+변경 전 기준 커밋:
+
+```text
+ef8b3f1
+```
+
+### 변경 요약
+
+공지사항 API는 존재하지만 운영 DB에 공지 데이터가 없으면 프론트 공지 화면이 비어 보이는 문제가 있었다.
+
+서버 시작 시 DAMARA 기본 공지사항 8개를 자동 보정하고, 프론트가 탭/배지를 바로 표시할 수 있도록 공지 응답에 `category` 필드를 명시했다.
+
+### 변경된 API
+
+```text
+GET /api/notices
+GET /api/notices/{id}
+```
+
+### 응답 스키마 변경
+
+`Notice` 응답에 다음 필드를 추가했다.
+
+```text
+category: string
+```
+
+`category`는 `summary`가 있으면 `summary` 값을 사용하고, 없으면 `type`에 따른 표시 라벨을 사용한다.
+
+예시:
+
+```json
+{
+  "title": "DAMARA 베타 서비스 오픈 안내",
+  "summary": "서비스 안내",
+  "category": "서비스 안내",
+  "type": "service",
+  "isPinned": true
+}
+```
+
+### 프론트엔드 영향
+
+공지 목록과 상세 화면에서 `category`를 그대로 표시하면 된다.
+
+초기 운영 DB에 공지가 없거나 일부 기본 공지가 누락되어도 서버가 title 기준으로 없는 기본 공지만 생성하므로 중복 공지 생성 가능성을 줄였다.
+
+### 확인 방법
+
+```bash
+curl -s https://be.damara.bluerack.org/api/notices
+curl -s https://be.damara.bluerack.org/api-docs.json
+```
+
 ## 2026-05-31 - 다마라존 공식 접선지 API 추가
 
 브랜치:

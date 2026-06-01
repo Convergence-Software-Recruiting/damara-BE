@@ -451,6 +451,7 @@ const options: swaggerJsdoc.Options = {
             "title",
             "content",
             "type",
+            "category",
             "isPinned",
             "createdAt",
             "updatedAt",
@@ -465,25 +466,32 @@ const options: swaggerJsdoc.Options = {
             title: {
               type: "string",
               description: "공지사항 제목",
-              example: "서비스 점검 안내",
+              example: "DAMARA 베타 서비스 오픈 안내",
             },
             summary: {
               type: "string",
               nullable: true,
-              description: "목록 카드용 요약 문구",
-              example: "5월 20일 새벽 서비스 점검이 진행됩니다.",
+              description:
+                "목록 카드용 요약 문구. 기본 DAMARA 공지는 category와 같은 표시값을 사용합니다.",
+              example: "서비스 안내",
             },
             content: {
               type: "string",
               description: "공지사항 본문",
               example:
-                "안정적인 서비스 제공을 위해 5월 20일 02:00부터 03:00까지 점검을 진행합니다.",
+                "안녕하세요, DAMARA 운영팀입니다. DAMARA는 명지대학교 학생들이 필요한 물품을 함께 구매하고 나눌 수 있도록 만든 캠퍼스 기반 공동구매 서비스입니다.",
             },
             type: {
               type: "string",
               enum: [...NOTICE_TYPES],
               description: "공지 유형",
-              example: "maintenance",
+              example: "service",
+            },
+            category: {
+              type: "string",
+              description:
+                "프론트 표시용 공지 카테고리. 기본값은 summary가 있으면 summary, 없으면 type 라벨입니다.",
+              example: "서비스 안내",
             },
             isPinned: {
               type: "boolean",

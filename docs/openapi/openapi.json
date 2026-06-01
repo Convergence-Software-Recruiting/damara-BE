@@ -416,6 +416,7 @@
           "title",
           "content",
           "type",
+          "category",
           "isPinned",
           "createdAt",
           "updatedAt"
@@ -430,18 +431,18 @@
           "title": {
             "type": "string",
             "description": "공지사항 제목",
-            "example": "서비스 점검 안내"
+            "example": "DAMARA 베타 서비스 오픈 안내"
           },
           "summary": {
             "type": "string",
             "nullable": true,
-            "description": "목록 카드용 요약 문구",
-            "example": "5월 20일 새벽 서비스 점검이 진행됩니다."
+            "description": "목록 카드용 요약 문구. 기본 DAMARA 공지는 category와 같은 표시값을 사용합니다.",
+            "example": "서비스 안내"
           },
           "content": {
             "type": "string",
             "description": "공지사항 본문",
-            "example": "안정적인 서비스 제공을 위해 5월 20일 02:00부터 03:00까지 점검을 진행합니다."
+            "example": "안녕하세요, DAMARA 운영팀입니다. DAMARA는 명지대학교 학생들이 필요한 물품을 함께 구매하고 나눌 수 있도록 만든 캠퍼스 기반 공동구매 서비스입니다."
           },
           "type": {
             "type": "string",
@@ -452,7 +453,7 @@
               "policy"
             ],
             "description": "공지 유형",
-            "example": "maintenance"
+            "example": "service"
           },
           "isPinned": {
             "type": "boolean",
@@ -468,6 +469,11 @@
             "type": "string",
             "format": "date-time",
             "description": "수정일시"
+          },
+          "category": {
+            "type": "string",
+            "description": "프론트 표시용 공지 카테고리. 기본값은 summary가 있으면 summary, 없으면 type 라벨입니다.",
+            "example": "서비스 안내"
           }
         }
       },
@@ -3503,7 +3509,7 @@
     "/api/notices": {
       "get": {
         "summary": "공지사항 목록 조회",
-        "description": "서비스 공지, 이벤트, 점검, 정책 공지를 고정 공지 우선순위와 최신순으로 조회합니다.",
+        "description": "서비스 공지, 이벤트, 점검, 정책 공지를 고정 공지 우선순위와 최신순으로 조회합니다. 운영 DB에 DAMARA 기본 공지가 없거나 일부 누락된 경우 서버 시작 시 기본 공지를 자동 보정합니다. 응답에는 프론트 표시용 category가 포함됩니다.",
         "tags": [
           "Notices"
         ],
@@ -3571,7 +3577,7 @@
     "/api/notices/{id}": {
       "get": {
         "summary": "공지사항 상세 조회",
-        "description": "공지사항 ID로 상세 제목, 요약, 본문, 유형, 고정 여부를 조회합니다.",
+        "description": "공지사항 ID로 상세 제목, 요약, 본문, 유형, 프론트 표시용 category, 고정 여부를 조회합니다.",
         "tags": [
           "Notices"
         ],
