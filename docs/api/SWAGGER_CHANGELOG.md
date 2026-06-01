@@ -27,6 +27,68 @@ src/routes/**/*.ts
 https://be.damara.bluerack.org/api-docs.json
 ```
 
+## 2026-06-01 - 기본 FAQ 데이터 자동 보정
+
+브랜치:
+
+```text
+feature/default-faqs
+```
+
+변경 전 기준 커밋:
+
+```text
+82f8a91
+```
+
+### 변경 요약
+
+FAQ API는 존재하지만 운영 DB에 FAQ 데이터가 없으면 프론트 FAQ 화면이 빈 상태로 노출되는 문제가 있었다.
+
+서버 시작 시 DAMARA 기본 FAQ 11개를 자동 보정하고, Swagger 예시를 실제 서비스 FAQ 문구에 맞게 정리했다.
+
+### 변경된 API
+
+```text
+GET /api/faqs
+```
+
+### 응답 스키마 변경
+
+요청/응답 필드의 구조 변경은 없다.
+
+다만 `GET /api/faqs` 응답이 운영 DB 초기 상태에서도 기본 FAQ 데이터를 반환할 수 있도록 seed 로직을 추가했다.
+
+예시:
+
+```json
+{
+  "category": "pickup",
+  "question": "물품 수령 장소는 어떻게 정하나요?",
+  "answer": "공구 등록 시 직접 장소를 입력하거나 다마라존을 선택할 수 있습니다. 다마라존은 S2810, 학생회관 앞, 기숙사 로비처럼 교내에서 만나기 쉬운 공식 접선지입니다.",
+  "order": 1,
+  "isActive": true
+}
+```
+
+### 프론트엔드 영향
+
+FAQ 화면은 기존처럼 `GET /api/faqs`를 호출하면 된다.
+
+카테고리 탭이 필요하면 기존 `category` 쿼리를 그대로 사용한다.
+
+```text
+trade | account | payment | pickup | etc
+```
+
+### 확인 방법
+
+```bash
+curl -s https://be.damara.bluerack.org/api/faqs
+curl -s "https://be.damara.bluerack.org/api/faqs?category=pickup"
+curl -s https://be.damara.bluerack.org/api-docs.json
+```
+
 ## 2026-06-01 - 기본 공지사항 데이터 및 category 응답 정리
 
 브랜치:
