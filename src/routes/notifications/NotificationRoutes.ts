@@ -14,6 +14,7 @@ const notificationRouter = Router();
  * /api/notifications:
  *   get:
  *     summary: 알림 목록 조회
+ *     description: 사용자의 알림 목록을 최신순으로 조회합니다. 공동구매에 새 참여자가 생기면 작성자에게 new_participant 타입 알림이 생성됩니다.
  *     tags: [Notifications]
  *     parameters:
  *       - in: header
@@ -48,7 +49,7 @@ const notificationRouter = Router();
  *         description: 읽지 않은 알림만 조회
  *     responses:
  *       200:
- *         description: 알림 목록 조회 성공
+ *         description: 알림 목록 조회 성공. new_participant 알림은 postId와 actionUrl을 포함하므로 프론트에서 게시글 상세로 이동시킬 수 있습니다.
  *         content:
  *           application/json:
  *             schema:

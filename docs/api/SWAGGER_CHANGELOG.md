@@ -27,12 +27,12 @@ src/routes/**/*.ts
 https://be.damara.bluerack.org/api-docs.json
 ```
 
-## 2026-06-01 - 게시글 상품명 검색 API 추가
+## 2026-06-01 - 공동구매 참여 알림 동작 명확화
 
 브랜치:
 
 ```text
-feature/post-product-search
+feature/participant-join-notification
 ```
 
 변경 전 기준 커밋:
@@ -43,65 +43,51 @@ ef8b3f1
 
 ### 변경 요약
 
-프론트엔드가 상품명을 입력했을 때 동일하거나 유사한 공동구매 게시글이 있는지
-즉시 판단할 수 있도록 상품명 검색 전용 API를 추가했다.
+사용자가 공동구매에 참여하면 게시글 작성자에게 `new_participant` 타입 알림이 생성되도록
+알림 생성 흐름을 정리했다.
 
-### 신규 API
+기존에는 참여 알림 생성 코드가 있었지만 공통 알림 생성 흐름을 우회해
+실시간 알림 emit이 누락될 수 있었다. 이제 `NotificationService.createNotification`을 통해
+DB 저장과 실시간 알림 전송을 같은 경로로 처리한다.
 
-```text
-GET /api/posts/product-search
-```
-
-### 요청 쿼리
+### 영향 API
 
 ```text
-productName: string
-limit?: number
+POST /api/posts/{id}/participate
+GET /api/notifications
+GET /api/notifications/unread-count
 ```
 
-`q`, `keyword`도 `productName`과 같은 검색어 alias로 사용할 수 있다.
-
-요청 예시:
-
-```bash
-GET /api/posts/product-search?productName=물티슈&limit=10
-```
-
-### 응답 스키마
+### 알림 타입
 
 ```text
-PostProductSearchResponse
+new_participant
 ```
 
-응답 예시:
+알림 예시:
 
 ```json
 {
-  "query": "물티슈",
-  "exists": true,
-  "exactMatchExists": false,
-  "partialMatchExists": true,
-  "total": 3,
-  "exactMatchCount": 0,
-  "limit": 10,
-  "items": []
+  "type": "new_participant",
+  "title": "공동구매 참여 알림",
+  "message": "김다마라님이 \"물티슈 공동구매\" 공동구매에 참여했습니다.",
+  "postId": "123e4567-e89b-12d3-a456-426614174000",
+  "actionUrl": "/post/123e4567-e89b-12d3-a456-426614174000",
+  "isRead": false
 }
 ```
 
 ### 프론트엔드 영향
 
-등록 화면에서 사용자가 상품명을 입력했을 때 다음 기준으로 안내 문구를 만들 수 있다.
+프론트엔드는 알림 목록 또는 소켓 이벤트에서 `type=new_participant`를 받으면
+게시글 작성자에게 새 참여자가 들어왔다는 알림으로 표시하면 된다.
 
 ```text
-exactMatchExists=true:
-이미 같은 상품명의 공동구매가 있어요.
-
-partialMatchExists=true:
-비슷한 상품명의 공동구매가 있어요.
-
-exists=false:
-아직 등록된 유사 공동구매가 없어요.
+공동구매 참여 알림
+김다마라님이 "물티슈 공동구매" 공동구매에 참여했습니다.
 ```
+
+알림 클릭 시 `actionUrl` 또는 `postId`를 사용해 게시글 상세 화면으로 이동한다.
 
 ## 2026-05-31 - 다마라존 공식 접선지 API 추가
 

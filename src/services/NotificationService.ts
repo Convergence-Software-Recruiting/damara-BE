@@ -5,6 +5,7 @@ import { NotificationCreationAttributes } from "../models/Notification";
 import PostModel from "../models/Post";
 import UserModel from "../models/User";
 import { NotificationType } from "../types/notification";
+import { UserSettingsRepo } from "../repos/UserSettingsRepo";
 import {
   emitAllNotificationsReadToUser,
   emitNotificationDeletedToUser,
@@ -40,6 +41,15 @@ function withActionUrl(
     ...data,
     actionUrl: buildActionUrl(data),
   };
+}
+
+async function canReceivePostNotification(userId: string) {
+  const settings = await UserSettingsRepo.findByUserId(userId);
+  if (!settings) {
+    return true;
+  }
+
+  return settings.pushEnabled && settings.postNotificationEnabled;
 }
 
 export const NotificationService = {
@@ -127,6 +137,17 @@ export const NotificationService = {
       return;
     }
 
+    if (post.authorId === participantUserId) {
+      return;
+    }
+
+    const canReceiveNotification = await canReceivePostNotification(
+      post.authorId
+    );
+    if (!canReceiveNotification) {
+      return;
+    }
+
     const participant = await UserModel.findByPk(participantUserId, {
       attributes: ["id", "nickname"],
     });
@@ -135,13 +156,12 @@ export const NotificationService = {
       return;
     }
 
-    await NotificationRepo.create({
+    await this.createNotification({
       userId: post.authorId,
       type: "new_participant",
-      title: "새로운 참여자",
-      message: `${post.title}에 새로운 참여자가 있습니다.`,
+      title: "공동구매 참여 알림",
+      message: `${participant.nickname}님이 "${post.title}" 공동구매에 참여했습니다.`,
       postId: postId,
-      actionUrl: `/post/${postId}`,
       isRead: false,
     });
   },
