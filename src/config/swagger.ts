@@ -2484,18 +2484,19 @@ const options: swaggerJsdoc.Options = {
             type: {
               type: "string",
               enum: [...NOTIFICATION_TYPES],
-              description: "알림 타입",
+              description:
+                "알림 타입. 공동구매 참여 알림은 작성자에게 new_participant 타입으로 전달됩니다.",
               example: "new_participant",
             },
             title: {
               type: "string",
               description: "알림 제목",
-              example: "새로운 참여자",
+              example: "공동구매 참여 알림",
             },
             message: {
               type: "string",
               description: "알림 메시지",
-              example: "호빵 공동구매에 새로운 참여자가 있습니다.",
+              example: "김다마라님이 \"물티슈 공동구매\" 공동구매에 참여했습니다.",
             },
             postId: {
               type: "string",
@@ -2514,7 +2515,8 @@ const options: swaggerJsdoc.Options = {
             actionUrl: {
               type: "string",
               nullable: true,
-              description: "알림 클릭 시 이동할 프론트엔드 경로",
+              description:
+                "알림 클릭 시 이동할 프론트엔드 경로. postId가 있으면 기본값은 /post/{postId}입니다.",
               example: "/post/123e4567-e89b-12d3-a456-426614174000",
             },
             isRead: {

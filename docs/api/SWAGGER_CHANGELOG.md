@@ -27,6 +27,68 @@ src/routes/**/*.ts
 https://be.damara.bluerack.org/api-docs.json
 ```
 
+## 2026-06-01 - 공동구매 참여 알림 동작 명확화
+
+브랜치:
+
+```text
+feature/participant-join-notification
+```
+
+변경 전 기준 커밋:
+
+```text
+ef8b3f1
+```
+
+### 변경 요약
+
+사용자가 공동구매에 참여하면 게시글 작성자에게 `new_participant` 타입 알림이 생성되도록
+알림 생성 흐름을 정리했다.
+
+기존에는 참여 알림 생성 코드가 있었지만 공통 알림 생성 흐름을 우회해
+실시간 알림 emit이 누락될 수 있었다. 이제 `NotificationService.createNotification`을 통해
+DB 저장과 실시간 알림 전송을 같은 경로로 처리한다.
+
+### 영향 API
+
+```text
+POST /api/posts/{id}/participate
+GET /api/notifications
+GET /api/notifications/unread-count
+```
+
+### 알림 타입
+
+```text
+new_participant
+```
+
+알림 예시:
+
+```json
+{
+  "type": "new_participant",
+  "title": "공동구매 참여 알림",
+  "message": "김다마라님이 \"물티슈 공동구매\" 공동구매에 참여했습니다.",
+  "postId": "123e4567-e89b-12d3-a456-426614174000",
+  "actionUrl": "/post/123e4567-e89b-12d3-a456-426614174000",
+  "isRead": false
+}
+```
+
+### 프론트엔드 영향
+
+프론트엔드는 알림 목록 또는 소켓 이벤트에서 `type=new_participant`를 받으면
+게시글 작성자에게 새 참여자가 들어왔다는 알림으로 표시하면 된다.
+
+```text
+공동구매 참여 알림
+김다마라님이 "물티슈 공동구매" 공동구매에 참여했습니다.
+```
+
+알림 클릭 시 `actionUrl` 또는 `postId`를 사용해 게시글 상세 화면으로 이동한다.
+
 ## 2026-05-31 - 다마라존 공식 접선지 API 추가
 
 브랜치:
