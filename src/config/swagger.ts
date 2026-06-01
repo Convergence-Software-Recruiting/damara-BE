@@ -1120,6 +1120,67 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        PostProductSearchResponse: {
+          type: "object",
+          required: [
+            "query",
+            "exists",
+            "exactMatchExists",
+            "partialMatchExists",
+            "total",
+            "exactMatchCount",
+            "limit",
+            "items",
+          ],
+          properties: {
+            query: {
+              type: "string",
+              description: "서버가 공백을 정리한 검색어",
+              example: "물티슈",
+            },
+            exists: {
+              type: "boolean",
+              description:
+                "정확히 같거나 일부 포함되는 상품명/게시글 제목이 하나라도 있는지 여부",
+              example: true,
+            },
+            exactMatchExists: {
+              type: "boolean",
+              description:
+                "상품명(productName) 또는 제목(title)이 검색어와 완전히 같은 게시글 존재 여부",
+              example: false,
+            },
+            partialMatchExists: {
+              type: "boolean",
+              description:
+                "상품명(productName) 또는 제목(title)에 검색어가 포함된 게시글 존재 여부",
+              example: true,
+            },
+            total: {
+              type: "integer",
+              description: "일부 포함 검색까지 포함한 전체 검색 결과 수",
+              example: 3,
+            },
+            exactMatchCount: {
+              type: "integer",
+              description: "정확히 일치하는 검색 결과 수",
+              example: 0,
+            },
+            limit: {
+              type: "integer",
+              description: "items에 반환된 최대 게시글 수",
+              example: 10,
+            },
+            items: {
+              type: "array",
+              description:
+                "검색어와 유사한 게시글 목록. 카드 UI용 favoriteCount, isFavorite, isParticipant, deadlineStatus 등이 포함됩니다.",
+              items: {
+                $ref: "#/components/schemas/Post",
+              },
+            },
+          },
+        },
         PostParticipationResult: {
           type: "object",
           required: ["isParticipant", "post"],
