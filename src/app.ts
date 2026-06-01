@@ -31,6 +31,7 @@ import {
   POST_EXCEPTION_STATUSES,
   POST_EXCEPTION_TYPES,
 } from "./types/post-exception";
+import { DEFAULT_SERVICE_NOTICES } from "./data/default-notices";
 
 // 모든 모델을 import하여 Sequelize가 테이블을 인식하도록 함
 import "./models/User";
@@ -41,7 +42,7 @@ import "./models/Message";
 import "./models/PostParticipant";
 import "./models/TrustEvent";
 import "./models/UserSettings";
-import "./models/Notice";
+import NoticeModel from "./models/Notice";
 import "./models/Faq";
 import "./models/Notification";
 import "./models/PostException";
@@ -475,6 +476,33 @@ async function ensureNoticesTable() {
   }
 }
 
+async function ensureDefaultNotices() {
+  try {
+    const existingNotices = await NoticeModel.findAll({
+      attributes: ["title"],
+    });
+    const existingTitles = new Set(
+      existingNotices.map((notice) => notice.title)
+    );
+    const missingNotices = DEFAULT_SERVICE_NOTICES.filter(
+      (notice) => !existingTitles.has(notice.title)
+    );
+
+    if (missingNotices.length === 0) {
+      logger.info("✓ 기본 공지사항 데이터 확인 완료");
+      return;
+    }
+
+    await NoticeModel.bulkCreate(
+      missingNotices.map(({ category, ...notice }) => notice)
+    );
+    logger.info(`✓ 기본 공지사항 데이터 ${missingNotices.length}개 생성 완료`);
+  } catch (error) {
+    logger.warn("기본 공지사항 데이터 생성 중 경고 발생");
+    logger.warn(error, true);
+  }
+}
+
 async function ensureFaqsTable() {
   try {
     const queryInterface = sequelize.getQueryInterface();
@@ -764,6 +792,7 @@ export async function syncDatabase() {
     await ensurePostUiDetailColumns();
     await ensureUserSettingsTable();
     await ensureNoticesTable();
+    await ensureDefaultNotices();
     await ensureFaqsTable();
     await ensureNotificationActionColumns();
     await ensureMessageTypeEnum();
@@ -776,6 +805,7 @@ export async function syncDatabase() {
     await ensurePostUiDetailColumns();
     await ensureUserSettingsTable();
     await ensureNoticesTable();
+    await ensureDefaultNotices();
     await ensureFaqsTable();
     await ensureNotificationActionColumns();
     await ensureMessageTypeEnum();

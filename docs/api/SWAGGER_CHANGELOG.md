@@ -27,12 +27,12 @@ src/routes/**/*.ts
 https://be.damara.bluerack.org/api-docs.json
 ```
 
-## 2026-06-01 - 공동구매 참여 알림 동작 명확화
+## 2026-06-01 - 기본 공지사항 데이터 및 category 응답 정리
 
 브랜치:
 
 ```text
-feature/participant-join-notification
+feature/default-service-notices
 ```
 
 변경 전 기준 커밋:
@@ -43,51 +43,51 @@ ef8b3f1
 
 ### 변경 요약
 
-사용자가 공동구매에 참여하면 게시글 작성자에게 `new_participant` 타입 알림이 생성되도록
-알림 생성 흐름을 정리했다.
+공지사항 API는 존재하지만 운영 DB에 공지 데이터가 없으면 프론트 공지 화면이 비어 보이는 문제가 있었다.
 
-기존에는 참여 알림 생성 코드가 있었지만 공통 알림 생성 흐름을 우회해
-실시간 알림 emit이 누락될 수 있었다. 이제 `NotificationService.createNotification`을 통해
-DB 저장과 실시간 알림 전송을 같은 경로로 처리한다.
+서버 시작 시 DAMARA 기본 공지사항 8개를 자동 보정하고, 프론트가 탭/배지를 바로 표시할 수 있도록 공지 응답에 `category` 필드를 명시했다.
 
-### 영향 API
+### 변경된 API
 
 ```text
-POST /api/posts/{id}/participate
-GET /api/notifications
-GET /api/notifications/unread-count
+GET /api/notices
+GET /api/notices/{id}
 ```
 
-### 알림 타입
+### 응답 스키마 변경
+
+`Notice` 응답에 다음 필드를 추가했다.
 
 ```text
-new_participant
+category: string
 ```
 
-알림 예시:
+`category`는 `summary`가 있으면 `summary` 값을 사용하고, 없으면 `type`에 따른 표시 라벨을 사용한다.
+
+예시:
 
 ```json
 {
-  "type": "new_participant",
-  "title": "공동구매 참여 알림",
-  "message": "김다마라님이 \"물티슈 공동구매\" 공동구매에 참여했습니다.",
-  "postId": "123e4567-e89b-12d3-a456-426614174000",
-  "actionUrl": "/post/123e4567-e89b-12d3-a456-426614174000",
-  "isRead": false
+  "title": "DAMARA 베타 서비스 오픈 안내",
+  "summary": "서비스 안내",
+  "category": "서비스 안내",
+  "type": "service",
+  "isPinned": true
 }
 ```
 
 ### 프론트엔드 영향
 
-프론트엔드는 알림 목록 또는 소켓 이벤트에서 `type=new_participant`를 받으면
-게시글 작성자에게 새 참여자가 들어왔다는 알림으로 표시하면 된다.
+공지 목록과 상세 화면에서 `category`를 그대로 표시하면 된다.
 
-```text
-공동구매 참여 알림
-김다마라님이 "물티슈 공동구매" 공동구매에 참여했습니다.
+초기 운영 DB에 공지가 없거나 일부 기본 공지가 누락되어도 서버가 title 기준으로 없는 기본 공지만 생성하므로 중복 공지 생성 가능성을 줄였다.
+
+### 확인 방법
+
+```bash
+curl -s https://be.damara.bluerack.org/api/notices
+curl -s https://be.damara.bluerack.org/api-docs.json
 ```
-
-알림 클릭 시 `actionUrl` 또는 `postId`를 사용해 게시글 상세 화면으로 이동한다.
 
 ## 2026-05-31 - 다마라존 공식 접선지 API 추가
 

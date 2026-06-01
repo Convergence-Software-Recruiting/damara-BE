@@ -28,6 +28,30 @@ function parseNoticeType(type?: string): NoticeType | undefined {
   return type as NoticeType;
 }
 
+function getNoticeCategory(notice: { summary: string | null; type: NoticeType }) {
+  if (notice.summary) {
+    return notice.summary;
+  }
+
+  const typeLabels: Record<NoticeType, string> = {
+    service: "서비스 안내",
+    event: "이벤트",
+    maintenance: "점검 안내",
+    policy: "운영 정책",
+  };
+
+  return typeLabels[notice.type];
+}
+
+function withNoticeCategory<T extends { summary: string | null; type: NoticeType }>(
+  notice: T
+) {
+  return {
+    ...notice,
+    category: getNoticeCategory(notice),
+  };
+}
+
 export const NoticeService = {
   async listNotices(params: ListNoticeParams) {
     const { limit, offset } = normalizePagination(params.limit, params.offset);
@@ -39,7 +63,7 @@ export const NoticeService = {
     ]);
 
     return {
-      notices,
+      notices: notices.map(withNoticeCategory),
       total,
       limit,
       offset,
@@ -54,6 +78,6 @@ export const NoticeService = {
       throw new RouteError(HttpStatusCodes.NOT_FOUND, "NOTICE_NOT_FOUND");
     }
 
-    return notice;
+    return withNoticeCategory(notice);
   },
 };

@@ -11,7 +11,7 @@ const noticeRouter = Router();
  * /api/notices:
  *   get:
  *     summary: 공지사항 목록 조회
- *     description: 서비스 공지, 이벤트, 점검, 정책 공지를 고정 공지 우선순위와 최신순으로 조회합니다.
+ *     description: 서비스 공지, 이벤트, 점검, 정책 공지를 고정 공지 우선순위와 최신순으로 조회합니다. 운영 DB에 DAMARA 기본 공지가 없거나 일부 누락된 경우 서버 시작 시 기본 공지를 자동 보정합니다. 응답에는 프론트 표시용 category가 포함됩니다.
  *     tags: [Notices]
  *     parameters:
  *       - in: query
@@ -56,7 +56,7 @@ noticeRouter.get("/", getNotices);
  * /api/notices/{id}:
  *   get:
  *     summary: 공지사항 상세 조회
- *     description: 공지사항 ID로 상세 제목, 요약, 본문, 유형, 고정 여부를 조회합니다.
+ *     description: 공지사항 ID로 상세 제목, 요약, 본문, 유형, 프론트 표시용 category, 고정 여부를 조회합니다.
  *     tags: [Notices]
  *     parameters:
  *       - in: path
