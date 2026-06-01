@@ -565,17 +565,18 @@ const options: swaggerJsdoc.Options = {
               type: "string",
               enum: [...FAQ_CATEGORIES],
               description: "FAQ 카테고리",
-              example: "trade",
+              example: "pickup",
             },
             question: {
               type: "string",
               description: "질문",
-              example: "공구 참여는 어떻게 하나요?",
+              example: "물품 수령 장소는 어떻게 정하나요?",
             },
             answer: {
               type: "string",
               description: "답변",
-              example: "공구 상세 화면에서 참여하기를 누르면 됩니다.",
+              example:
+                "공구 등록 시 직접 장소를 입력하거나 다마라존을 선택할 수 있습니다. 다마라존은 S2810, 학생회관 앞, 기숙사 로비처럼 교내에서 만나기 쉬운 공식 접선지입니다.",
             },
             order: {
               type: "integer",
@@ -612,7 +613,7 @@ const options: swaggerJsdoc.Options = {
             total: {
               type: "integer",
               description: "필터 조건에 맞는 전체 FAQ 수",
-              example: 8,
+              example: 11,
             },
             limit: {
               type: "integer",
