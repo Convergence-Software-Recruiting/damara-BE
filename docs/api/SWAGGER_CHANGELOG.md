@@ -27,6 +27,106 @@ src/routes/**/*.ts
 https://be.damara.bluerack.org/api-docs.json
 ```
 
+## 2026-06-01 - 마이페이지 프로필 이미지 API 추가
+
+브랜치:
+
+```text
+feature/user-profile-image-api
+```
+
+변경 전 기준 커밋:
+
+```text
+82f8a91
+```
+
+### 변경 요약
+
+기존에는 이미지 업로드 API와 사용자 `avatarUrl` 수정 API를 프론트에서 조합해야 했다.
+
+마이페이지에서 프로필 이미지를 바로 추가/교체/제거할 수 있도록 사용자 전용 프로필 이미지 API를 추가했다.
+
+### 신규 API
+
+```text
+POST /api/users/{id}/profile-image
+PUT /api/users/{id}/profile-image
+```
+
+### 요청 스키마
+
+`POST /api/users/{id}/profile-image`는 프로필 이미지 파일을 업로드하고 사용자 `avatarUrl`에 즉시 반영한다.
+
+```text
+Content-Type: multipart/form-data
+image: File
+```
+
+`PUT /api/users/{id}/profile-image`는 두 가지 방식으로 수정할 수 있다.
+
+```text
+Content-Type: multipart/form-data
+image: File
+```
+
+또는
+
+```json
+{
+  "avatarUrl": "/uploads/images/abc123.png"
+}
+```
+
+프로필 이미지를 제거하려면 다음처럼 보낸다.
+
+```json
+{
+  "avatarUrl": null
+}
+```
+
+### 응답 스키마
+
+신규 `UserProfileImageResponse` 스키마를 추가했다.
+
+```json
+{
+  "avatarUrl": "/uploads/images/abc123.png",
+  "image": {
+    "imageUrl": "/uploads/images/abc123.png",
+    "url": "/uploads/images/abc123.png",
+    "filename": "abc123.png"
+  },
+  "user": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "nickname": "홍길동",
+    "avatarUrl": "/uploads/images/abc123.png"
+  }
+}
+```
+
+`image`는 파일 업로드 요청에서만 포함된다.
+
+### 프론트엔드 영향
+
+마이페이지 프로필 이미지 추가는 `POST /api/users/{id}/profile-image`를 사용하면 된다.
+
+프로필 이미지 교체는 `PUT /api/users/{id}/profile-image`에 새 파일을 보내면 된다.
+
+이미지 URL을 직접 지정하거나 제거할 때도 같은 `PUT` API를 사용한다.
+
+### 확인 방법
+
+```bash
+curl -X POST "https://be.damara.bluerack.org/api/users/{id}/profile-image" \
+  -F "image=@profile.png"
+
+curl -X PUT "https://be.damara.bluerack.org/api/users/{id}/profile-image" \
+  -H "Content-Type: application/json" \
+  -d '{"avatarUrl":null}'
+```
+
 ## 2026-06-01 - 기본 공지사항 데이터 및 category 응답 정리
 
 브랜치:

@@ -170,6 +170,41 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        UserProfileImageResponse: {
+          type: "object",
+          required: ["avatarUrl", "user"],
+          properties: {
+            avatarUrl: {
+              type: "string",
+              nullable: true,
+              description: "사용자에게 반영된 프로필 이미지 URL. null이면 이미지 없음",
+              example: "/uploads/images/abc123.png",
+            },
+            image: {
+              type: "object",
+              nullable: true,
+              description: "파일 업로드 요청에서 생성된 이미지 정보",
+              properties: {
+                imageUrl: {
+                  type: "string",
+                  example: "/uploads/images/abc123.png",
+                },
+                url: {
+                  type: "string",
+                  description: "기존 클라이언트 호환용 URL",
+                  example: "/uploads/images/abc123.png",
+                },
+                filename: {
+                  type: "string",
+                  example: "abc123.png",
+                },
+              },
+            },
+            user: {
+              $ref: "#/components/schemas/User",
+            },
+          },
+        },
         UserSummaryResponse: {
           type: "object",
           required: ["user", "counts", "trust"],
