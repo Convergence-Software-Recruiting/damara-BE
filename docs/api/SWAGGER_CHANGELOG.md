@@ -27,12 +27,12 @@ src/routes/**/*.ts
 https://be.damara.bluerack.org/api-docs.json
 ```
 
-## 2026-06-01 - 기본 FAQ 데이터 자동 보정
+## 2026-06-01 - 마이페이지 프로필 이미지 API 추가
 
 브랜치:
 
 ```text
-feature/default-faqs
+feature/user-profile-image-api
 ```
 
 변경 전 기준 커밋:
@@ -43,50 +43,88 @@ feature/default-faqs
 
 ### 변경 요약
 
-FAQ API는 존재하지만 운영 DB에 FAQ 데이터가 없으면 프론트 FAQ 화면이 빈 상태로 노출되는 문제가 있었다.
+기존에는 이미지 업로드 API와 사용자 `avatarUrl` 수정 API를 프론트에서 조합해야 했다.
 
-서버 시작 시 DAMARA 기본 FAQ 11개를 자동 보정하고, Swagger 예시를 실제 서비스 FAQ 문구에 맞게 정리했다.
+마이페이지에서 프로필 이미지를 바로 추가/교체/제거할 수 있도록 사용자 전용 프로필 이미지 API를 추가했다.
 
-### 변경된 API
+### 신규 API
 
 ```text
-GET /api/faqs
+POST /api/users/{id}/profile-image
+PUT /api/users/{id}/profile-image
 ```
 
-### 응답 스키마 변경
+### 요청 스키마
 
-요청/응답 필드의 구조 변경은 없다.
+`POST /api/users/{id}/profile-image`는 프로필 이미지 파일을 업로드하고 사용자 `avatarUrl`에 즉시 반영한다.
 
-다만 `GET /api/faqs` 응답이 운영 DB 초기 상태에서도 기본 FAQ 데이터를 반환할 수 있도록 seed 로직을 추가했다.
+```text
+Content-Type: multipart/form-data
+image: File
+```
 
-예시:
+`PUT /api/users/{id}/profile-image`는 두 가지 방식으로 수정할 수 있다.
+
+```text
+Content-Type: multipart/form-data
+image: File
+```
+
+또는
 
 ```json
 {
-  "category": "pickup",
-  "question": "물품 수령 장소는 어떻게 정하나요?",
-  "answer": "공구 등록 시 직접 장소를 입력하거나 다마라존을 선택할 수 있습니다. 다마라존은 S2810, 학생회관 앞, 기숙사 로비처럼 교내에서 만나기 쉬운 공식 접선지입니다.",
-  "order": 1,
-  "isActive": true
+  "avatarUrl": "/uploads/images/abc123.png"
 }
 ```
 
+프로필 이미지를 제거하려면 다음처럼 보낸다.
+
+```json
+{
+  "avatarUrl": null
+}
+```
+
+### 응답 스키마
+
+신규 `UserProfileImageResponse` 스키마를 추가했다.
+
+```json
+{
+  "avatarUrl": "/uploads/images/abc123.png",
+  "image": {
+    "imageUrl": "/uploads/images/abc123.png",
+    "url": "/uploads/images/abc123.png",
+    "filename": "abc123.png"
+  },
+  "user": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "nickname": "홍길동",
+    "avatarUrl": "/uploads/images/abc123.png"
+  }
+}
+```
+
+`image`는 파일 업로드 요청에서만 포함된다.
+
 ### 프론트엔드 영향
 
-FAQ 화면은 기존처럼 `GET /api/faqs`를 호출하면 된다.
+마이페이지 프로필 이미지 추가는 `POST /api/users/{id}/profile-image`를 사용하면 된다.
 
-카테고리 탭이 필요하면 기존 `category` 쿼리를 그대로 사용한다.
+프로필 이미지 교체는 `PUT /api/users/{id}/profile-image`에 새 파일을 보내면 된다.
 
-```text
-trade | account | payment | pickup | etc
-```
+이미지 URL을 직접 지정하거나 제거할 때도 같은 `PUT` API를 사용한다.
 
 ### 확인 방법
 
 ```bash
-curl -s https://be.damara.bluerack.org/api/faqs
-curl -s "https://be.damara.bluerack.org/api/faqs?category=pickup"
-curl -s https://be.damara.bluerack.org/api-docs.json
+curl -X POST "https://be.damara.bluerack.org/api/users/{id}/profile-image" \
+  -F "image=@profile.png"
+
+curl -X PUT "https://be.damara.bluerack.org/api/users/{id}/profile-image" \
+  -H "Content-Type: application/json" \
+  -d '{"avatarUrl":null}'
 ```
 
 ## 2026-06-01 - 기본 공지사항 데이터 및 category 응답 정리

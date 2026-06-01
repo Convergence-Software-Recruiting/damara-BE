@@ -373,6 +373,19 @@ export const UserService = {
   },
 
   /**
+   * 마이페이지 프로필 이미지 수정
+   */
+  async updateProfileImage(id: string, avatarUrl: string | null) {
+    const user = await UserRepo.findById(id);
+    if (!user) {
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "USER_NOT_FOUND");
+    }
+
+    const updatedUser = await UserRepo.update(id, { avatarUrl });
+    return TrustService.withTrustGrade(updatedUser);
+  },
+
+  /**
    * 삭제
    */
   async deleteUser(id: string) {

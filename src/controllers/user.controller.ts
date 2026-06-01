@@ -20,6 +20,8 @@ import {
   CreateUserReq,
   updateUserSchema,
   UpdateUserReq,
+  updateProfileImageSchema,
+  UpdateProfileImageReq,
   loginSchema,
   LoginReq,
   updateUserSettingsSchema,
@@ -58,6 +60,16 @@ function parseNonNegativeInteger(value: unknown, fallback: number) {
 
   const parsed = Number.parseInt(rawValue, 10);
   return Number.isNaN(parsed) || parsed < 0 ? fallback : parsed;
+}
+
+function toUploadedProfileImage(filename: string) {
+  const imageUrl = `/uploads/images/${filename}`;
+
+  return {
+    imageUrl,
+    url: imageUrl,
+    filename,
+  };
 }
 
 /**
@@ -133,6 +145,75 @@ export async function updateUser(
     const updatedUser = await UserService.updateUser(id, user);
 
     res.status(HttpStatusCodes.OK).json(updatedUser);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 프로필 이미지 업로드 및 설정
+ * POST /api/users/:id/profile-image
+ * multipart/form-data: { image: File }
+ */
+export async function uploadUserProfileImage(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+
+    if (!req.file) {
+      return sendErrorResponse(
+        res,
+        HttpStatusCodes.BAD_REQUEST,
+        "PROFILE_IMAGE_REQUIRED",
+        "업로드할 프로필 이미지 파일이 필요합니다."
+      );
+    }
+
+    const image = toUploadedProfileImage(req.file.filename);
+    const user = await UserService.updateProfileImage(id, image.imageUrl);
+
+    res.status(HttpStatusCodes.CREATED).json({
+      avatarUrl: user.avatarUrl,
+      image,
+      user,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 프로필 이미지 수정
+ * PUT /api/users/:id/profile-image
+ *
+ * - multipart/form-data image가 있으면 새 이미지로 교체한다.
+ * - JSON avatarUrl이 있으면 URL을 직접 설정하거나 null로 제거한다.
+ */
+export async function updateUserProfileImage(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+    const uploadedImage = req.file
+      ? toUploadedProfileImage(req.file.filename)
+      : null;
+    const avatarUrl = uploadedImage
+      ? uploadedImage.imageUrl
+      : parseReq<UpdateProfileImageReq>(updateProfileImageSchema)(req.body)
+          .avatarUrl;
+
+    const user = await UserService.updateProfileImage(id, avatarUrl);
+
+    res.status(HttpStatusCodes.OK).json({
+      avatarUrl: user.avatarUrl,
+      ...(uploadedImage ? { image: uploadedImage } : {}),
+      user,
+    });
   } catch (error) {
     next(error);
   }
